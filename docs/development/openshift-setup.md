@@ -388,7 +388,7 @@ EOF
 
 # Check if custom changes are applied
 oc get evalhub evalhub -n evalhub-test -o yaml
-oc get pods -n evalhub-test -l app=evalhub
+oc get pods -n evalhub-test -l app=eval-hub
 ```
 
 #### Iterate on Changes
@@ -553,13 +553,13 @@ curl -k -X POST \
 
 ```bash
 # Check pod status
-oc get pods -n evalhub-test -l app=evalhub
+oc get pods -n evalhub-test -l app=eval-hub
 
 # Describe pod for events
-oc describe pod -n evalhub-test -l app=evalhub
+oc describe pod -n evalhub-test -l app=eval-hub
 
 # Check logs
-oc logs -n evalhub-test -l app=evalhub --tail=100
+oc logs -n evalhub-test -l app=eval-hub --tail=100
 ```
 
 **Common causes:**
@@ -596,7 +596,7 @@ oc logs -n evalhub-test -l app=evalhub --tail=100
 
 ```bash
 # Find evaluation job
-oc get jobs -n evalhub-test -l app=evalhub
+oc get jobs -n evalhub-test -l app=eval-hub
 
 # Check job status
 oc describe job <job-name> -n evalhub-test
