@@ -98,7 +98,7 @@ The TrustyAI Operator is installed automatically as part of the DataScienceClust
 
 ```bash
 # Check TrustyAI Operator pods
-oc get pods -n opendatahub -l control-plane=trustyai-service-operator-controller-manager
+oc get pods -n opendatahub -l app.kubernetes.io/part-of=trustyai
 
 # Check TrustyAI CRDs
 oc get crd | grep trustyai
@@ -151,13 +151,13 @@ oc get evalhub evalhub -n evalhub-test
 # Should show STATUS: Ready
 
 # Check EvalHub pods
-oc get pods -n evalhub-test -l app=evalhub
+oc get pods -n evalhub-test -l app=eval-hub
 
 # Check EvalHub service
-oc get svc -n evalhub-test -l app=evalhub
+oc get svc -n evalhub-test -l app=eval-hub
 
 # Check route (if OAuth is enabled)
-oc get route -n evalhub-test -l app=evalhub
+oc get route -n evalhub-test -l app=eval-hub
 ```
 
 ### 4. Access EvalHub
@@ -360,10 +360,10 @@ After uploading and restarting, verify the operators are using your custom manif
 ```bash
 # Check operator pods are running
 oc get pods -n openshift-operators -l name=opendatahub-operator
-oc get pods -n opendatahub -l control-plane=trustyai-service-operator-controller-manager
+oc get pods -n opendatahub -l  app.kubernetes.io/part-of=trustyai
 
 # Check TrustyAI operator logs for manifest loading
-oc logs -n opendatahub -l control-plane=trustyai-service-operator-controller-manager --tail=50
+oc logs -n opendatahub -l  app.kubernetes.io/part-of=trustyai --tail=50
 
 # Verify ConfigMap has your custom values
 oc get configmap trustyai-service-operator-config -n opendatahub -o yaml
@@ -680,7 +680,7 @@ curl -k -v -H "Authorization: Bearer $TOKEN" \
 ```bash
 # Check operator logs
 oc logs -n opendatahub \
-  -l control-plane=trustyai-service-operator-controller-manager \
+  -l  app.kubernetes.io/part-of=trustyai \
   --tail=100
 
 # Check EvalHub CR status
@@ -695,7 +695,7 @@ oc get events -n evalhub-test --sort-by='.lastTimestamp'
 1. **Restart operator**
    ```bash
    oc delete pod -n opendatahub \
-     -l control-plane=trustyai-service-operator-controller-manager
+     -l  app.kubernetes.io/part-of=trustyai
    ```
 
 2. **Check CRD versions**
