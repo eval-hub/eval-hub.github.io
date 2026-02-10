@@ -82,6 +82,7 @@ nav:
   - Development:
     - Architecture: development/architecture.md
     - Creating Adapters: development/creating-adapters.md
+    - OpenShift Setup: development/openshift-setup.md
   - Reference:
     - REST API: reference/api.md
     - Python SDK: reference/sdk-client.md
