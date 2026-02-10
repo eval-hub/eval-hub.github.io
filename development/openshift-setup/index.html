@@ -1886,7 +1886,7 @@
 <h3 id="1-verify-trustyai-operator-installation">1. Verify TrustyAI Operator Installation<a class="headerlink" href="#1-verify-trustyai-operator-installation" title="Permanent link">¶</a></h3>
 <p>The TrustyAI Operator is installed automatically as part of the DataScienceCluster:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Check TrustyAI Operator pods</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span>-l<span class="w"> </span>control-plane<span class="o">=</span>trustyai-service-operator-controller-manager
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Check TrustyAI CRDs</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>oc<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>trustyai
@@ -1927,13 +1927,13 @@
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Should show STATUS: Ready</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Check EvalHub pods</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>evalhub
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="c1"># Check EvalHub service</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>oc<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>evalhub
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>oc<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
 </span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="c1"># Check route (if OAuth is enabled)</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>evalhub
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
 </span></code></pre></div>
 <h3 id="4-access-evalhub">4. Access EvalHub<a class="headerlink" href="#4-access-evalhub" title="Permanent link">¶</a></h3>
 <p>Get the EvalHub URL:</p>
@@ -2090,10 +2090,10 @@
 <p>After uploading and restarting, verify the operators are using your custom manifests:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Check operator pods are running</span>
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>openshift-operators<span class="w"> </span>-l<span class="w"> </span><span class="nv">name</span><span class="o">=</span>opendatahub-operator
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span>-l<span class="w"> </span>control-plane<span class="o">=</span>trustyai-service-operator-controller-manager
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span>-l<span class="w">  </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai
 </span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
 </span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="c1"># Check TrustyAI operator logs for manifest loading</span>
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span>-l<span class="w"> </span>control-plane<span class="o">=</span>trustyai-service-operator-controller-manager<span class="w"> </span>--tail<span class="o">=</span><span class="m">50</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span>-l<span class="w">  </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai<span class="w"> </span>--tail<span class="o">=</span><span class="m">50</span>
 </span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>
 </span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="c1"># Verify ConfigMap has your custom values</span>
 </span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>oc<span class="w"> </span>get<span class="w"> </span>configmap<span class="w"> </span>trustyai-service-operator-config<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span>-o<span class="w"> </span>yaml
@@ -2115,7 +2115,7 @@
 </span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>
 </span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="c1"># Check if custom changes are applied</span>
 </span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>oc<span class="w"> </span>get<span class="w"> </span>evalhub<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>evalhub
+</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
 </span></code></pre></div>
 <h4 id="iterate-on-changes">Iterate on Changes<a class="headerlink" href="#iterate-on-changes" title="Permanent link">¶</a></h4>
 <p>To update your manifests during development:</p>
@@ -2244,13 +2244,13 @@
 <p><strong>Symptoms:</strong> EvalHub pod stuck in Pending or CrashLoopBackOff</p>
 <p><strong>Diagnostics:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># Check pod status</span>
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>evalhub
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
 </span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>
 </span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="c1"># Describe pod for events</span>
-</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>oc<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>evalhub
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>oc<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
 </span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>
 </span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a><span class="c1"># Check logs</span>
-</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>evalhub<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
 </span></code></pre></div>
 <p><strong>Common causes:</strong></p>
 <ol>
@@ -2283,7 +2283,7 @@
 <p><strong>Symptoms:</strong> Jobs complete but report failure status</p>
 <p><strong>Diagnostics:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="c1"># Find evaluation job</span>
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>oc<span class="w"> </span>get<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>evalhub
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>oc<span class="w"> </span>get<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
 </span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
 </span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="c1"># Check job status</span>
 </span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>oc<span class="w"> </span>describe<span class="w"> </span>job<span class="w"> </span>&lt;job-name&gt;<span class="w"> </span>-n<span class="w"> </span>evalhub-test
@@ -2359,7 +2359,7 @@
 <p><strong>Diagnostics:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1"># Check operator logs</span>
 </span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">  </span>-l<span class="w"> </span>control-plane<span class="o">=</span>trustyai-service-operator-controller-manager<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">  </span>-l<span class="w">  </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="w">  </span>--tail<span class="o">=</span><span class="m">100</span>
 </span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>
 </span><span id="__span-40-6"><a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a><span class="c1"># Check EvalHub CR status</span>
@@ -2373,7 +2373,7 @@
 <li>
 <p><strong>Restart operator</strong>
    </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>oc<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="w">  </span>-l<span class="w"> </span>control-plane<span class="o">=</span>trustyai-service-operator-controller-manager
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="w">  </span>-l<span class="w">  </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai
 </span></code></pre></div><p></p>
 </li>
 <li>
