@@ -65,13 +65,18 @@ After the operator is installed, configure OpenDataHub from the operator's dashb
 
 1. Navigate to **Operators → Installed Operators**
 2. Select **OpenDataHub Operator**
-3. Go to the **Data Science Cluster** tab
-4. Click **Create DataScienceCluster**
-5. Use default settings for most components
-6. **Important**: Under the TrustyAI component, configure LMEval security settings:
+3. Go to the **DSCInitialization** tab
+4. Click **Create DSCInitialization**
+5. Review or just use default settings
+6. Click **Create**
+7. Await "Phase: Ready"
+7. Go to the **Data Science Cluster** tab
+8. Click **Create DataScienceCluster**
+9. Review or just use default settings for most components, do not save/create yet
+10. **Important**: Under the TrustyAI component, configure LMEval security settings:
    - Set `permitCodeExecution` to **allow**
    - Set `permitOnline` to **allow**
-7. Click **Create**
+11. Click **Create**
 
 !!! warning "Security Settings"
     The `permitCodeExecution` and `permitOnline` settings control whether evaluation jobs can execute arbitrary code or access the internet. For development and testing, set these to `allow`. For production deployments, consider setting to `deny` based on your security requirements.
