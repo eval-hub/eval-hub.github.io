@@ -346,6 +346,7 @@ oc cp ./config/. openshift-operators/${POD}:/opt/manifests/trustyai
 ```bash
 # Restart OpenDataHub operator
 oc rollout restart deploy -n openshift-operators -l name=opendatahub-operator
+oc rollout status deploy -n openshift-operators -l name=opendatahub-operator
 
 # Restart TrustyAI operator
 oc rollout restart deployment/trustyai-service-operator-controller-manager -n opendatahub
@@ -412,6 +413,7 @@ To update your manifests during development:
 3. **Restart operators**:
    ```bash
    oc rollout restart deploy -n openshift-operators -l name=opendatahub-operator
+   oc rollout status deploy -n openshift-operators -l name=opendatahub-operator
    oc rollout restart deployment/trustyai-service-operator-controller-manager -n opendatahub
    ```
 4. **Test changes** by recreating the EvalHub CR
@@ -474,6 +476,7 @@ oc cp ./config/. openshift-operators/${POD}:/opt/manifests/trustyai
 
 # Restart operators
 oc rollout restart deploy -n openshift-operators -l name=opendatahub-operator
+oc rollout status deploy -n openshift-operators -l name=opendatahub-operator
 oc rollout restart deployment/trustyai-service-operator-controller-manager -n opendatahub
 ```
 
