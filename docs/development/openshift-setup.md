@@ -455,7 +455,7 @@ Build a custom EvalHub server image:
 cd eval-hub
 
 # Build with Podman
-podman build -t quay.io/your-org/eval-hub:dev .
+podman build --platform linux/amd64 -t quay.io/your-org/eval-hub:dev .
 
 # Push to registry
 podman push quay.io/your-org/eval-hub:dev
