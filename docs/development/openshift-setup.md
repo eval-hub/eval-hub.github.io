@@ -441,6 +441,12 @@ oc delete pvc trustyai-manifests -n openshift-operators
 
 If you want to use a custom EvalHub server image (for example, with modified code or dependencies), build and push it to your container registry, then update the operator manifests before uploading them.
 
+Login to Quay if you haven't done already:
+
+```sh
+podman login quay.io
+```
+
 Build a custom EvalHub server image:
 
 ```bash
@@ -450,7 +456,6 @@ cd eval-hub
 podman build -t quay.io/your-org/eval-hub:dev .
 
 # Push to registry
-podman login quay.io
 podman push quay.io/your-org/eval-hub:dev
 ```
 
