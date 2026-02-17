@@ -559,6 +559,73 @@ curl -k -X POST \
   "https://$EVALHUB_URL/api/v1/evaluations/jobs" | jq .
 ```
 
+## Deploying an OpenAI-compatible simulator
+
+For specific testing purposes when the Model's answers quality is not relevant, you can deploy an OpenAI-compatible inference simulator instead of a real model server.
+
+Deploy the simulator with:
+
+```bash
+curl -s https://raw.githubusercontent.com/tarilabs/llm-d-inference-sim/refs/heads/patch-1/manifests/deployment.yaml | yq '.spec.replicas = 1' | kubectl apply -f -
+```
+
+> [!NOTE]
+> The `patch-1` branch is used until [llm-d/llm-d-inference-sim#348](https://github.com/llm-d/llm-d-inference-sim/pull/348) is resolved to fix the standard example.
+> See the upstream [llm-d testing documentation](https://github.com/llm-d/llm-d-inference-sim?tab=readme-ov-file#kubernetes-testing) for more details.
+
+This makes the simulator available as an internal service at:
+
+- **Service:** `vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local` (Accessible within the cluster and the namespace only)
+- **Port:** `8000`
+- **Model name:** `meta-llama/Llama-3.1-8B-Instruct`
+
+The service exposes an OpenAI-compatible endpoint (e.g. `/v1/chat/completions`).
+
+You can verify the simulator is working from within the namesapce in the cluster (for example by opening a Terminal on the evalhub Pod) with:
+
+```sh
+export SIM_URL=vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local:8000
+
+# List available models
+curl -s "http://$SIM_URL/v1/models" 
+
+# Chat completion
+curl -s "http://$SIM_URL/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }' 
+```
+
+### Exposing the simulator externally via a Route
+
+If you need to invoke the simulator externally, create a Route in the OpenShift console:
+
+1. Navigate to **Networking → Routes → Create Route**
+2. Select the **Service** `vllm-llama3-8b-instruct-svc`
+3. Select the only available **Target Port**
+4. Check **Secure Route**
+5. Set **TLS Termination** to **Edge**
+6. Set **Insecure Traffic** to **None**
+
+Once the Route is created, you can test it:
+
+```sh
+export SIM_URL=$(oc get route -n evalhub-test -o jsonpath='{.items[?(@.spec.to.name=="vllm-llama3-8b-instruct-svc")].spec.host}')
+
+# List available models
+curl -s "https://$SIM_URL/v1/models" | jq .
+
+# Chat completion
+curl -s "https://$SIM_URL/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }' | jq .
+```
+
 ## Troubleshooting
 
 ### EvalHub Pod Not Starting
