@@ -566,12 +566,13 @@ For specific testing purposes when the Model's answers quality is not relevant, 
 Deploy the simulator with:
 
 ```bash
-curl -s https://raw.githubusercontent.com/tarilabs/llm-d-inference-sim/refs/heads/patch-1/manifests/deployment.yaml | yq '.spec.replicas = 1' | kubectl apply -f -
+curl -s https://raw.githubusercontent.com/tarilabs/llm-d-inference-sim/refs/heads/patch-1/manifests/deployment.yaml | yq '.spec.replicas = 1' | oc apply -f -
 ```
 
-> [!NOTE]
-> The `patch-1` branch is used until [llm-d/llm-d-inference-sim#348](https://github.com/llm-d/llm-d-inference-sim/pull/348) is resolved to fix the standard example.
-> See the upstream [llm-d testing documentation](https://github.com/llm-d/llm-d-inference-sim?tab=readme-ov-file#kubernetes-testing) for more details.
+!!! note
+
+    The `patch-1` branch is used until [llm-d/llm-d-inference-sim#348](https://github.com/llm-d/llm-d-inference-sim/pull/348) is resolved to fix the standard example.
+    See the upstream [llm-d testing documentation](https://github.com/llm-d/llm-d-inference-sim?tab=readme-ov-file#kubernetes-testing) for more details.
 
 This makes the simulator available as an internal service at:
 
