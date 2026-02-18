@@ -2312,13 +2312,13 @@
 <h2 id="deploying-an-openai-compatible-simulator">Deploying an OpenAI-compatible simulator<a class="headerlink" href="#deploying-an-openai-compatible-simulator" title="Permanent link">¶</a></h2>
 <p>For specific testing purposes when the Model's answers quality is not relevant, you can deploy an OpenAI-compatible inference simulator instead of a real model server.</p>
 <p>Deploy the simulator with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://raw.githubusercontent.com/tarilabs/llm-d-inference-sim/refs/heads/patch-1/manifests/deployment.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>yq<span class="w"> </span><span class="s1">'.spec.replicas = 1'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://raw.githubusercontent.com/tarilabs/llm-d-inference-sim/refs/heads/patch-1/manifests/deployment.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>yq<span class="w"> </span><span class="s1">'.spec.replicas = 1'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>oc<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-
 </span></code></pre></div>
-<blockquote>
-<p>[!NOTE]
-The <code>patch-1</code> branch is used until <a href="https://github.com/llm-d/llm-d-inference-sim/pull/348">llm-d/llm-d-inference-sim#348</a> is resolved to fix the standard example.
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>patch-1</code> branch is used until <a href="https://github.com/llm-d/llm-d-inference-sim/pull/348">llm-d/llm-d-inference-sim#348</a> is resolved to fix the standard example.
 See the upstream <a href="https://github.com/llm-d/llm-d-inference-sim?tab=readme-ov-file#kubernetes-testing">llm-d testing documentation</a> for more details.</p>
-</blockquote>
+</div>
 <p>This makes the simulator available as an internal service at:</p>
 <ul>
 <li><strong>Service:</strong> <code>vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local</code> (Accessible within the cluster and the namespace only)</li>
