@@ -1141,6 +1141,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#deploying-an-openai-compatible-simulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploying an OpenAI-compatible simulator
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploying an OpenAI-compatible simulator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exposing-the-simulator-externally-via-a-route" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exposing the simulator externally via a Route
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1705,6 +1733,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#deploying-an-openai-compatible-simulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploying an OpenAI-compatible simulator
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploying an OpenAI-compatible simulator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exposing-the-simulator-externally-via-a-route" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exposing the simulator externally via a Route
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2253,157 +2309,212 @@
 </span><span id="__span-29-30"><a id="__codelineno-29-30" name="__codelineno-29-30" href="#__codelineno-29-30"></a><span class="w">  </span>-d<span class="w"> </span>@eval-request.json<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-29-31"><a id="__codelineno-29-31" name="__codelineno-29-31" href="#__codelineno-29-31"></a><span class="w">  </span><span class="s2">"https://</span><span class="nv">$EVALHUB_URL</span><span class="s2">/api/v1/evaluations/jobs"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
 </span></code></pre></div>
+<h2 id="deploying-an-openai-compatible-simulator">Deploying an OpenAI-compatible simulator<a class="headerlink" href="#deploying-an-openai-compatible-simulator" title="Permanent link">¶</a></h2>
+<p>For specific testing purposes when the Model's answers quality is not relevant, you can deploy an OpenAI-compatible inference simulator instead of a real model server.</p>
+<p>Deploy the simulator with:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://raw.githubusercontent.com/tarilabs/llm-d-inference-sim/refs/heads/patch-1/manifests/deployment.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>yq<span class="w"> </span><span class="s1">'.spec.replicas = 1'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-
+</span></code></pre></div>
+<blockquote>
+<p>[!NOTE]
+The <code>patch-1</code> branch is used until <a href="https://github.com/llm-d/llm-d-inference-sim/pull/348">llm-d/llm-d-inference-sim#348</a> is resolved to fix the standard example.
+See the upstream <a href="https://github.com/llm-d/llm-d-inference-sim?tab=readme-ov-file#kubernetes-testing">llm-d testing documentation</a> for more details.</p>
+</blockquote>
+<p>This makes the simulator available as an internal service at:</p>
+<ul>
+<li><strong>Service:</strong> <code>vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local</code> (Accessible within the cluster and the namespace only)</li>
+<li><strong>Port:</strong> <code>8000</code></li>
+<li><strong>Model name:</strong> <code>meta-llama/Llama-3.1-8B-Instruct</code></li>
+</ul>
+<p>The service exposes an OpenAI-compatible endpoint (e.g. <code>/v1/chat/completions</code>).</p>
+<p>You can verify the simulator is working from within the namesapce in the cluster (for example by opening a Terminal on the evalhub Pod) with:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SIM_URL</span><span class="o">=</span>vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local:8000
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="c1"># List available models</span>
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"http://</span><span class="nv">$SIM_URL</span><span class="s2">/v1/models"</span><span class="w"> </span>
+</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>
+</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="c1"># Chat completion</span>
+</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"http://</span><span class="nv">$SIM_URL</span><span class="s2">/v1/chat/completions"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+</span><span id="__span-31-10"><a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a><span class="s1">    "model": "meta-llama/Llama-3.1-8B-Instruct",</span>
+</span><span id="__span-31-11"><a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a><span class="s1">    "messages": [{"role": "user", "content": "Hello"}]</span>
+</span><span id="__span-31-12"><a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a><span class="s1">  }'</span><span class="w"> </span>
+</span></code></pre></div>
+<h3 id="exposing-the-simulator-externally-via-a-route">Exposing the simulator externally via a Route<a class="headerlink" href="#exposing-the-simulator-externally-via-a-route" title="Permanent link">¶</a></h3>
+<p>If you need to invoke the simulator externally, create a Route in the OpenShift console:</p>
+<ol>
+<li>Navigate to <strong>Networking → Routes → Create Route</strong></li>
+<li>Select the <strong>Service</strong> <code>vllm-llama3-8b-instruct-svc</code></li>
+<li>Select the only available <strong>Target Port</strong></li>
+<li>Check <strong>Secure Route</strong></li>
+<li>Set <strong>TLS Termination</strong> to <strong>Edge</strong></li>
+<li>Set <strong>Insecure Traffic</strong> to <strong>None</strong></li>
+</ol>
+<p>Once the Route is created, you can test it:</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SIM_URL</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[?(@.spec.to.name=="vllm-llama3-8b-instruct-svc")].spec.host}'</span><span class="k">)</span>
+</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>
+</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="c1"># List available models</span>
+</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"https://</span><span class="nv">$SIM_URL</span><span class="s2">/v1/models"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
+</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>
+</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a><span class="c1"># Chat completion</span>
+</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"https://</span><span class="nv">$SIM_URL</span><span class="s2">/v1/chat/completions"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-32-9"><a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+</span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a><span class="s1">    "model": "meta-llama/Llama-3.1-8B-Instruct",</span>
+</span><span id="__span-32-11"><a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a><span class="s1">    "messages": [{"role": "user", "content": "Hello"}]</span>
+</span><span id="__span-32-12"><a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a><span class="s1">  }'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
+</span></code></pre></div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">¶</a></h2>
 <h3 id="evalhub-pod-not-starting">EvalHub Pod Not Starting<a class="headerlink" href="#evalhub-pod-not-starting" title="Permanent link">¶</a></h3>
 <p><strong>Symptoms:</strong> EvalHub pod stuck in Pending or CrashLoopBackOff</p>
 <p><strong>Diagnostics:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c1"># Check pod status</span>
-</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
-</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
-</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="c1"># Describe pod for events</span>
-</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>oc<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
-</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>
-</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="c1"># Check logs</span>
-</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="c1"># Check pod status</span>
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="c1"># Describe pod for events</span>
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>oc<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
+</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>
+</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a><span class="c1"># Check logs</span>
+</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
 </span></code></pre></div>
 <p><strong>Common causes:</strong></p>
 <ol>
 <li>
 <p><strong>Image pull failure</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="c1"># Check image pull secrets</span>
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>oc<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>-n<span class="w"> </span>evalhub-test
-</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>
-</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="c1"># Verify image exists</span>
-</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>podman<span class="w"> </span>pull<span class="w"> </span>quay.io/opendatahub/odh-eval-hub:latest
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="c1"># Check image pull secrets</span>
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>oc<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>-n<span class="w"> </span>evalhub-test
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>
+</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="c1"># Verify image exists</span>
+</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>podman<span class="w"> </span>pull<span class="w"> </span>quay.io/opendatahub/odh-eval-hub:latest
 </span></code></pre></div><p></p>
 </li>
 <li>
 <p><strong>Insufficient resources</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="c1"># Check node capacity</span>
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>oc<span class="w"> </span>describe<span class="w"> </span>node<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span><span class="s2">"Allocated resources"</span>
-</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
-</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="c1"># Reduce resource requests in CR</span>
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>oc<span class="w"> </span>edit<span class="w"> </span>evalhub<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="c1"># Check node capacity</span>
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>oc<span class="w"> </span>describe<span class="w"> </span>node<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span><span class="s2">"Allocated resources"</span>
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="c1"># Reduce resource requests in CR</span>
+</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>oc<span class="w"> </span>edit<span class="w"> </span>evalhub<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test
 </span></code></pre></div><p></p>
 </li>
 <li>
 <p><strong>ConfigMap missing</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="c1"># Check operator ConfigMap</span>
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>oc<span class="w"> </span>get<span class="w"> </span>configmap<span class="w"> </span>trustyai-service-operator-config<span class="w"> </span>-n<span class="w"> </span>opendatahub
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="c1"># Check operator ConfigMap</span>
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>oc<span class="w"> </span>get<span class="w"> </span>configmap<span class="w"> </span>trustyai-service-operator-config<span class="w"> </span>-n<span class="w"> </span>opendatahub
 </span></code></pre></div><p></p>
 </li>
 </ol>
 <h3 id="evaluation-jobs-failing">Evaluation Jobs Failing<a class="headerlink" href="#evaluation-jobs-failing" title="Permanent link">¶</a></h3>
 <p><strong>Symptoms:</strong> Jobs complete but report failure status</p>
 <p><strong>Diagnostics:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="c1"># Find evaluation job</span>
-</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>oc<span class="w"> </span>get<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
-</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>
-</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="c1"># Check job status</span>
-</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>oc<span class="w"> </span>describe<span class="w"> </span>job<span class="w"> </span>&lt;job-name&gt;<span class="w"> </span>-n<span class="w"> </span>evalhub-test
-</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>
-</span><span id="__span-34-7"><a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a><span class="c1"># Check adapter pod logs</span>
-</span><span id="__span-34-8"><a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span>job-name<span class="o">=</span>&lt;job-name&gt;<span class="w"> </span>-c<span class="w"> </span>adapter
-</span><span id="__span-34-9"><a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a>
-</span><span id="__span-34-10"><a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a><span class="c1"># Check sidecar logs (if present)</span>
-</span><span id="__span-34-11"><a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span>job-name<span class="o">=</span>&lt;job-name&gt;<span class="w"> </span>-c<span class="w"> </span>sidecar
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="c1"># Find evaluation job</span>
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>oc<span class="w"> </span>get<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>eval-hub
+</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>
+</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="c1"># Check job status</span>
+</span><span id="__span-37-5"><a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>oc<span class="w"> </span>describe<span class="w"> </span>job<span class="w"> </span>&lt;job-name&gt;<span class="w"> </span>-n<span class="w"> </span>evalhub-test
+</span><span id="__span-37-6"><a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>
+</span><span id="__span-37-7"><a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a><span class="c1"># Check adapter pod logs</span>
+</span><span id="__span-37-8"><a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span>job-name<span class="o">=</span>&lt;job-name&gt;<span class="w"> </span>-c<span class="w"> </span>adapter
+</span><span id="__span-37-9"><a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>
+</span><span id="__span-37-10"><a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a><span class="c1"># Check sidecar logs (if present)</span>
+</span><span id="__span-37-11"><a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span>job-name<span class="o">=</span>&lt;job-name&gt;<span class="w"> </span>-c<span class="w"> </span>sidecar
 </span></code></pre></div>
 <p><strong>Common causes:</strong></p>
 <ol>
 <li>
 <p><strong>Callback URL unreachable</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="c1"># Verify EvalHub service is accessible from job pods</span>
-</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>oc<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test
-</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>
-</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="c1"># Test connectivity from job pod</span>
-</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>oc<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;job-pod&gt;<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="w">  </span>curl<span class="w"> </span>-v<span class="w"> </span>http://evalhub.evalhub-test.svc.cluster.local:8080/api/v1/health
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1"># Verify EvalHub service is accessible from job pods</span>
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>oc<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test
+</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>
+</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a><span class="c1"># Test connectivity from job pod</span>
+</span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>oc<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;job-pod&gt;<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a><span class="w">  </span>curl<span class="w"> </span>-v<span class="w"> </span>http://evalhub.evalhub-test.svc.cluster.local:8080/api/v1/health
 </span></code></pre></div><p></p>
 </li>
 <li>
 <p><strong>Model endpoint unreachable</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="c1"># Check if model server is accessible</span>
-</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>oc<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;job-pod&gt;<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="w">  </span>curl<span class="w"> </span>-v<span class="w"> </span>http://vllm-server.models.svc.cluster.local:8000/v1/models
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="c1"># Check if model server is accessible</span>
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>oc<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;job-pod&gt;<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="w">  </span>curl<span class="w"> </span>-v<span class="w"> </span>http://vllm-server.models.svc.cluster.local:8000/v1/models
 </span></code></pre></div><p></p>
 </li>
 <li>
 <p><strong>Insufficient job resources</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="c1"># Check for OOMKilled status</span>
-</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span>job-name<span class="o">=</span>&lt;job-name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[*].status.containerStatuses[*].state}'</span>
-</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>
-</span><span id="__span-37-5"><a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a><span class="c1"># Increase memory limits in provider config</span>
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1"># Check for OOMKilled status</span>
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>oc<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-l<span class="w"> </span>job-name<span class="o">=</span>&lt;job-name&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[*].status.containerStatuses[*].state}'</span>
+</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a>
+</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a><span class="c1"># Increase memory limits in provider config</span>
 </span></code></pre></div><p></p>
 </li>
 </ol>
 <h3 id="oauth-authentication-issues">OAuth Authentication Issues<a class="headerlink" href="#oauth-authentication-issues" title="Permanent link">¶</a></h3>
 <p><strong>Symptoms:</strong> 401 Unauthorized when accessing EvalHub API</p>
 <p><strong>Diagnostics:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1"># Check OAuth configuration</span>
-</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A10<span class="w"> </span>tls
-</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>
-</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a><span class="c1"># Verify token is valid</span>
-</span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>oc<span class="w"> </span>whoami<span class="w"> </span>-t
-</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>
-</span><span id="__span-38-7"><a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a><span class="c1"># Test authentication</span>
-</span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>whoami<span class="w"> </span>-t<span class="k">)</span>
-</span><span id="__span-38-9"><a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>curl<span class="w"> </span>-k<span class="w"> </span>-v<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-38-10"><a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a><span class="w">  </span><span class="s2">"https://</span><span class="k">$(</span>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.spec.host}'</span><span class="k">)</span><span class="s2">/api/v1/health"</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="c1"># Check OAuth configuration</span>
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A10<span class="w"> </span>tls
+</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>
+</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="c1"># Verify token is valid</span>
+</span><span id="__span-41-5"><a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a>oc<span class="w"> </span>whoami<span class="w"> </span>-t
+</span><span id="__span-41-6"><a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a>
+</span><span id="__span-41-7"><a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a><span class="c1"># Test authentication</span>
+</span><span id="__span-41-8"><a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>whoami<span class="w"> </span>-t<span class="k">)</span>
+</span><span id="__span-41-9"><a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>curl<span class="w"> </span>-k<span class="w"> </span>-v<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-41-10"><a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a><span class="w">  </span><span class="s2">"https://</span><span class="k">$(</span>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.spec.host}'</span><span class="k">)</span><span class="s2">/api/v1/health"</span>
 </span></code></pre></div>
 <p><strong>Solutions:</strong></p>
 <ol>
 <li>
 <p><strong>Regenerate token</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>oc<span class="w"> </span>login<span class="w"> </span>--token<span class="o">=</span>&lt;new-token&gt;
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>oc<span class="w"> </span>login<span class="w"> </span>--token<span class="o">=</span>&lt;new-token&gt;
 </span></code></pre></div><p></p>
 </li>
 <li>
 <p><strong>Check RBAC configuration</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1"># Verify ClusterRoleBinding exists</span>
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>oc<span class="w"> </span>get<span class="w"> </span>clusterrolebinding<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>evalhub
-</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>
-</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="c1"># Check user permissions</span>
-</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluationjobs.trustyai.opendatahub.io
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="c1"># Verify ClusterRoleBinding exists</span>
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>oc<span class="w"> </span>get<span class="w"> </span>clusterrolebinding<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>evalhub
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>
+</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a><span class="c1"># Check user permissions</span>
+</span><span id="__span-43-5"><a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluationjobs.trustyai.opendatahub.io
 </span></code></pre></div><p></p>
 </li>
 </ol>
 <h3 id="operator-not-reconciling">Operator Not Reconciling<a class="headerlink" href="#operator-not-reconciling" title="Permanent link">¶</a></h3>
 <p><strong>Symptoms:</strong> EvalHub CR created but no pods deployed</p>
 <p><strong>Diagnostics:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="w">  </span>-l<span class="w">  </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="w">  </span>--tail<span class="o">=</span><span class="m">100</span>
-</span><span id="__span-41-5"><a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a>
-</span><span id="__span-41-6"><a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a><span class="c1"># Check EvalHub CR status</span>
-</span><span id="__span-41-7"><a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a>oc<span class="w"> </span>get<span class="w"> </span>evalhub<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-41-8"><a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>
-</span><span id="__span-41-9"><a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a><span class="c1"># Check events</span>
-</span><span id="__span-41-10"><a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a>oc<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>--sort-by<span class="o">=</span><span class="s1">'.lastTimestamp'</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="c1"># Check operator logs</span>
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>oc<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="w">  </span>-l<span class="w">  </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="w">  </span>--tail<span class="o">=</span><span class="m">100</span>
+</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a>
+</span><span id="__span-44-6"><a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a><span class="c1"># Check EvalHub CR status</span>
+</span><span id="__span-44-7"><a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a>oc<span class="w"> </span>get<span class="w"> </span>evalhub<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-44-8"><a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a>
+</span><span id="__span-44-9"><a id="__codelineno-44-9" name="__codelineno-44-9" href="#__codelineno-44-9"></a><span class="c1"># Check events</span>
+</span><span id="__span-44-10"><a id="__codelineno-44-10" name="__codelineno-44-10" href="#__codelineno-44-10"></a>oc<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>--sort-by<span class="o">=</span><span class="s1">'.lastTimestamp'</span>
 </span></code></pre></div>
 <p><strong>Solutions:</strong></p>
 <ol>
 <li>
 <p><strong>Restart operator</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>oc<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="w">  </span>-l<span class="w">  </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>oc<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="w">  </span>-l<span class="w">  </span>app.kubernetes.io/part-of<span class="o">=</span>trustyai
 </span></code></pre></div><p></p>
 </li>
 <li>
 <p><strong>Check CRD versions</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="c1"># Verify CRD is installed</span>
-</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>oc<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>evalhubs.trustyai.opendatahub.io
-</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>
-</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a><span class="c1"># Check stored versions</span>
-</span><span id="__span-43-5"><a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a>oc<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>evalhubs.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-43-6"><a id="__codelineno-43-6" name="__codelineno-43-6" href="#__codelineno-43-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.status.storedVersions}'</span>
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="c1"># Verify CRD is installed</span>
+</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>oc<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>evalhubs.trustyai.opendatahub.io
+</span><span id="__span-46-3"><a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>
+</span><span id="__span-46-4"><a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a><span class="c1"># Check stored versions</span>
+</span><span id="__span-46-5"><a id="__codelineno-46-5" name="__codelineno-46-5" href="#__codelineno-46-5"></a>oc<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>evalhubs.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-46-6"><a id="__codelineno-46-6" name="__codelineno-46-6" href="#__codelineno-46-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.status.storedVersions}'</span>
 </span></code></pre></div><p></p>
 </li>
 <li>
 <p><strong>Recreate EvalHub CR</strong>
-   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>oc<span class="w"> </span>delete<span class="w"> </span>evalhub<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test
-</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>oc<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>evalhub-cr.yaml
+   </p><div class="language-bash highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>oc<span class="w"> </span>delete<span class="w"> </span>evalhub<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>evalhub-test
+</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>oc<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>evalhub-cr.yaml
 </span></code></pre></div><p></p>
 </li>
 </ol>
