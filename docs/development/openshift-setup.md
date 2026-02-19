@@ -515,12 +515,12 @@ EVALHUB_URL=$(oc get route evalhub -n evalhub-test -o jsonpath='{.spec.host}')
 TOKEN=$(oc whoami -t)
 
 # List all providers
-curl -k -H "Authorization: Bearer $TOKEN" \
+curl -sS -k -H "Authorization: Bearer $TOKEN" \
   "https://$EVALHUB_URL/api/v1/evaluations/providers" | jq .
 
 # List benchmarks for a specific provider
-curl -k -H "Authorization: Bearer $TOKEN" \
-  "https://$EVALHUB_URL/api/v1/evaluations/providers/lm_evaluation_harness/benchmarks" | jq .
+curl -sS -k -H "Authorization: Bearer $TOKEN" \
+  "https://$EVALHUB_URL/api/v1/evaluations/providers?id=lm_evaluation_harness" | jq .
 ```
 
 **Submit a test evaluation:**
@@ -552,7 +552,7 @@ cat > eval-request.json <<EOF
 EOF
 
 # Submit evaluation
-curl -k -X POST \
+curl -sS -k -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d @eval-request.json \
