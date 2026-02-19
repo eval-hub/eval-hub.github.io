@@ -755,6 +755,32 @@ curl -k -v -H "Authorization: Bearer $TOKEN" \
    oc auth can-i create evaluationjobs.trustyai.opendatahub.io
    ```
 
+### Removing Cached Images from Nodes
+
+**Symptoms:** After pushing a new version of an image with the same tag (e.g., `:dev`), pods continue using the old cached image.
+
+When using a tag other than `latest`, Kubernetes defaults (if no otherwise specified) to `imagePullPolicy: IfNotPresent`, meaning nodes will reuse a cached image rather than pulling the updated one. If you don't want to change the `imagePullPolicy`, you can force nodes to re-fetch the image by removing it from each node's container runtime cache.
+
+**Remove a cached image from all worker nodes:**
+
+```bash
+IMG=quay.io/your-org/eval-hub:dev
+oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | while read NODE; do
+    oc debug node/$NODE --quiet -- chroot /host crictl rmi $IMG
+done
+```
+
+Replace the `IMG` value with the image reference you want to remove.
+
+After removing the cached image, delete the existing pod(s) so that the new pod pulls the updated image:
+
+```bash
+oc delete pod -n evalhub-test -l app=eval-hub
+```
+
+!!! tip
+    This approach iterates over all worker nodes, which is typical in OpenShift clusters with multiple nodes. Each node maintains its own image cache, so the image must be removed from every node where it may have been pulled.
+
 ### Operator Not Reconciling
 
 **Symptoms:** EvalHub CR created but no pods deployed
