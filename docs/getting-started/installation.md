@@ -109,7 +109,7 @@ Providers are evaluation frameworks (LightEval, GuideLLM, RAGAS, etc.) that run 
           provider_type: performance
           provider_name: GuideLLM
           description: Performance benchmarking framework
-          container_image: quay.io/eval-hub/community-guidellm:latest
+          container_image: quay.io/evalhub/community-guidellm:latest
           benchmarks:
           - benchmark_id: performance_test
             name: Performance Benchmark
@@ -133,7 +133,7 @@ Providers are evaluation frameworks (LightEval, GuideLLM, RAGAS, etc.) that run 
       provider_type: performance
       provider_name: GuideLLM
       description: Performance benchmarking framework
-      container_image: quay.io/eval-hub/community-guidellm:latest
+      container_image: quay.io/evalhub/community-guidellm:latest
       benchmarks:
       - benchmark_id: performance_test
         name: Performance Benchmark

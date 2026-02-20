@@ -87,14 +87,14 @@ For local testing without Kubernetes:
 
 ```bash
 # Pull from registry
-podman pull quay.io/eval-hub/community-guidellm:latest
+podman pull quay.io/evalhub/community-guidellm:latest
 
 # Run with custom job spec
 podman run \
   -e EVALHUB_MODE=local \
   -e EVALHUB_JOB_SPEC_PATH=/meta/job.json \
   -v $(pwd)/job.json:/meta/job.json:ro \
-  quay.io/eval-hub/community-guidellm:latest
+  quay.io/evalhub/community-guidellm:latest
 ```
 
 ## What's Next?

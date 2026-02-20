@@ -60,8 +60,8 @@ Community-contributed framework adapters packaged as container images.
 
 **Container images**:
 
-- `quay.io/eval-hub/community-lighteval:latest`
-- `quay.io/eval-hub/community-guidellm:latest`
+- `quay.io/evalhub/community-lighteval:latest`
+- `quay.io/evalhub/community-guidellm:latest`
 
 ## System Architecture
 
