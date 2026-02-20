@@ -453,12 +453,13 @@ Build a custom EvalHub server image:
 
 ```bash
 cd eval-hub
+IMG=quay.io/your-org/evalhub
 
 # Build with Podman
-podman build --platform linux/amd64 -t quay.io/your-org/eval-hub:dev .
+podman build --platform linux/amd64 -t $IMG .
 
 # Push to registry
-podman push quay.io/your-org/eval-hub:dev
+podman push $IMG
 ```
 
 Update the operator manifests to use your custom image:
@@ -469,7 +470,7 @@ cd trustyai-service-operator
 vim config/overlays/odh/params.env
 
 # Change evalHubImage to your custom image
-# evalHubImage=quay.io/your-org/eval-hub:dev
+# evalHubImage=quay.io/your-org/evalhub:latest
 ```
 
 Then upload the modified manifests using the commands from the previous section:
@@ -764,7 +765,7 @@ When using a tag other than `latest`, Kubernetes defaults (if no otherwise speci
 **Remove a cached image from all worker nodes:**
 
 ```bash
-IMG=quay.io/your-org/eval-hub:dev
+IMG=quay.io/your-org/evalhub:dev
 oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | while read NODE; do
     oc debug node/$NODE --quiet -- chroot /host crictl rmi $IMG
 done
