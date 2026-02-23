@@ -1124,14 +1124,14 @@
 </div>
 <h2 id="container-image">Container Image<a class="headerlink" href="#container-image" title="Permanent link">¶</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Pull from registry</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>podman<span class="w"> </span>pull<span class="w"> </span>quay.io/eval-hub/community-guidellm:latest
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>podman<span class="w"> </span>pull<span class="w"> </span>quay.io/evalhub/community-guidellm:latest
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Run with custom job spec</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>podman<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">EVALHUB_MODE</span><span class="o">=</span><span class="nb">local</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">EVALHUB_JOB_SPEC_PATH</span><span class="o">=</span>/meta/job.json<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/job.json:/meta/job.json:ro<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>quay.io/eval-hub/community-guidellm:latest
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>quay.io/evalhub/community-guidellm:latest
 </span></code></pre></div>
 <h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">¶</a></h2>
 <ul>
