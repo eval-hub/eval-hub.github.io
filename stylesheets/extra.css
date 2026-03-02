@@ -1,0 +1,6 @@
+/* Ensure architecture diagrams display at full content width */
+.md-content img[src*="diagrams/"] {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}

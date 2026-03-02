@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
@@ -47,6 +47,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -315,7 +317,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../reference/api/" class="md-tabs__link">
+        <a href="../../reference/sdk-client/" class="md-tabs__link">
           
   
   
@@ -722,34 +724,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/creating-adapters/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Creating Adapters
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../development/openshift-setup/" class="md-nav__link">
         
   
@@ -831,34 +805,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    REST API
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -1157,19 +1103,7 @@
 </ul>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">¶</a></h2>
 <p>The adapter follows the eval-hub framework adapter pattern:</p>
-<pre class="mermaid"><code>graph TD
-    A[ConfigMap&lt;br/&gt;JobSpec] --&gt;|mounted at /meta/job.json| B[Kubernetes Job Pod]
-    B --&gt; C[Adapter Container]
-    B --&gt; D[Sidecar Container]
-
-    C --&gt;|1. Load JobSpec| C
-    C --&gt;|2. Run LightEval| C
-    C --&gt;|3. Parse Results| C
-    C --&gt;|4. Report via callbacks| D
-
-    D --&gt;|Receive status| D
-    D --&gt;|Persist artifacts| D
-    D --&gt;|Store in OCI registry| E[OCI Registry]</code></pre>
+<p><a class="glightbox" data-type="image" data-width="auto" data-height="auto" href="../../images/diagrams/lighteval-architecture.svg" data-desc-position="bottom"><img alt="LightEval adapter architecture" src="../../images/diagrams/lighteval-architecture.svg"></a></p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">¶</a></h2>
 <h3 id="building-the-container">Building the Container<a class="headerlink" href="#building-the-container" title="Permanent link">¶</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>image-lighteval

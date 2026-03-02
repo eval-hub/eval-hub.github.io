@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
@@ -51,6 +51,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -321,7 +323,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../reference/api/" class="md-tabs__link">
+        <a href="../../reference/sdk-client/" class="md-tabs__link">
           
   
   
@@ -679,67 +681,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deployment-models" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Deployment Models
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Deployment Models">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#local-development" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local Development
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#openshift-production" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenShift Production
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kubernetes-generic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes (Generic)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-evalhub" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why EvalHub?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1000,34 +941,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/creating-adapters/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Creating Adapters
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../development/openshift-setup/" class="md-nav__link">
         
   
@@ -1109,34 +1022,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    REST API
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -1350,67 +1235,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deployment-models" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Deployment Models
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Deployment Models">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#local-development" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local Development
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#openshift-production" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenShift Production
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kubernetes-generic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kubernetes (Generic)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-evalhub" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why EvalHub?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1442,160 +1266,107 @@
 
 
 <h1 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">¶</a></h1>
-<p>EvalHub is an open source evaluation orchestration platform for Large Language Models, consisting of three integrated components.</p>
+<p>EvalHub is an evaluation orchestration platform for Large Language Models, consisting of three integrated components.</p>
 <h2 id="the-evalhub-ecosystem">The EvalHub Ecosystem<a class="headerlink" href="#the-evalhub-ecosystem" title="Permanent link">¶</a></h2>
 <h3 id="evalhub-server">EvalHub Server<a class="headerlink" href="#evalhub-server" title="Permanent link">¶</a></h3>
-<p>REST API orchestration service that manages evaluation workflows.</p>
-<p><strong>Key responsibilities</strong>:</p>
+<p>Go REST API service that manages evaluation workflows.</p>
 <ul>
-<li>Expose versioned REST API (v1) for evaluation submission</li>
-<li>Orchestrate Kubernetes Job creation and lifecycle management</li>
-<li>Manage provider registry and benchmark discovery</li>
-<li>Store job metadata and results in PostgreSQL</li>
-<li>Export Prometheus metrics for observability</li>
-</ul>
-<p><strong>Primary deployment targets</strong>:</p>
-<ul>
-<li>Local development (http://localhost:8080)</li>
-<li>OpenShift clusters (production)</li>
-<li>Generic Kubernetes clusters</li>
+<li>Versioned REST API (v1) with OpenAPI specification</li>
+<li>Kubernetes Job orchestration and lifecycle management</li>
+<li>Provider registry and benchmark discovery</li>
+<li>MLflow experiment tracking integration</li>
+<li>SQLite (local) or PostgreSQL (production) storage</li>
+<li>Prometheus metrics and OpenTelemetry tracing</li>
 </ul>
 <h3 id="evalhub-sdk">EvalHub SDK<a class="headerlink" href="#evalhub-sdk" title="Permanent link">¶</a></h3>
-<p>Python SDK providing three focused packages for different use cases.</p>
-<p><strong>evalhub.client</strong> - Submit evaluations to the service:
-</p><div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">evalhub.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvalHubClient</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">EvalHubClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">"http://localhost:8080"</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">job</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">submit_evaluation</span><span class="p">(</span><span class="n">model</span><span class="o">=...</span><span class="p">,</span> <span class="n">benchmarks</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
+<p>Python SDK providing three packages:</p>
+<p><strong>evalhub.client</strong> - Submit evaluations:
+</p><div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">evalhub</span><span class="w"> </span><span class="kn">import</span> <span class="n">SyncEvalHubClient</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">evalhub.models.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">JobSubmissionRequest</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">client</span> <span class="o">=</span> <span class="n">SyncEvalHubClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s2">"http://localhost:8080"</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">job</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">JobSubmissionRequest</span><span class="p">(</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">model</span><span class="o">=</span><span class="n">ModelConfig</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"http://vllm:8000/v1"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"llama-3-8b"</span><span class="p">),</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">benchmarks</span><span class="o">=</span><span class="p">[</span><span class="n">BenchmarkConfig</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"mmlu"</span><span class="p">,</span> <span class="n">provider_id</span><span class="o">=</span><span class="s2">"lm_evaluation_harness"</span><span class="p">)]</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">))</span>
 </span></code></pre></div><p></p>
 <p><strong>evalhub.adapter</strong> - Build framework adapters:
-</p><div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">evalhub.adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">FrameworkAdapter</span><span class="p">,</span> <span class="n">JobSpec</span><span class="p">,</span> <span class="n">JobResults</span>
+</p><div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">evalhub.adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">FrameworkAdapter</span><span class="p">,</span> <span class="n">JobSpec</span><span class="p">,</span> <span class="n">JobResults</span><span class="p">,</span> <span class="n">JobCallbacks</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyAdapter</span><span class="p">(</span><span class="n">FrameworkAdapter</span><span class="p">):</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_benchmark_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_spec</span><span class="p">,</span> <span class="n">callbacks</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JobResults</span><span class="p">:</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="c1"># Framework integration logic</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="k">pass</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_benchmark_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">JobSpec</span><span class="p">,</span> <span class="n">callbacks</span><span class="p">:</span> <span class="n">JobCallbacks</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JobResults</span><span class="p">:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="o">...</span>
 </span></code></pre></div><p></p>
 <p><strong>evalhub.models</strong> - Shared data structures:
-</p><div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">evalhub.models.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">BenchmarkSpec</span>
+</p><div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">evalhub.models.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">EvaluationJob</span>
 </span></code></pre></div><p></p>
 <h3 id="evalhub-contrib">EvalHub Contrib<a class="headerlink" href="#evalhub-contrib" title="Permanent link">¶</a></h3>
 <p>Community-contributed framework adapters packaged as container images.</p>
-<p><strong>Available adapters</strong>:</p>
-<ul>
-<li><strong>LightEval</strong>: Language model evaluation (HellaSwag, ARC, MMLU, TruthfulQA, GSM8K)</li>
-<li><strong>GuideLLM</strong>: Performance benchmarking (TTFT, ITL, throughput, latency)</li>
-</ul>
-<p><strong>Container images</strong>:</p>
-<ul>
-<li><code>quay.io/evalhub/community-lighteval:latest</code></li>
-<li><code>quay.io/evalhub/community-guidellm:latest</code></li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Adapter</th>
+<th>Image</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LightEval</td>
+<td><code>quay.io/eval-hub/community-lighteval:latest</code></td>
+<td>Language model benchmarks</td>
+</tr>
+<tr>
+<td>GuideLLM</td>
+<td><code>quay.io/eval-hub/community-guidellm:latest</code></td>
+<td>Performance benchmarking</td>
+</tr>
+<tr>
+<td>MTEB</td>
+<td><code>quay.io/eval-hub/community-mteb:latest</code></td>
+<td>Embedding model evaluation</td>
+</tr>
+</tbody>
+</table>
 <h2 id="system-architecture">System Architecture<a class="headerlink" href="#system-architecture" title="Permanent link">¶</a></h2>
-<pre class="mermaid"><code>graph TB
-    subgraph users["Users"]
-        DEV[Developer&lt;br/&gt;Python SDK]
-        OPS[Operator&lt;br/&gt;REST API]
-    end
-
-    subgraph server["EvalHub Server"]
-        API[REST API&lt;br/&gt;Port 8080]
-        ORCH[Job Orchestrator]
-        DB[(PostgreSQL)]
-    end
-
-    subgraph cluster["Kubernetes/OpenShift"]
-        subgraph job["Evaluation Job Pod"]
-            ADAPTER[Adapter Container&lt;br/&gt;Framework Executor]
-            SIDECAR[Sidecar Container&lt;br/&gt;Status Reporter]
-        end
-        CM[ConfigMap&lt;br/&gt;JobSpec]
-    end
-
-    subgraph external["External Services"]
-        MODEL[Model Endpoint&lt;br/&gt;OpenAI, vLLM, etc.]
-        OCI[OCI Registry&lt;br/&gt;Artifacts]
-    end
-
-    DEV --&gt; API
-    OPS --&gt; API
-    API --&gt; ORCH
-    API --&gt; DB
-    ORCH --&gt; job
-    ORCH --&gt; CM
-    CM --&gt; ADAPTER
-    ADAPTER --&gt; MODEL
-    ADAPTER --&gt; SIDECAR
-    SIDECAR --&gt; API
-    SIDECAR --&gt; OCI
-
-    style server fill:#e3f2fd
-    style cluster fill:#fff3e0
-    style job fill:#f3e5f5</code></pre>
+<p><a class="glightbox" data-type="image" data-width="auto" data-height="auto" href="../../images/diagrams/overview-system-architecture.svg" data-desc-position="bottom"><img alt="EvalHub system architecture" src="../../images/diagrams/overview-system-architecture.svg"></a></p>
 <h3 id="data-flow">Data Flow<a class="headerlink" href="#data-flow" title="Permanent link">¶</a></h3>
 <ol>
 <li><strong>Client submits evaluation</strong> via SDK or REST API</li>
 <li><strong>Server creates Kubernetes Job</strong> with adapter container and sidecar</li>
 <li><strong>ConfigMap mounted</strong> with JobSpec at <code>/meta/job.json</code></li>
 <li><strong>Adapter loads JobSpec</strong>, runs evaluation, reports progress via callbacks</li>
-<li><strong>Sidecar receives callbacks</strong>, forwards to server, persists artifacts to OCI registry</li>
+<li><strong>Sidecar forwards events</strong> to the server via <code>POST /api/v1/evaluations/jobs/{id}/events</code></li>
+<li><strong>Adapter persists artifacts</strong> to OCI registry and logs metrics to MLflow</li>
 <li><strong>Server stores results</strong> in PostgreSQL, returns status to client</li>
 </ol>
 <h2 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">¶</a></h2>
 <h3 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">¶</a></h3>
-<p>Evaluation providers represent evaluation frameworks or services.</p>
-<p><strong>Example providers</strong>:</p>
-<ul>
-<li><code>lm_evaluation_harness</code> - EleutherAI's evaluation framework</li>
-<li><code>ragas</code> - RAG evaluation framework</li>
-<li><code>garak</code> - LLM vulnerability scanner</li>
-<li><code>guidellm</code> - Performance benchmarking</li>
-</ul>
-<p>Each provider exposes a set of benchmarks.</p>
+<p>Evaluation providers represent frameworks. Each provider has a set of benchmarks and a container image that runs evaluations.</p>
+<p>Built-in providers: <code>lm_evaluation_harness</code>, <code>garak</code>, <code>guidellm</code>, <code>lighteval</code>. Custom providers can be registered via YAML configuration or the REST API.</p>
 <h3 id="benchmarks">Benchmarks<a class="headerlink" href="#benchmarks" title="Permanent link">¶</a></h3>
-<p>Benchmarks are specific evaluation tasks within a provider.</p>
-<p><strong>Example benchmarks</strong>:</p>
-<ul>
-<li><code>mmlu</code> (lm_evaluation_harness) - Multitask accuracy</li>
-<li><code>humaneval</code> (lm_evaluation_harness) - Code generation</li>
-<li><code>performance_test</code> (guidellm) - Throughput and latency</li>
-</ul>
+<p>Benchmarks are specific evaluation tasks within a provider. Examples: <code>mmlu</code> (lm_evaluation_harness), <code>hellaswag</code> (lighteval), <code>sweep</code> (guidellm).</p>
 <h3 id="collections">Collections<a class="headerlink" href="#collections" title="Permanent link">¶</a></h3>
-<p>Collections are curated sets of benchmarks with weighted scoring.</p>
-<p><strong>Example collection</strong>:
-</p><div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">collection_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">healthcare_safety_v1</span>
+<p>Curated sets of benchmarks with weighted scoring, enabling domain-specific evaluation with a single API call.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">collection_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">healthcare_safety_v1</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">benchmarks</span><span class="p">:</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">benchmark_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mmlu_medical</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">provider_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lm_evaluation_harness</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">benchmark_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">truthfulqa</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">provider_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lm_evaluation_harness</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.5</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">benchmark_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">toxicity</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">provider_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">garak</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
-</span></code></pre></div><p></p>
-<p>Collections enable domain-specific evaluation with a single API call.</p>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">benchmark_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">toxicity</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">provider_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">garak</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</span></code></pre></div>
 <h3 id="jobs">Jobs<a class="headerlink" href="#jobs" title="Permanent link">¶</a></h3>
-<p>Jobs are Kubernetes Job resources that execute evaluations in isolated environments. When an evaluation is submitted, the server creates a Job which progresses through a well-defined lifecycle: it begins in a Pending state while waiting for pod scheduling, transitions to Running when the adapter starts executing the evaluation, and completes with either a Completed status for successful evaluations or Failed when errors are encountered.</p>
+<p>Kubernetes Jobs that execute evaluations in isolated pods. Each job has an adapter container (runs the framework) and a sidecar (forwards status events to the server).</p>
 <h3 id="adapters">Adapters<a class="headerlink" href="#adapters" title="Permanent link">¶</a></h3>
-<p>Adapters are containerised applications that bridge evaluation frameworks with EvalHub. Each adapter loads its JobSpec from a mounted ConfigMap, executes framework-specific evaluation logic, and reports progress through a standardised callback interface. Once evaluation completes, the adapter persists artifacts to an OCI registry and returns structured JobResults to the server, enabling consistent integration across diverse evaluation frameworks.</p>
-<h2 id="deployment-models">Deployment Models<a class="headerlink" href="#deployment-models" title="Permanent link">¶</a></h2>
-<h3 id="local-development">Local Development<a class="headerlink" href="#local-development" title="Permanent link">¶</a></h3>
-<p>The local development model runs the server directly on your development machine at http://localhost:8080 without requiring Kubernetes infrastructure. Using SQLite for storage, this environment enables rapid iteration for server development, API testing, SDK development, and adapter prototyping.</p>
-<h3 id="openshift-production">OpenShift Production<a class="headerlink" href="#openshift-production" title="Permanent link">¶</a></h3>
-<p>OpenShift deployments provide production-ready evaluation workflows through Kubernetes-native orchestration. The platform automatically manages job lifecycles, enforces resource isolation and limits, supports horizontal pod autoscaling, and integrates comprehensive monitoring and logging. This model is ideal for production model evaluation, CI/CD integration, multi-tenant evaluation scenarios, and large-scale benchmarking operations.</p>
-<h3 id="kubernetes-generic">Kubernetes (Generic)<a class="headerlink" href="#kubernetes-generic" title="Permanent link">¶</a></h3>
-<p>Generic Kubernetes deployments use standard manifests compatible with any conformant cluster, enabling self-managed infrastructure with flexible configuration. This deployment model suits on-premises installations, custom Kubernetes distributions, and air-gapped environments where organisations manage their own infrastructure.</p>
-<h2 id="why-evalhub">Why EvalHub?<a class="headerlink" href="#why-evalhub" title="Permanent link">¶</a></h2>
-<p>EvalHub provides a unified interface for evaluating models across heterogeneous frameworks using a consistent API, eliminating the need for framework-specific integration code. Its Kubernetes-native architecture leverages existing orchestration capabilities for job management, resource allocation, and scaling without requiring custom infrastructure. The adapter pattern enables extensibility, allowing new evaluation frameworks to integrate without modifying the core server. Production deployments benefit from structured logging, Prometheus metrics, and PostgreSQL persistence, providing the observability required for confident operation.</p>
+<p>Containerised applications implementing the <code>FrameworkAdapter</code> interface from the SDK. Each adapter loads a JobSpec, runs the evaluation framework, reports progress via callbacks, persists artifacts to OCI, and returns structured results.</p>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">¶</a></h2>
 <ul>
 <li><a href="../installation/">Installation</a> - Install server and SDK components</li>
-<li><a href="../quickstart/">Quick Start</a> - Run your first evaluation end-to-end</li>
-<li><a href="../../server/">Server Documentation</a> - Understand the Go server</li>
-<li><a href="../sdk/index.md">SDK Documentation</a> - Use the Python SDK</li>
-<li><a href="../contrib/index.md">Contrib Documentation</a> - Explore community adapters</li>
+<li><a href="../quickstart/">Quick Start</a> - Run your first evaluation</li>
+<li><a href="../../development/architecture/">Architecture</a> - Adapter technical architecture</li>
+<li><a href="../../reference/sdk-client/">Python SDK</a> - Client and adapter reference</li>
 </ul>
 
 
