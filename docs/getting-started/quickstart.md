@@ -145,6 +145,7 @@ Then reference it in the job submission using the `exports.oci` field:
 curl -s -X POST http://localhost:8080/api/v1/evaluations/jobs \
   -H "Content-Type: application/json" \
   -d '{
+    "name": "my-eval-job1",
     "model": {
       "url": "http://vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local:8000/v1",
       "name": "meta-llama/Llama-3.2-1B-Instruct"
