@@ -123,6 +123,54 @@ job = client.jobs.submit(JobSubmissionRequest(
 ))
 ```
 
+### Export Results to OCI Registry
+
+EvalHub can persist evaluation result files as OCI Artifacts to a OCI Registry. Each result file is stored as a separate layer in the OCI Artifact, allowing consumers to selectively pull only the content they need (e.g. a summary JSON, individual adapter output files, or all files).
+
+First, create a Kubernetes Secret with your registry credentials (aka "OCI Connection"):
+
+```yaml
+kind: Secret
+apiVersion: v1
+type: kubernetes.io/dockerconfigjson
+metadata:
+  name: my-oci-credentials
+data:
+  .dockerconfigjson: <base64-encoded docker config>
+```
+
+Then reference it in the job submission using the `exports.oci` field:
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/evaluations/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": {
+      "url": "http://vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local:8000/v1",
+      "name": "meta-llama/Llama-3.2-1B-Instruct"
+    },
+    "benchmarks": [
+      {
+        "id": "demo_benchmark",
+        "provider_id": "demo"
+      }
+    ],
+    "exports": {
+      "oci": {
+        "coordinates": {
+          "oci_host": "quay.io",
+          "oci_repository": "myorg/myartifact"
+        },
+        "k8s": {
+          "connection": "my-oci-credentials"
+        }
+      }
+    }
+  }'
+```
+
+When the evaluation completes, the adapter pushes an OCI Artifact to the specified repository (e.g. `quay.io/myorg/myartifact`). The `k8s.connection` field references the name of the Kubernetes Secret containing the registry credentials.
+
 ## Troubleshooting
 
 **Job stuck in pending**: Check server logs with `kubectl logs deployment/evalhub-server` or run locally with debug logging.
