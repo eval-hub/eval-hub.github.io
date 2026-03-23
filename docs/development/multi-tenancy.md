@@ -59,6 +59,7 @@ metadata:
 spec:
   replicas: 1
   database:
+    type: postgresql
     secret: evalhub-db-credentials
 ```
 
