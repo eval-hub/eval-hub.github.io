@@ -104,7 +104,7 @@ The operator watches for namespaces with the label `evalhub.trustyai.opendatahub
 
 If you remove the tenant label from a namespace, the operator will clean up the job-related resources from that namespace.
 
-## Step 3: Create tenant users
+## Step 3: Create tenant principals (users or service accounts)
 
 The operator provisions the **job** ServiceAccount and RBAC in each labelled namespace. You still need to create a **tenant user** identity and bind it to evaluation permissions. This is the principal that API consumers use to authenticate when calling the EvalHub API.
 
