@@ -966,10 +966,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-create-tenant-users" class="md-nav__link">
+  <a href="#step-3-create-tenant-principals-users-or-service-accounts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Create tenant users
+        Step 3: Create tenant principals (users or service accounts)
       
     </span>
   </a>
@@ -1358,10 +1358,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-create-tenant-users" class="md-nav__link">
+  <a href="#step-3-create-tenant-principals-users-or-service-accounts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Create tenant users
+        Step 3: Create tenant principals (users or service accounts)
       
     </span>
   </a>
@@ -1604,11 +1604,15 @@
     EvalHub --&gt;|schedules jobs| Job_B</code></pre>
 <h3 id="how-tenant-isolation-works">How tenant isolation works<a class="headerlink" href="#how-tenant-isolation-works" title="Permanent link">¶</a></h3>
 <ol>
-<li><strong>Authentication</strong> -- Bearer tokens (SA tokens) are validated via the Kubernetes TokenReview API</li>
-<li><strong>Authorisation</strong> -- Every API request includes an <code>X-Tenant</code> header. EvalHub runs a SAR check: <em>"can this user perform this action in the tenant namespace?"</em></li>
+<li><strong>Authentication</strong> -- Bearer tokens are validated via the Kubernetes TokenReview API. The token can belong to a ServiceAccount or a real OpenShift User — EvalHub treats both identically at this stage.</li>
+<li><strong>Authorisation</strong> -- Every API request includes an <code>X-Tenant</code> header specifying the target namespace. EvalHub runs a SAR check: <em>"can this principal perform this action in that namespace?"</em></li>
 <li><strong>Data isolation</strong> -- All database queries are filtered by <code>tenant_id</code></li>
 <li><strong>Job isolation</strong> -- Evaluation jobs run in the tenant namespace with a scoped ServiceAccount</li>
 </ol>
+<div class="admonition info">
+<p class="admonition-title">Tenant ID and user identity are independent</p>
+<p>The tenant is always determined by the <code>X-Tenant</code> request header — <strong>not</strong> by the identity in the token. A ServiceAccount has a home namespace, but EvalHub does not use it. A real OpenShift User has no namespace at all. In both cases the caller must supply <code>X-Tenant</code> explicitly, and a matching RoleBinding must exist in that namespace.</p>
+</div>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">¶</a></h2>
 <p>Before setting up multi-tenancy, ensure you have:</p>
 <ul>
@@ -1710,9 +1714,39 @@
 <p>In the <strong>EvalHub instance namespace</strong> (e.g. <code>opendatahub</code>), the controller also creates the <code>evalhub-service</code> SA, the job SA, all RoleBindings, and the auth-reviewer ClusterRoleBinding. You do <strong>not</strong> need to create these manually. Labelling the instance namespace as a tenant is unnecessary and is skipped by the watcher.</p>
 </div>
 <p>If you remove the tenant label from a namespace, the operator will clean up the job-related resources from that namespace.</p>
-<h2 id="step-3-create-tenant-users">Step 3: Create tenant users<a class="headerlink" href="#step-3-create-tenant-users" title="Permanent link">¶</a></h2>
-<p>The operator provisions the <strong>job</strong> ServiceAccount and RBAC in each labelled namespace. You still need to create a <strong>tenant user</strong> identity (ServiceAccount or user) and bind it to evaluation permissions. This is the identity that API consumers use to authenticate when calling the EvalHub API.</p>
-<p><strong>Create a tenant ServiceAccount:</strong></p>
+<h2 id="step-3-create-tenant-principals-users-or-service-accounts">Step 3: Create tenant principals (users or service accounts)<a class="headerlink" href="#step-3-create-tenant-principals-users-or-service-accounts" title="Permanent link">¶</a></h2>
+<p>The operator provisions the <strong>job</strong> ServiceAccount and RBAC in each labelled namespace. You still need to create a <strong>tenant user</strong> identity and bind it to evaluation permissions. This is the principal that API consumers use to authenticate when calling the EvalHub API.</p>
+<p>EvalHub supports two principal types:</p>
+<table>
+<thead>
+<tr>
+<th>Principal</th>
+<th>Token source</th>
+<th>RoleBinding <code>kind</code></th>
+<th>Has home namespace?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ServiceAccount</td>
+<td><code>oc create token</code></td>
+<td><code>ServiceAccount</code></td>
+<td>Yes (where SA lives)</td>
+</tr>
+<tr>
+<td>OpenShift User</td>
+<td><code>oc whoami -t</code> (OAuth)</td>
+<td><code>User</code></td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>In both cases the <strong>tenant namespace is supplied by the caller via the <code>X-Tenant</code> header</strong>, not inferred from the identity. A RoleBinding granting evaluation permissions must exist in that namespace.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio"><input id="__tabbed_1_2" name="__tabbed_1" type="radio"><div class="tabbed-labels"><label for="__tabbed_1_1">ServiceAccount</label><label for="__tabbed_1_2">OpenShift User</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Create a ServiceAccount in the tenant namespace and grant it evaluation permissions there.</p>
+<p><strong>Create the ServiceAccount:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>oc<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s">apiVersion: v1</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s">kind: ServiceAccount</span>
@@ -1721,7 +1755,7 @@
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s">  namespace: team-a</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s">EOF</span>
 </span></code></pre></div>
-<p><strong>Grant evaluation permissions in the tenant namespace:</strong></p>
+<p><strong>Grant evaluation permissions:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>oc<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="s">apiVersion: rbac.authorization.k8s.io/v1</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s">kind: Role</span>
@@ -1748,55 +1782,115 @@
 </span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="s">subjects:</span>
 </span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="s">  - kind: ServiceAccount</span>
 </span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="s">    name: team-a-user</span>
-</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="s">    namespace: team-a</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="s">    namespace: team-a       # required for ServiceAccount subjects</span>
 </span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="s">EOF</span>
 </span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Bind an existing OpenShift User (a human identity from the OAuth server) to evaluation permissions in the tenant namespace. No ServiceAccount needs to be created.</p>
+<p><strong>Grant evaluation permissions:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>oc<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s">apiVersion: rbac.authorization.k8s.io/v1</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s">kind: Role</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="s">metadata:</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s">  name: evalhub-evaluator</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s">  namespace: team-a</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="s">rules:</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="s">  - apiGroups: [trustyai.opendatahub.io]</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="s">    resources: [evaluations, collections, providers]</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="s">    verbs: [get, list, create, update, delete]</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="s">  - apiGroups: [mlflow.kubeflow.org]</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="s">    resources: [experiments]</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="s">    verbs: [create, get]</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="s">---</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="s">apiVersion: rbac.authorization.k8s.io/v1</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="s">kind: RoleBinding</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="s">metadata:</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="s">  name: evalhub-evaluator-binding</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="s">  namespace: team-a</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="s">roleRef:</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="s">  apiGroup: rbac.authorization.k8s.io</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="s">  kind: Role</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="s">  name: evalhub-evaluator</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="s">subjects:</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="s">  - kind: User</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="s">    name: alice             # OpenShift username (oc whoami)</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="s">    apiGroup: rbac.authorization.k8s.io</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="s">                            # no namespace field — Users are cluster-scoped</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="s">EOF</span>
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Username must match exactly</p>
+<p>The <code>name</code> field must match the OpenShift username as returned by <code>oc whoami</code>. The TokenReview resolves the OAuth token to this username, and the SAR engine matches it against the <code>kind: User</code> subject in the binding.</p>
+</div>
+</div>
+</div>
+</div>
 <div class="admonition info">
 <p class="admonition-title">Virtual resources</p>
 <p>The resources in the Role (<code>evaluations</code>, <code>collections</code>, <code>providers</code>, <code>status-events</code>) are virtual -- they don't correspond to actual Kubernetes API resources. EvalHub uses them as SAR targets to enforce fine-grained access control via the Kubernetes authorisation API.</p>
 </div>
 <h2 id="step-4-access-the-api-with-tenant-scoping">Step 4: Access the API with tenant scoping<a class="headerlink" href="#step-4-access-the-api-with-tenant-scoping" title="Permanent link">¶</a></h2>
-<p>All evaluation API requests must include the <code>X-Tenant</code> header set to the target namespace.</p>
-<p><strong>Get a token for the tenant user:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>create<span class="w"> </span>token<span class="w"> </span>team-a-user<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>--duration<span class="o">=</span>1h<span class="k">)</span>
-</span></code></pre></div>
+<p>All evaluation API requests must include the <code>X-Tenant</code> header set to the target namespace. The header is the sole source of the tenant ID — it is not derived from the token.</p>
 <p><strong>Get the EvalHub route:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">EVALHUB_URL</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>evalhub<span class="w"> </span>-n<span class="w"> </span>opendatahub<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.spec.host}'</span><span class="k">)</span>
 </span></code></pre></div>
-<p><strong>List providers (scoped to team-a):</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-sS<span class="w"> </span>-k<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"X-Tenant: team-a"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="s2">"https://</span><span class="nv">$EVALHUB_URL</span><span class="s2">/api/v1/evaluations/providers"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
+<p><strong>Get a token:</strong></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio"><input id="__tabbed_2_2" name="__tabbed_2" type="radio"><div class="tabbed-labels"><label for="__tabbed_2_1">ServiceAccount</label><label for="__tabbed_2_2">OpenShift User</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>create<span class="w"> </span>token<span class="w"> </span>team-a-user<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>--duration<span class="o">=</span>1h<span class="k">)</span>
+</span></code></pre></div>
+<p>The TokenReview will resolve this to <code>system:serviceaccount:team-a:team-a-user</code>.</p>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Log in as the user first (if not already)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>oc<span class="w"> </span>login<span class="w"> </span>--username<span class="o">=</span>alice<span class="w"> </span>--password<span class="o">=</span>&lt;password&gt;
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>whoami<span class="w"> </span>-t<span class="k">)</span>
+</span></code></pre></div>
+<p>The TokenReview will resolve this to <code>alice</code> (the plain OpenShift username).</p>
+<div class="admonition warning">
+<p class="admonition-title">Use <code>oc whoami -t</code>, not <code>oc create token</code></p>
+<p><code>oc create token</code> always creates a ServiceAccount token, even when run as a logged-in user. To get an OAuth token for a real OpenShift User, use <code>oc whoami -t</code> after logging in.</p>
+</div>
+</div>
+</div>
+</div>
+<p><strong>List providers (scoped to team-a)</strong> (or alternatively, use the <a href="../../getting-started/cli/">CLI</a>)<strong>:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>curl<span class="w"> </span>-sS<span class="w"> </span>-k<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"X-Tenant: team-a"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="s2">"https://</span><span class="nv">$EVALHUB_URL</span><span class="s2">/api/v1/evaluations/providers"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
 </span></code></pre></div>
 <p><strong>Submit an evaluation job:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>curl<span class="w"> </span>-sS<span class="w"> </span>-k<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"X-Tenant: team-a"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s1">    "model": {</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s1">      "url": "http://vllm-server.team-a.svc.cluster.local:8000/v1",</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="s1">      "name": "meta-llama/Llama-3.2-1B-Instruct"</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="s1">    },</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="s1">    "benchmarks": [</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="s1">      {</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="s1">        "id": "mmlu",</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="s1">        "provider_id": "lm_evaluation_harness"</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="s1">      }</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="s1">    ]</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="s1">  }'</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">  </span><span class="s2">"https://</span><span class="nv">$EVALHUB_URL</span><span class="s2">/api/v1/evaluations/jobs"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>curl<span class="w"> </span>-sS<span class="w"> </span>-k<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"X-Tenant: team-a"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s1">    "model": {</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="s1">      "url": "http://vllm-server.team-a.svc.cluster.local:8000/v1",</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="s1">      "name": "meta-llama/Llama-3.2-1B-Instruct"</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="s1">    },</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="s1">    "benchmarks": [</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="s1">      {</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="s1">        "id": "mmlu",</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="s1">        "provider_id": "lm_evaluation_harness"</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="s1">      }</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="s1">    ]</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="s1">  }'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="w">  </span><span class="s2">"https://</span><span class="nv">$EVALHUB_URL</span><span class="s2">/api/v1/evaluations/jobs"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
 </span></code></pre></div>
-<p>The job pod will be created in the <code>team-a</code> namespace using the <code>evalhub-opendatahub-job</code> ServiceAccount.</p>
+<p>The job pod will be created in the <code>team-a</code> namespace using the <code>evalhub-opendatahub-job</code> ServiceAccount, regardless of which principal type submitted the request.</p>
 <p><strong>Cross-tenant access is denied:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># This will return 403 Forbidden</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>curl<span class="w"> </span>-sS<span class="w"> </span>-k<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"X-Tenant: team-b"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="s2">"https://</span><span class="nv">$EVALHUB_URL</span><span class="s2">/api/v1/evaluations/jobs"</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># This will return 403 Forbidden</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>curl<span class="w"> </span>-sS<span class="w"> </span>-k<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"X-Tenant: team-b"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="s2">"https://</span><span class="nv">$EVALHUB_URL</span><span class="s2">/api/v1/evaluations/jobs"</span>
 </span></code></pre></div>
-<p>The SAR check fails because <code>team-a-user</code> has no permissions in the <code>team-b</code> namespace.</p>
+<p>The SAR check fails because the principal (whether a ServiceAccount or a User) has no RoleBinding in the <code>team-b</code> namespace.</p>
 <h2 id="authorisation-model">Authorisation model<a class="headerlink" href="#authorisation-model" title="Permanent link">¶</a></h2>
 <p>EvalHub uses an embedded SAR authoriser. The auth config (<code>config/auth.yaml</code>) maps API endpoints to Kubernetes resource attributes:</p>
 <table>
@@ -1843,8 +1937,12 @@
 </table>
 <p>For <code>POST /api/v1/evaluations/jobs</code>, two additional SAR checks are performed for MLFlow access (<code>mlflow.kubeflow.org/experiments</code> with <code>create</code> and <code>get</code> verbs).</p>
 <h3 id="request-flow">Request flow<a class="headerlink" href="#request-flow" title="Permanent link">¶</a></h3>
+<p>The flow is identical for both principal types. The only difference is what the TokenReview returns and which subject kind is matched in the RoleBinding.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio"><input id="__tabbed_3_2" name="__tabbed_3" type="radio"><div class="tabbed-labels"><label for="__tabbed_3_1">ServiceAccount</label><label for="__tabbed_3_2">OpenShift User</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <pre class="mermaid"><code>sequenceDiagram
-    participant User as Tenant User
+    participant User as Tenant SA
     participant EH as EvalHub API
     participant K8s as Kubernetes API
     participant Job as Eval Job Pod
@@ -1852,8 +1950,8 @@
     User-&gt;&gt;EH: POST /jobs (Bearer token + X-Tenant: team-a)
     EH-&gt;&gt;K8s: TokenReview (validate token)
     K8s--&gt;&gt;EH: user=system:serviceaccount:team-a:team-a-user
-    EH-&gt;&gt;K8s: SAR (can user create evaluations in team-a?)
-    K8s--&gt;&gt;EH: Allowed
+    EH-&gt;&gt;K8s: SAR (can SA create evaluations in team-a?)
+    K8s--&gt;&gt;EH: Allowed (kind:ServiceAccount RoleBinding matched)
     EH-&gt;&gt;K8s: Create Job in team-a (SA: evalhub-opendatahub-job)
     K8s--&gt;&gt;EH: Job created
     EH--&gt;&gt;User: 202 Accepted
@@ -1862,6 +1960,31 @@
     EH-&gt;&gt;K8s: SAR (can job SA create status-events in team-a?)
     K8s--&gt;&gt;EH: Allowed
     EH--&gt;&gt;Job: 200 OK</code></pre>
+</div>
+<div class="tabbed-block">
+<pre class="mermaid"><code>sequenceDiagram
+    participant User as OpenShift User (alice)
+    participant EH as EvalHub API
+    participant K8s as Kubernetes API
+    participant Job as Eval Job Pod
+
+    User-&gt;&gt;EH: POST /jobs (OAuth token + X-Tenant: team-a)
+    EH-&gt;&gt;K8s: TokenReview (validate token)
+    K8s--&gt;&gt;EH: user=alice
+    EH-&gt;&gt;K8s: SAR (can alice create evaluations in team-a?)
+    K8s--&gt;&gt;EH: Allowed (kind:User RoleBinding matched)
+    EH-&gt;&gt;K8s: Create Job in team-a (SA: evalhub-opendatahub-job)
+    K8s--&gt;&gt;EH: Job created
+    EH--&gt;&gt;User: 202 Accepted
+
+    Job-&gt;&gt;EH: POST /jobs/{id}/events (job SA token + X-Tenant: team-a)
+    EH-&gt;&gt;K8s: SAR (can job SA create status-events in team-a?)
+    K8s--&gt;&gt;EH: Allowed
+    EH--&gt;&gt;Job: 200 OK</code></pre>
+</div>
+</div>
+</div>
+<p>Note that the job pod always runs as the operator-provisioned job ServiceAccount (<code>evalhub-opendatahub-job</code>), regardless of whether the submitter was a User or a ServiceAccount.</p>
 <h2 id="rbac-reference">RBAC reference<a class="headerlink" href="#rbac-reference" title="Permanent link">¶</a></h2>
 <h3 id="clusterroles-installed-by-operator">ClusterRoles (installed by operator)<a class="headerlink" href="#clusterroles-installed-by-operator" title="Permanent link">¶</a></h3>
 <table>
@@ -1960,64 +2083,97 @@
 </table>
 <h3 id="serviceaccount-naming">ServiceAccount naming<a class="headerlink" href="#serviceaccount-naming" title="Permanent link">¶</a></h3>
 <p>The job SA name includes the EvalHub instance namespace to prevent collisions when multiple EvalHub instances (potentially with the same CR name in different namespaces) create jobs in the same tenant namespace:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>{evalhub-cr-name}-{evalhub-namespace}-job
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>{evalhub-cr-name}-{evalhub-namespace}-job
 </span></code></pre></div>
 <p>For example, an EvalHub CR named <code>evalhub</code> in namespace <code>opendatahub</code> produces:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>evalhub-opendatahub-job
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>evalhub-opendatahub-job
 </span></code></pre></div>
 <h2 id="verifying-the-setup">Verifying the setup<a class="headerlink" href="#verifying-the-setup" title="Permanent link">¶</a></h2>
 <h3 id="check-operator-provisioned-resources">Check operator-provisioned resources<a class="headerlink" href="#check-operator-provisioned-resources" title="Permanent link">¶</a></h3>
 <p>After labelling a namespace with <code>evalhub.trustyai.opendatahub.io/tenant</code>, the operator should create the job SA and RoleBindings within a short time. Verify:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Ensure the namespace has the tenant label</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>oc<span class="w"> </span>get<span class="w"> </span>namespace<span class="w"> </span>team-a<span class="w"> </span>--show-labels<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>evalhub.trustyai.opendatahub.io/tenant
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Verify job SA exists in tenant namespace (created by operator)</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>oc<span class="w"> </span>get<span class="w"> </span>sa<span class="w"> </span>evalhub-opendatahub-job<span class="w"> </span>-n<span class="w"> </span>team-a
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># Verify RoleBindings (created by operator)</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>oc<span class="w"> </span>get<span class="w"> </span>rolebindings<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>evalhub
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="c1"># Test permissions for tenant user</span>
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">  </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:team-a:team-a-user
-</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>
-</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="c1"># Test cross-tenant denial</span>
-</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">  </span>-n<span class="w"> </span>team-b<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:team-a:team-a-user
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Ensure the namespace has the tenant label</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>oc<span class="w"> </span>get<span class="w"> </span>namespace<span class="w"> </span>team-a<span class="w"> </span>--show-labels<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>evalhub.trustyai.opendatahub.io/tenant
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Verify job SA exists in tenant namespace (created by operator)</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>oc<span class="w"> </span>get<span class="w"> </span>sa<span class="w"> </span>evalhub-opendatahub-job<span class="w"> </span>-n<span class="w"> </span>team-a
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="c1"># Verify RoleBindings (created by operator)</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>oc<span class="w"> </span>get<span class="w"> </span>rolebindings<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>evalhub
 </span></code></pre></div>
+<p>Test permissions for the tenant principal:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio"><input id="__tabbed_4_2" name="__tabbed_4" type="radio"><div class="tabbed-labels"><label for="__tabbed_4_1">ServiceAccount</label><label for="__tabbed_4_2">OpenShift User</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Test access in own tenant namespace</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:team-a:team-a-user
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="c1"># Test cross-tenant denial</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span>-n<span class="w"> </span>team-b<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:team-a:team-a-user
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Test access in own tenant namespace</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>--as<span class="o">=</span>alice
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="c1"># Test cross-tenant denial</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span>-n<span class="w"> </span>team-b<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span>--as<span class="o">=</span>alice
+</span></code></pre></div>
+</div>
+</div>
+</div>
 <h3 id="check-job-execution">Check job execution<a class="headerlink" href="#check-job-execution" title="Permanent link">¶</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># List jobs in tenant namespace</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>oc<span class="w"> </span>get<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/part-of<span class="o">=</span>eval-hub
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Check job pod SA</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>oc<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/part-of<span class="o">=</span>eval-hub<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[0].spec.serviceAccountName}'</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1"># Expected: evalhub-opendatahub-job</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># List jobs in tenant namespace</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>oc<span class="w"> </span>get<span class="w"> </span><span class="nb">jobs</span><span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/part-of<span class="o">=</span>eval-hub
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># Check job pod SA</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>oc<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/part-of<span class="o">=</span>eval-hub<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[0].spec.serviceAccountName}'</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="c1"># Expected: evalhub-opendatahub-job</span>
 </span></code></pre></div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">¶</a></h2>
 <h3 id="403-forbidden-on-api-calls">403 Forbidden on API calls<a class="headerlink" href="#403-forbidden-on-api-calls" title="Permanent link">¶</a></h3>
 <p>The SAR check is failing. Verify:</p>
 <ol>
-<li>The <code>X-Tenant</code> header matches a namespace where the user has permissions</li>
-<li>The user's Role includes the correct resources and verbs</li>
-<li>The RoleBinding exists in the target namespace</li>
+<li>The <code>X-Tenant</code> header matches a namespace where the principal has a RoleBinding</li>
+<li>The Role includes the correct resources and verbs</li>
+<li>The RoleBinding <code>subjects[].kind</code> matches the principal type (<code>ServiceAccount</code> or <code>User</code>)</li>
 </ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Debug: check what SAR would evaluate</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:team-a:team-a-user<span class="w"> </span>-v<span class="o">=</span><span class="m">6</span>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio"><input id="__tabbed_5_2" name="__tabbed_5" type="radio"><div class="tabbed-labels"><label for="__tabbed_5_1">ServiceAccount</label><label for="__tabbed_5_2">OpenShift User</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:team-a:team-a-user<span class="w"> </span>-v<span class="o">=</span><span class="m">6</span>
 </span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>evaluations.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>--as<span class="o">=</span>alice<span class="w"> </span>-v<span class="o">=</span><span class="m">6</span>
+</span></code></pre></div>
+<p>Also confirm the RoleBinding subject kind is <code>User</code> and has no <code>namespace</code> field:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>oc<span class="w"> </span>get<span class="w"> </span>rolebinding<span class="w"> </span>evalhub-evaluator-binding<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span>subjects
+</span></code></pre></div>
+</div>
+</div>
+</div>
 <h3 id="jobs-not-created-in-tenant-namespace">Jobs not created in tenant namespace<a class="headerlink" href="#jobs-not-created-in-tenant-namespace" title="Permanent link">¶</a></h3>
 <p>Verify the EvalHub API SA has the <code>jobs-writer</code> and <code>job-config</code> RoleBindings in the tenant namespace:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>oc<span class="w"> </span>get<span class="w"> </span>rolebindings<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>-o<span class="w"> </span>wide<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">"jobs-writer|job-config"</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>oc<span class="w"> </span>get<span class="w"> </span>rolebindings<span class="w"> </span>-n<span class="w"> </span>team-a<span class="w"> </span>-o<span class="w"> </span>wide<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">"jobs-writer|job-config"</span>
 </span></code></pre></div>
 <h3 id="job-pods-failing-to-post-status-events">Job pods failing to post status events<a class="headerlink" href="#job-pods-failing-to-post-status-events" title="Permanent link">¶</a></h3>
 <p>The job SA needs the <code>status-events/create</code> permission in the tenant namespace:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>status-events.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:team-a:evalhub-opendatahub-job
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>oc<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>status-events.trustyai.opendatahub.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span>-n<span class="w"> </span>team-a<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:team-a:evalhub-opendatahub-job
 </span></code></pre></div>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">¶</a></h2>
 <ul>
