@@ -2510,7 +2510,7 @@
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="s">{</span>
 </span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="s">  "model": {</span>
 </span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="s">    "url": "http://vllm-server.models.svc.cluster.local:8000/v1",</span>
-</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="s">    "name": "meta-llama/Llama-3.2-1B-Instruct"</span>
+</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="s">    "name": "Qwen/Qwen3.5-397B-A17B"</span>
 </span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="s">  },</span>
 </span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="s">  "benchmarks": [</span>
 </span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="s">    {</span>
@@ -2539,23 +2539,20 @@
 </span></code></pre></div>
 <h2 id="deploying-an-openai-compatible-simulator">Deploying an OpenAI-compatible simulator<a class="headerlink" href="#deploying-an-openai-compatible-simulator" title="Permanent link">¶</a></h2>
 <p>For specific testing purposes when the Model's answers quality is not relevant, you can deploy an OpenAI-compatible inference simulator instead of a real model server.</p>
-<p>Deploy the simulator with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://raw.githubusercontent.com/tarilabs/llm-d-inference-sim/refs/heads/patch-1/manifests/deployment.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>yq<span class="w"> </span><span class="s1">'.spec.replicas = 1'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>oc<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-
+<p>Deploy the simulator in the currently active namespace with:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://raw.githubusercontent.com/llm-d/llm-d-inference-sim/refs/heads/main/manifests/deployment.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>yq<span class="w"> </span><span class="s1">'select(.kind == "Deployment").spec.replicas = 1 | select(.kind == "Deployment").spec.template.spec.containers[0].image |= sub(":dev$", ":latest")'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>oc<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w">  </span>
 </span></code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <code>patch-1</code> branch is used until <a href="https://github.com/llm-d/llm-d-inference-sim/pull/348">llm-d/llm-d-inference-sim#348</a> is resolved to fix the standard example.
-See the upstream <a href="https://github.com/llm-d/llm-d-inference-sim?tab=readme-ov-file#kubernetes-testing">llm-d testing documentation</a> for more details.</p>
-</div>
 <p>This makes the simulator available as an internal service at:</p>
 <ul>
-<li><strong>Service:</strong> <code>vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local</code> (Accessible within the cluster and the namespace only)</li>
+<li><strong>Service:</strong> <code>vllm-sim-demo-svc.evalhub-test.svc.cluster.local</code> (Accessible within the cluster and the namespace only)</li>
 <li><strong>Port:</strong> <code>8000</code></li>
-<li><strong>Model name:</strong> <code>meta-llama/Llama-3.1-8B-Instruct</code></li>
+<li><strong>Model name:</strong> <code>Qwen/Qwen3.5-397B-A17B</code></li>
 </ul>
 <p>The service exposes an OpenAI-compatible endpoint (e.g. <code>/v1/chat/completions</code>).</p>
 <p>You can verify the simulator is working from within the namesapce in the cluster (for example by opening a Terminal on the evalhub Pod) with:</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SIM_URL</span><span class="o">=</span>vllm-llama3-8b-instruct-svc.evalhub-test.svc.cluster.local:8000
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SIM_URL</span><span class="o">=</span>vllm-sim-demo-svc.evalhub-test.svc.cluster.local:8000
 </span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>
 </span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="c1"># List available models</span>
 </span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"http://</span><span class="nv">$SIM_URL</span><span class="s2">/v1/models"</span><span class="w"> </span>
@@ -2564,7 +2561,7 @@ See the upstream <a href="https://github.com/llm-d/llm-d-inference-sim?tab=readm
 </span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"http://</span><span class="nv">$SIM_URL</span><span class="s2">/v1/chat/completions"</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-32-9"><a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
-</span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a><span class="s1">    "model": "meta-llama/Llama-3.1-8B-Instruct",</span>
+</span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a><span class="s1">    "model": "Qwen/Qwen3.5-397B-A17B",</span>
 </span><span id="__span-32-11"><a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a><span class="s1">    "messages": [{"role": "user", "content": "Hello"}]</span>
 </span><span id="__span-32-12"><a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a><span class="s1">  }'</span><span class="w"> </span>
 </span></code></pre></div>
@@ -2572,14 +2569,14 @@ See the upstream <a href="https://github.com/llm-d/llm-d-inference-sim?tab=readm
 <p>If you need to invoke the simulator externally, create a Route in the OpenShift console:</p>
 <ol>
 <li>Navigate to <strong>Networking → Routes → Create Route</strong></li>
-<li>Select the <strong>Service</strong> <code>vllm-llama3-8b-instruct-svc</code></li>
+<li>Select the <strong>Service</strong> <code>vllm-sim-demo-svc</code></li>
 <li>Select the only available <strong>Target Port</strong></li>
 <li>Check <strong>Secure Route</strong></li>
 <li>Set <strong>TLS Termination</strong> to <strong>Edge</strong></li>
 <li>Set <strong>Insecure Traffic</strong> to <strong>None</strong></li>
 </ol>
 <p>Once the Route is created, you can test it:</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SIM_URL</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[?(@.spec.to.name=="vllm-llama3-8b-instruct-svc")].spec.host}'</span><span class="k">)</span>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">SIM_URL</span><span class="o">=</span><span class="k">$(</span>oc<span class="w"> </span>get<span class="w"> </span>route<span class="w"> </span>-n<span class="w"> </span>evalhub-test<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[?(@.spec.to.name=="vllm-sim-demo-svc")].spec.host}'</span><span class="k">)</span>
 </span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>
 </span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="c1"># List available models</span>
 </span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"https://</span><span class="nv">$SIM_URL</span><span class="s2">/v1/models"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
@@ -2588,7 +2585,7 @@ See the upstream <a href="https://github.com/llm-d/llm-d-inference-sim?tab=readm
 </span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"https://</span><span class="nv">$SIM_URL</span><span class="s2">/v1/chat/completions"</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
-</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a><span class="s1">    "model": "meta-llama/Llama-3.1-8B-Instruct",</span>
+</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a><span class="s1">    "model": "Qwen/Qwen3.5-397B-A17B",</span>
 </span><span id="__span-33-11"><a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a><span class="s1">    "messages": [{"role": "user", "content": "Hello"}]</span>
 </span><span id="__span-33-12"><a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a><span class="s1">  }'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
 </span></code></pre></div>
