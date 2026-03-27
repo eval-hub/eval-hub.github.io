@@ -335,6 +335,26 @@
   
 
       
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../build-details/cve-fixer/" class="md-tabs__link">
+          
+  
+  
+  Build Details
+
+        </a>
+      </li>
+    
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -1170,6 +1190,95 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6">
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build Details
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Build Details
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../build-details/cve-fixer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CVE fixer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1381,6 +1490,7 @@
 <p>Go REST API service for managing LLM evaluation workflows.</p>
 <h2 id="rest-api">REST API<a class="headerlink" href="#rest-api" title="Permanent link">¶</a></h2>
 <p>All endpoints are under <code>/api/v1</code>. Request and response bodies use JSON. The OpenAPI 3.1.0 specification is served at <code>/openapi.yaml</code>.</p>
+<p>See <a href="https://eval-hub.github.io/eval-hub/">https://eval-hub.github.io/eval-hub/</a> for the full specification.</p>
 <h3 id="evaluation-jobs">Evaluation Jobs<a class="headerlink" href="#evaluation-jobs" title="Permanent link">¶</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>POST   /api/v1/evaluations/jobs             # Submit evaluation
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>GET    /api/v1/evaluations/jobs             # List jobs
@@ -1396,7 +1506,7 @@
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>PATCH  /api/v1/evaluations/providers/{id}        # Patch provider
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>DELETE /api/v1/evaluations/providers/{id}        # Delete provider
 </span></code></pre></div>
-<p>Query parameters: <code>benchmarks=true|false</code> (default true), <code>system_defined=true|false</code>.</p>
+<p>Query parameters: <code>benchmarks=true|false</code> (default <code>true</code>), <code>scope=system|tenant</code> (default is not set which means all providers).</p>
 <p>Benchmarks are returned as part of the provider response. There is no separate <code>/benchmarks</code> endpoint.</p>
 <h3 id="collections">Collections<a class="headerlink" href="#collections" title="Permanent link">¶</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>GET    /api/v1/evaluations/collections             # List collections
