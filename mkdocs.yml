@@ -88,6 +88,7 @@ nav:
     - Multi-Tenancy: development/multi-tenancy.md
   - Reference:
     - Python SDK: reference/sdk-client.md
+    - MCP: reference/mcp.md
   - Build Details:
     - CVE fixer: build-details/cve-fixer.md
 

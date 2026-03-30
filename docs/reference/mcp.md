@@ -2,7 +2,7 @@
 
 This guide provides reference details for the MCP server to interact with EvalHub.
 
-## Prerequisite
+## Prerequisites
 
 The following installation steps assumes you want to use a dedicated "agent" ServiceAccount when using Evalhub multi-tenant deployed on an OpenShift cluster.
 
@@ -18,7 +18,7 @@ metadata:
 EOF
 ```
 
-grant `team-a-agent` ServiceAccount the required permissions:
+Grant `team-a-agent` ServiceAccount the required permissions:
 
 ```sh
 oc apply -f - <<EOF
@@ -61,7 +61,7 @@ evalhub --profile agent config set tenant team-a
 evalhub --profile agent config set token $(oc create token team-a-agent -n team-a --duration=8760h)
 ```
 
-this makes an "agent" configuration profile for the CLI:
+This makes an "agent" configuration profile for the CLI:
 
 ```yaml
 active_profile: default
@@ -72,7 +72,7 @@ profiles:
     token: ...
 ```
 
-then add MCP "evalhub" via `evalhub` CLI (this examples assumes Claude as the AI Agent):
+Then add MCP "evalhub" via `evalhub` CLI (this example assumes Claude as the AI Agent):
 
 ```sh
 claude mcp add evalhub -- evalhub --profile agent mcp
@@ -96,7 +96,7 @@ Use evalhub "agent" configuration with MCP Inspector by starting it where the ev
 npx @modelcontextprotocol/inspector
 ```
 
-use:
+Use:
 
 ```
 command:
