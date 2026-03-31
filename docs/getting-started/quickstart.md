@@ -55,6 +55,7 @@ from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionReques
 client = SyncEvalHubClient(base_url="http://localhost:8080")
 
 job = client.jobs.submit(JobSubmissionRequest(
+    name="quickstart-eval",
     model=ModelConfig(
         url="http://localhost:11434/v1",
         name="qwen2.5:1.5b"
@@ -107,9 +108,12 @@ for b in benchmarks:
 ### Submit a Collection
 
 ```python
+from evalhub.models.api import CollectionRef
+
 job = client.jobs.submit(JobSubmissionRequest(
+    name="llama3-healthcare-eval",
     model=ModelConfig(url="...", name="llama-3-8b"),
-    collection={"id": "healthcare_safety_v1"}
+    collection=CollectionRef(id="healthcare_safety_v1")
 ))
 ```
 

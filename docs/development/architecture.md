@@ -8,7 +8,7 @@ All adapters implement the `FrameworkAdapter` interface from the SDK:
 
 ```python
 from evalhub.adapter import FrameworkAdapter, JobSpec, JobResults, JobCallbacks
-from evalhub.adapter.models import JobStatusUpdate, JobStatus, JobPhase, OCIArtifactSpec
+from evalhub.adapter.models import JobStatusUpdate, JobStatus, JobPhase, MessageInfo, OCIArtifactSpec
 
 class MyAdapter(FrameworkAdapter):
     def run_benchmark_job(
@@ -20,7 +20,7 @@ class MyAdapter(FrameworkAdapter):
             status=JobStatus.RUNNING,
             phase=JobPhase.RUNNING_EVALUATION,
             progress=0.5,
-            message="Running evaluation"
+            message=MessageInfo(message="Running evaluation", message_code="running_evaluation")
         ))
 
         raw_results = self._run_evaluation(config)
@@ -51,8 +51,13 @@ def main():
     adapter = MyAdapter()
     callbacks = DefaultCallbacks.from_adapter(adapter)
     results = adapter.run_benchmark_job(adapter.job_spec, callbacks)
+
+    # Optional: persist metrics to MLflow
+    run_id = callbacks.mlflow.save(results, adapter.job_spec)
+    if run_id:
+        results.mlflow_run_id = run_id
+
     callbacks.report_results(results)
-    callbacks.report_metrics_to_mlflow(results, adapter.job_spec)
 ```
 
 ## Component Diagram
@@ -86,7 +91,7 @@ class JobSpec:
     benchmark_id: str
     benchmark_index: int
     model: ModelConfig          # url, name, auth
-    benchmark_config: dict
+    parameters: dict            # adapter-specific parameters
     callback_url: str           # sidecar base URL
     num_examples: int | None
     experiment_name: str | None # MLflow experiment
@@ -126,9 +131,6 @@ class JobCallbacks(ABC):
 
     def report_results(self, results: JobResults) -> None:
         """Send final results via POST /api/v1/evaluations/jobs/{id}/events"""
-
-    def report_metrics_to_mlflow(self, results: JobResults, job_spec: JobSpec) -> None:
-        """Log metrics and params to MLflow (optional)"""
 ```
 
 ### DefaultCallbacks
@@ -144,12 +146,14 @@ The SDK provides `DefaultCallbacks` which:
 
 Environment-based configuration loaded via `pydantic-settings`:
 
-- `EVALHUB_MODE`: `k8s` (default) or `local`
-- `EVALHUB_JOB_SPEC_PATH`: path to job spec (default `/meta/job.json`)
-- `EVALHUB_URL`: server base URL
-- `OCI_AUTH_CONFIG_PATH`: Docker config for registry auth
-- `MLFLOW_TRACKING_URI`: MLflow server URL
-- `MLFLOW_TRACKING_TOKEN_PATH`: MLflow auth token
+- `EVALHUB_MODE`: `k8s` or `local` (default `local`)
+- `EVALHUB_JOB_SPEC_PATH`: path to job spec (default `/meta/job.json` in k8s, `meta/job.json` locally)
+- `OCI_AUTH_CONFIG_PATH`: Docker config for OCI registry auth
+- `OCI_INSECURE`: skip TLS verification for OCI registry
+- `EVALHUB_AUTH_TOKEN_PATH`: path to ServiceAccount token file
+- `EVALHUB_CA_BUNDLE_PATH`: path to CA bundle for TLS
+- `EVALHUB_INSECURE`: skip TLS verification for EvalHub connection
+- `EVALHUB_MLFLOW_BACKEND`: `odh` (default) or `upstream`
 
 ## Adapter Container Images
 

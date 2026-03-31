@@ -20,6 +20,7 @@ pip install eval-hub-sdk[all]       # Everything
 
     with SyncEvalHubClient(base_url="http://localhost:8080") as client:
         job = client.jobs.submit(JobSubmissionRequest(
+            name="llama3-mmlu-eval",
             model=ModelConfig(url="http://vllm:8000/v1", name="llama-3-8b"),
             benchmarks=[BenchmarkConfig(id="mmlu", provider_id="lm_evaluation_harness")]
         ))
@@ -36,6 +37,7 @@ pip install eval-hub-sdk[all]       # Everything
 
     async with AsyncEvalHubClient(base_url="http://localhost:8080") as client:
         job = await client.jobs.submit(JobSubmissionRequest(
+            name="llama3-mmlu-eval",
             model=ModelConfig(url="http://vllm:8000/v1", name="llama-3-8b"),
             benchmarks=[BenchmarkConfig(id="mmlu", provider_id="lm_evaluation_harness")]
         ))
@@ -93,6 +95,7 @@ collection = client.collections.get("healthcare_safety_v1")
 from evalhub.models.api import JobSubmissionRequest, ModelConfig, BenchmarkConfig, JobStatus
 
 job = client.jobs.submit(JobSubmissionRequest(
+    name="llama3-multi-benchmark",
     model=ModelConfig(url="http://vllm:8000/v1", name="llama-3-8b"),
     benchmarks=[
         BenchmarkConfig(id="mmlu", provider_id="lm_evaluation_harness"),
@@ -122,6 +125,7 @@ async def main():
 
         jobs = await asyncio.gather(*[
             client.jobs.submit(JobSubmissionRequest(
+                name=f"llama3-{b}",
                 model=ModelConfig(url="http://vllm:8000/v1", name="llama-3-8b"),
                 benchmarks=[BenchmarkConfig(id=b, provider_id="lm_evaluation_harness")]
             ))
@@ -166,7 +170,7 @@ except ClientError as e:
 |----------|---------|
 | `client.providers` | `list()`, `get(id)` |
 | `client.benchmarks` | `list(provider_id?, category?, limit?)` |
-| `client.collections` | `list()`, `get(id)` |
+| `client.collections` | `list()`, `get(id)`, `create(request)` |
 | `client.jobs` | `submit(request)`, `get(id)`, `list(status?, limit?)`, `cancel(id, hard_delete?)`, `wait_for_completion(id, timeout?, poll_interval?)` |
 | `client.health()` | Health check |
 
