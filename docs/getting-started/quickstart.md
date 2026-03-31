@@ -98,7 +98,7 @@ print(f"Status: {status.status}")
 
 ```python
 for provider in client.providers.list():
-    print(f"{provider.id}: {provider.name}")
+    print(f"{provider.resource.id}: {provider.name}")
 
 benchmarks = client.benchmarks.list(provider_id="lm_evaluation_harness")
 for b in benchmarks:
