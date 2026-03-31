@@ -54,6 +54,7 @@ client = SyncEvalHubClient(
     auth_token_path=None,         # Path to token file
     ca_bundle_path=None,          # CA bundle for TLS
     insecure=False,               # Skip TLS verification
+    tenant=None,                  # Namespace for multi-tenant deployments (X-Tenant header)
     timeout=30.0,                 # Request timeout (seconds)
     max_retries=3,                # Retry attempts for 5xx/timeout/connection errors
     retry_initial_delay=1.0,      # Initial retry delay (seconds)
@@ -170,7 +171,7 @@ except ClientError as e:
 |----------|---------|
 | `client.providers` | `list()`, `get(id)` |
 | `client.benchmarks` | `list(provider_id?, category?, limit?)` |
-| `client.collections` | `list()`, `get(id)`, `create(request)` |
+| `client.collections` | `list()`, `get(id)`, `create(request)`, `delete(id)` |
 | `client.jobs` | `submit(request)`, `get(id)`, `list(status?, limit?)`, `cancel(id, hard_delete?)`, `wait_for_completion(id, timeout?, poll_interval?)` |
 | `client.health()` | Health check |
 

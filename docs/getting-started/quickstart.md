@@ -120,10 +120,13 @@ job = client.jobs.submit(JobSubmissionRequest(
 ### Use MLflow Tracking
 
 ```python
+from evalhub.models.api import ExperimentConfig
+
 job = client.jobs.submit(JobSubmissionRequest(
+    name="llama3-mlflow-eval",
     model=ModelConfig(url="...", name="llama-3-8b"),
     benchmarks=[BenchmarkConfig(id="mmlu", provider_id="lm_evaluation_harness")],
-    experiment={"name": "my-experiment"}
+    experiment=ExperimentConfig(name="my-experiment")
 ))
 ```
 
