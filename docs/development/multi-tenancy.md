@@ -33,13 +33,13 @@ flowchart LR
 
 ### How tenant isolation works
 
-1. **Authentication** -- Bearer tokens are validated via the Kubernetes TokenReview API. The token can belong to a ServiceAccount or a real OpenShift User — EvalHub treats both identically at this stage.
+1. **Authentication** -- Bearer tokens are validated via the Kubernetes TokenReview API. The token can belong to a ServiceAccount, an OpenShift User, or a member of an OpenShift Group — EvalHub treats all identically at this stage.
 2. **Authorisation** -- Every API request includes an `X-Tenant` header specifying the target namespace. EvalHub runs a SAR check: _"can this principal perform this action in that namespace?"_
 3. **Data isolation** -- All database queries are filtered by `tenant_id`
 4. **Job isolation** -- Evaluation jobs run in the tenant namespace with a scoped ServiceAccount
 
 !!! info "Tenant ID and user identity are independent"
-    The tenant is always determined by the `X-Tenant` request header — **not** by the identity in the token. A ServiceAccount has a home namespace, but EvalHub does not use it. A real OpenShift User has no namespace at all. In both cases the caller must supply `X-Tenant` explicitly, and a matching RoleBinding must exist in that namespace.
+    The tenant is always determined by the `X-Tenant` request header — **not** by the identity in the token. A ServiceAccount has a home namespace, but EvalHub does not use it. A real OpenShift User or Group member has no namespace at all. In all cases the caller must supply `X-Tenant` explicitly, and a matching RoleBinding (for the User, ServiceAccount, or Group) must exist in that namespace.
 
 ## Prerequisites
 
@@ -108,14 +108,15 @@ If you remove the tenant label from a namespace, the operator will clean up the 
 
 The operator provisions the **job** ServiceAccount and RBAC in each labelled namespace. You still need to create a **tenant user** identity and bind it to evaluation permissions. This is the principal that API consumers use to authenticate when calling the EvalHub API.
 
-EvalHub supports two principal types:
+EvalHub supports three principal types:
 
 | Principal | Token source | RoleBinding `kind` | Has home namespace? |
 |-----------|-------------|-------------------|---------------------|
 | ServiceAccount | `oc create token` | `ServiceAccount` | Yes (where SA lives) |
 | OpenShift User | `oc whoami -t` (OAuth) | `User` | No |
+| OpenShift Group | `oc whoami -t` (OAuth, via member) | `Group` | No |
 
-In both cases the **tenant namespace is supplied by the caller via the `X-Tenant` header**, not inferred from the identity. A RoleBinding granting evaluation permissions must exist in that namespace.
+In all cases the **tenant namespace is supplied by the caller via the `X-Tenant` header**, not inferred from the identity. A RoleBinding granting evaluation permissions must exist in that namespace.
 
 === "ServiceAccount"
 
@@ -207,6 +208,61 @@ In both cases the **tenant namespace is supplied by the caller via the `X-Tenant
     !!! warning "Username must match exactly"
         The `name` field must match the OpenShift username as returned by `oc whoami`. The TokenReview resolves the OAuth token to this username, and the SAR engine matches it against the `kind: User` subject in the binding.
 
+=== "OpenShift Group"
+
+    Bind an OpenShift Group to evaluation permissions in the tenant namespace. All members of the group inherit access without needing individual RoleBindings. This is the recommended approach for teams.
+
+    **Create the Group and add members:**
+
+    ```bash
+    # Create the group (cluster-admin required)
+    oc adm groups new team-a-evaluators
+
+    # Add users to the group
+    oc adm groups add-users team-a-evaluators alice
+    oc adm groups add-users team-a-evaluators bob
+    ```
+
+    **Grant evaluation permissions to the group:**
+
+    ```bash
+    oc apply -f - <<EOF
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: evalhub-evaluator
+      namespace: team-a
+    rules:
+      - apiGroups: [trustyai.opendatahub.io]
+        resources: [evaluations, collections, providers]
+        verbs: [get, list, create, update, delete]
+      - apiGroups: [mlflow.kubeflow.org]
+        resources: [experiments]
+        verbs: [create, get]
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: evalhub-evaluator-group-binding
+      namespace: team-a
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: evalhub-evaluator
+    subjects:
+      - kind: Group
+        name: team-a-evaluators
+        apiGroup: rbac.authorization.k8s.io
+                                # no namespace field — Groups are cluster-scoped
+    EOF
+    ```
+
+    !!! info "Group membership propagation"
+        After adding a user to a group, the user must re-authenticate (`oc login`) to obtain a fresh OAuth token that includes the new group membership. Existing tokens may not reflect the updated groups until they are refreshed. Allow a few seconds for RBAC propagation after creating the RoleBinding.
+
+    !!! tip "Groups vs individual Users"
+        Group-based RBAC is preferred for teams because adding or removing a member from the group immediately changes their access across all namespaces where the group has a RoleBinding — no need to update individual bindings.
+
 !!! info "Virtual resources"
     The resources in the Role (`evaluations`, `collections`, `providers`, `status-events`) are virtual -- they don't correspond to actual Kubernetes API resources. EvalHub uses them as SAR targets to enforce fine-grained access control via the Kubernetes authorisation API.
 
@@ -243,6 +299,17 @@ EVALHUB_URL=$(oc get route evalhub -n opendatahub -o jsonpath='{.spec.host}')
 
     !!! warning "Use `oc whoami -t`, not `oc create token`"
         `oc create token` always creates a ServiceAccount token, even when run as a logged-in user. To get an OAuth token for a real OpenShift User, use `oc whoami -t` after logging in.
+
+=== "OpenShift Group"
+
+    ```bash
+    # Log in as a user who is a member of the group
+    oc login --username=alice --password=<password>
+
+    TOKEN=$(oc whoami -t)
+    ```
+
+    The TokenReview resolves this to `alice`, and the SAR check matches the `kind: Group` RoleBinding because the token includes group membership claims. The flow is identical to the User case — the only difference is which RoleBinding subject kind is matched.
 
 **List providers (scoped to team-a)** (or alternatively, use the [CLI](../getting-started/cli.md))**:**
 
@@ -355,7 +422,31 @@ The flow is identical for both principal types. The only difference is what the 
         EH-->>Job: 200 OK
     ```
 
-Note that the job pod always runs as the operator-provisioned job ServiceAccount (`evalhub-opendatahub-job`), regardless of whether the submitter was a User or a ServiceAccount.
+=== "OpenShift Group"
+
+    ```mermaid
+    sequenceDiagram
+        participant User as Group Member (alice)
+        participant EH as EvalHub API
+        participant K8s as Kubernetes API
+        participant Job as Eval Job Pod
+
+        User->>EH: POST /jobs (OAuth token + X-Tenant: team-a)
+        EH->>K8s: TokenReview (validate token)
+        K8s-->>EH: user=alice, groups=[team-a-evaluators, ...]
+        EH->>K8s: SAR (can alice create evaluations in team-a?)
+        K8s-->>EH: Allowed (kind:Group RoleBinding matched via group membership)
+        EH->>K8s: Create Job in team-a (SA: evalhub-opendatahub-job)
+        K8s-->>EH: Job created
+        EH-->>User: 202 Accepted
+
+        Job->>EH: POST /jobs/{id}/events (job SA token + X-Tenant: team-a)
+        EH->>K8s: SAR (can job SA create status-events in team-a?)
+        K8s-->>EH: Allowed
+        EH-->>Job: 200 OK
+    ```
+
+Note that the job pod always runs as the operator-provisioned job ServiceAccount (`evalhub-opendatahub-job`), regardless of whether the submitter was a User, Group member, or a ServiceAccount.
 
 ## RBAC reference
 
@@ -446,6 +537,23 @@ Test permissions for the tenant principal:
       --as=alice
     ```
 
+=== "OpenShift Group"
+
+    ```bash
+    # Test access via group membership (using --as-group)
+    oc auth can-i create evaluations.trustyai.opendatahub.io \
+      -n team-a \
+      --as=alice --as-group=team-a-evaluators
+
+    # Test cross-tenant denial
+    oc auth can-i create evaluations.trustyai.opendatahub.io \
+      -n team-b \
+      --as=alice --as-group=team-a-evaluators
+
+    # Verify group membership
+    oc get group team-a-evaluators -o jsonpath='{.users[*]}'
+    ```
+
 ### Check job execution
 
 ```bash
@@ -466,7 +574,7 @@ The SAR check is failing. Verify:
 
 1. The `X-Tenant` header matches a namespace where the principal has a RoleBinding
 2. The Role includes the correct resources and verbs
-3. The RoleBinding `subjects[].kind` matches the principal type (`ServiceAccount` or `User`)
+3. The RoleBinding `subjects[].kind` matches the principal type (`ServiceAccount`, `User`, or `Group`)
 
 === "ServiceAccount"
 
@@ -489,6 +597,29 @@ The SAR check is failing. Verify:
     ```bash
     oc get rolebinding evalhub-evaluator-binding -n team-a -o yaml | grep -A5 subjects
     ```
+
+=== "OpenShift Group"
+
+    ```bash
+    oc auth can-i create evaluations.trustyai.opendatahub.io \
+      -n team-a \
+      --as=alice --as-group=team-a-evaluators -v=6
+    ```
+
+    If the SAR check passes with `--as-group` but real requests still fail:
+
+    1. **Token doesn't include group claims** -- The user must re-login (`oc login`) after being added to the group. Existing OAuth tokens may not include the new group membership.
+    2. **Verify group membership:**
+
+        ```bash
+        oc get group team-a-evaluators -o jsonpath='{.users[*]}'
+        ```
+
+    3. **Confirm the RoleBinding subject kind is `Group`:**
+
+        ```bash
+        oc get rolebinding evalhub-evaluator-group-binding -n team-a -o yaml | grep -A5 subjects
+        ```
 
 ### Jobs not created in tenant namespace
 
