@@ -75,6 +75,15 @@ The operator automatically creates:
 | ClusterRoleBinding for auth-reviewer | cluster-wide | Allows SAR and TokenReview checks |
 | RoleBindings for jobs-writer, job-config | `opendatahub` | Allows creating Jobs and ConfigMaps |
 
+!!! note "NetworkPolicies in the EvalHub namespace"
+    The namespace where the EvalHub CR is deployed (e.g. `opendatahub` in the example snippet above) may have specific NetworkPolicies that restrict traffic from other namespaces. If tenant namespaces cannot reach the EvalHub API, check the applicable NetworkPolicies and ensure tenant namespaces are explicitly allowed. For example, in the `opendatahub` namespace you may need to label tenant namespaces with:
+
+    ```bash
+    oc label namespace team-a opendatahub.io/generated-namespace=true
+    ```
+
+    Review the NetworkPolicies in the EvalHub namespace (`oc get networkpolicy -n opendatahub`) to determine the exact label required.
+
 ## Step 2: Register tenant namespaces with the operator
 
 Create a namespace for each tenant and label it so the TrustyAI Operator's **namespace watcher** provisions job resources and RBAC automatically:
@@ -86,6 +95,10 @@ oc create namespace team-b
 # Label each namespace as an EvalHub tenant (value can be empty or e.g. "true")
 oc label namespace team-a evalhub.trustyai.opendatahub.io/tenant=
 oc label namespace team-b evalhub.trustyai.opendatahub.io/tenant=
+
+# Below labels only needed when the multi-tenancy EvalHub is deployed in the `opendatahub` namespace
+oc label namespace team-a opendatahub.io/generated-namespace=true
+oc label namespace team-b opendatahub.io/generated-namespace=true
 ```
 
 The operator watches for namespaces with the label `evalhub.trustyai.opendatahub.io/tenant`. When it sees a labelled namespace (other than the EvalHub instance namespace), it automatically creates in that namespace:
