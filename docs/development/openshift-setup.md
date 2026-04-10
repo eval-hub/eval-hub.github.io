@@ -153,11 +153,14 @@ EvalHub requires an explicit database configuration via `spec.database.type`. Ch
       providers:
         - lm-evaluation-harness
         - garak
+        - garak-kfp
         - guidellm
         - lighteval
-        - ragas
+        - ibm-clear
       collections:
         - leaderboard-v2
+        - safety-and-fairness-v1
+        - toxicity-and-ethical-principles
     EOF
     ```
 
@@ -191,11 +194,14 @@ EvalHub requires an explicit database configuration via `spec.database.type`. Ch
       providers:
         - lm-evaluation-harness
         - garak
+        - garak-kfp
         - guidellm
         - lighteval
-        - ragas
+        - ibm-clear
       collections:
         - leaderboard-v2
+        - safety-and-fairness-v1
+        - toxicity-and-ethical-principles
     EOF
     ```
 
@@ -461,6 +467,17 @@ spec:
   replicas: 1
   database:
     type: sqlite
+  providers:
+    - lm-evaluation-harness
+    - garak
+    - garak-kfp
+    - guidellm
+    - lighteval
+    - ibm-clear
+  collections:
+    - leaderboard-v2
+    - safety-and-fairness-v1
+    - toxicity-and-ethical-principles
 EOF
 
 # Check if custom changes are applied
@@ -571,6 +588,17 @@ spec:
   replicas: 1
   database:
     type: sqlite
+  providers:
+    - lm-evaluation-harness
+    - garak
+    - garak-kfp
+    - guidellm
+    - lighteval
+    - ibm-clear
+  collections:
+    - leaderboard-v2
+    - safety-and-fairness-v1
+    - toxicity-and-ethical-principles
 EOF
 ```
 

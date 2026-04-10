@@ -64,6 +64,17 @@ spec:
   database:
     type: postgresql
     secret: evalhub-db-credentials
+  providers:
+    - lm-evaluation-harness
+    - garak
+    - garak-kfp
+    - guidellm
+    - lighteval
+    - ibm-clear
+  collections:
+    - leaderboard-v2
+    - safety-and-fairness-v1
+    - toxicity-and-ethical-principles
 ```
 
 The operator automatically creates:

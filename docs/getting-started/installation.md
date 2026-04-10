@@ -42,9 +42,14 @@ providers = client.providers.list()
       providers:
         - lm-evaluation-harness
         - garak
+        - garak-kfp
         - guidellm
+        - lighteval
+        - ibm-clear
       collections:
         - leaderboard-v2
+        - safety-and-fairness-v1
+        - toxicity-and-ethical-principles
     EOF
 
     # PostgreSQL (production): create the credentials secret first, then the CR.
@@ -72,9 +77,14 @@ providers = client.providers.list()
       providers:
         - lm-evaluation-harness
         - garak
+        - garak-kfp
         - guidellm
+        - lighteval
+        - ibm-clear
       collections:
         - leaderboard-v2
+        - safety-and-fairness-v1
+        - toxicity-and-ethical-principles
     EOF
     ```
 
