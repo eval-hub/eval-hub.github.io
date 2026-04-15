@@ -71,6 +71,18 @@ export default defineConfig({
                 { label: 'Examples', slug: 'adapters/lighteval/examples' },
               ],
             },
+            {
+              label: 'MTEB',
+              items: [
+                { label: 'Overview', slug: 'adapters/mteb' },
+              ],
+            },
+            {
+              label: 'IBM CLEAR',
+              items: [
+                { label: 'Overview', slug: 'adapters/clear' },
+              ],
+            },
           ],
         },
         {
