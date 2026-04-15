@@ -43,14 +43,14 @@ EvalHub consists of three components:
 
 ## Available Adapters
 
-| Adapter | Provider | What it measures |
-|---------|----------|------------------|
-| **lm-eval-harness** | `lm_evaluation_harness` | 167 benchmarks across 12 categories (MMLU, HellaSwag, GSM8K, ...) |
-| **GuideLLM** | `guidellm` | Inference performance: TTFT, ITL, throughput, latency |
-| **LightEval** | `lighteval` | Language model benchmarks: accuracy, exact match |
-| **Garak** | `garak` | Safety and vulnerability scanning (OWASP Top 10) |
-| **MTEB** | `mteb` | Embedding evaluation: STS, retrieval, classification |
-| **IBM CLEAR** | `ibm-clear` | Agentic trace evaluation: LLM-as-judge failure pattern analysis on JSON traces |
+| Adapter | Provider | Support Tier | What it measures |
+|---------|----------|:------------:|------------------|
+| **lm-eval-harness** | `lm_evaluation_harness` | Core | 167 benchmarks across 12 categories (MMLU, HellaSwag, GSM8K, ...) |
+| **GuideLLM** | `guidellm` | Core | Inference performance: TTFT, ITL, throughput, latency |
+| **LightEval** | `lighteval` | Core | Language model benchmarks: accuracy, exact match |
+| **Garak** | `garak` | Core | Safety and vulnerability scanning (OWASP Top 10) |
+| **IBM CLEAR** | `ibm-clear` | Validated | Agentic trace evaluation: LLM-as-judge failure pattern analysis on JSON traces |
+| **MTEB** | `mteb` | Community | Embedding evaluation: STS, retrieval, classification |
 
 ## Quick Taste
 
