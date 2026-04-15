@@ -72,12 +72,6 @@ export default defineConfig({
               ],
             },
             {
-              label: 'MTEB',
-              items: [
-                { label: 'Overview', slug: 'adapters/mteb' },
-              ],
-            },
-            {
               label: 'IBM CLEAR',
               items: [
                 { label: 'Overview', slug: 'adapters/clear' },
