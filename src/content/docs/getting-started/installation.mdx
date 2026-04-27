@@ -8,7 +8,8 @@ Install the EvalHub server and a client to interact with it.
 
 ## Prerequisites
 
-- **Python 3.11+**
+- **Python 3.11+** (client SDK and CLI)
+- **Go 1.22+** (building the server from source)
 - **Kubernetes/OpenShift cluster** (for production deployment)
 - **kubectl** or **oc** CLI configured for your cluster
 
@@ -127,21 +128,43 @@ See [OpenShift Setup](/deployment/openshift-setup/) for a full description of al
 
 <TabItem label="Local Development">
 
-Build and run from source:
+Build and run from source. Requires **Go 1.22+** and **Make**.
 
 ```bash
 git clone https://github.com/eval-hub/eval-hub.git
 cd eval-hub
 make build
-./bin/eval-hub
+./bin/eval-hub --local
 ```
 
+The `--local` flag disables authentication and enables CORS, which is required for
+local development — without it, all endpoints except `/api/v1/health` return `401 Unauthorized`.
+
 The server starts at `http://localhost:8080` with SQLite in-memory storage.
+
+**Custom port:** If port 8080 is already in use, set the `PORT` environment variable:
+
+```bash
+PORT=8090 ./bin/eval-hub --local
+```
+
+**Persistent storage:** By default the server uses in-memory SQLite and all data is
+lost when the process stops. To persist data across restarts, point `DB_URL` at a file:
+
+```bash
+DB_URL="file:./data/eval-hub.db?cache=shared" ./bin/eval-hub --local
+```
 
 </TabItem>
 </Tabs>
 
 ## Verify the Installation
+
+For local development servers, first point the CLI at your server:
+
+```bash
+evalhub config set base_url http://localhost:8080
+```
 
 <Tabs syncKey="interface">
 <TabItem label="CLI">
