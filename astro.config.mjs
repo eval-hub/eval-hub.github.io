@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightClientMermaid from '@pasqal-io/starlight-client-mermaid';
+import starlightBlog from 'starlight-blog';
 
 // For fork previews, set base to the repo name. Remove before merging upstream.
 const base = process.env.ASTRO_BASE || undefined;
@@ -11,7 +12,17 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'EvalHub',
-      plugins: [starlightClientMermaid()],
+      plugins: [
+        starlightBlog({
+          authors: {
+            evalhub: {
+              name: 'EvalHub Team',
+              url: 'https://github.com/eval-hub',
+            },
+          },
+        }),
+        starlightClientMermaid(),
+      ],
       customCss: ['./src/styles/custom.css'],
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/eval-hub' },

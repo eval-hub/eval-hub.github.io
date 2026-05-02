@@ -6,14 +6,15 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview --host 0.0.0.0"
   },
   "license": "Apache-2.0",
   "type": "module",
   "dependencies": {
     "@astrojs/starlight": "^0.38.3",
     "@pasqal-io/starlight-client-mermaid": "^0.1.0",
-    "astro": "^6.1.5",
-    "sharp": "^0.34.5"
+    "astro": "^6.1.6",
+    "sharp": "^0.34.5",
+    "starlight-blog": "^0.26.1"
   }
 }
