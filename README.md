@@ -4,7 +4,7 @@ Documentation site for EvalHub.
 
 ## Overview
 
-This repository contains the source for the [EvalHub documentation](https://eval-hub.github.io) built with MkDocs Material.
+This repository contains the source for the [EvalHub documentation](https://eval-hub.github.io) built with Astro/Starlight.
 
 ## Deployment
 
