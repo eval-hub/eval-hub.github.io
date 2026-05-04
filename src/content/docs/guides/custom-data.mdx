@@ -175,34 +175,9 @@ The init container expects credentials from a **Kubernetes Secret** mounted at `
    </TabItem>
    <TabItem label="Python SDK">
 
-   ```python {16-22}
-   import os
-   from evalhub import SyncEvalHubClient
-   from evalhub.models.api import (
-       ModelConfig, BenchmarkConfig, JobSubmissionRequest, TestDataRef, S3TestDataRef
-   )
-
-   client = SyncEvalHubClient(base_url=os.environ["EVALHUB_URL"])
-
-   job = client.jobs.submit(JobSubmissionRequest(
-       name="s3-data-eval",
-       model=ModelConfig(url="http://your-model:8000/v1", name="my-model"),
-       benchmarks=[
-           BenchmarkConfig(
-               id="your_benchmark_id",
-               provider_id="your_provider_id",
-               test_data_ref=TestDataRef(
-                   s3=S3TestDataRef(
-                       bucket="evalhub-test",
-                       key="dataset/",
-                       secret_ref="evalhub-s3-credentials",
-                   )
-               ),
-           )
-       ],
-   ))
-   print(f"Job submitted: {job.id}")
-   ```
+   :::caution
+   The Python SDK does not yet support the `test_data_ref` field. The `TestDataRef` and `S3TestDataRef` classes have not been implemented in `evalhub.models.api`. Use the **CLI** or **REST API** tab instead to submit jobs with custom S3 test data.
+   :::
 
    </TabItem>
    <TabItem label="REST API">
