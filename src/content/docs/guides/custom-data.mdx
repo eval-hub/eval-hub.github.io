@@ -160,17 +160,7 @@ The init container expects credentials from a **Kubernetes Secret** mounted at `
    <Tabs>
    <TabItem label="CLI">
 
-   ```bash {7-9}
-   evalhub eval run \
-     --name s3-data-eval \
-     --model-url http://your-model:8000/v1 \
-     --model-name my-model \
-     --provider your_provider_id \
-     --benchmark your_benchmark_id \
-     --test-data-s3-bucket evalhub-test \
-     --test-data-s3-key dataset/ \
-     --test-data-s3-secret evalhub-s3-credentials
-   ```
+   The CLI does not currently support S3 test data configuration. Use the **REST API** or **Python SDK** tab instead.
 
    </TabItem>
    <TabItem label="Python SDK">
