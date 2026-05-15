@@ -2,13 +2,15 @@
 title: "MCP"
 ---
 
-This guide provides reference details for the MCP server to interact with EvalHub.
+For comprehensive MCP documentation including installation, quick-start guides, and full API reference, see the dedicated [MCP section](/mcp/).
 
-## Prerequisites
+## Using the EvalHub CLI as an MCP Server
 
-The following installation steps assumes you want to use a dedicated "agent" ServiceAccount when using [EvalHub multi-tenant](/architecture/multi-tenancy/) deployed on an OpenShift cluster.
+If you already have the [EvalHub CLI](/guides/cli/) installed and configured with profiles, you can use it as the MCP server directly. This is useful when EvalHub is running on a Kubernetes/OpenShift cluster with [multi-tenant](/architecture/multi-tenancy/) RBAC.
 
-Create a `team-a-agent` ServiceAccount:
+### Prerequisites
+
+Create a dedicated ServiceAccount for the agent:
 
 ```sh
 oc apply -f - <<EOF
@@ -20,7 +22,7 @@ metadata:
 EOF
 ```
 
-Grant `team-a-agent` ServiceAccount the required permissions:
+Grant the ServiceAccount the required permissions:
 
 ```sh
 oc apply -f - <<EOF
@@ -49,13 +51,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: team-a-agent
-    namespace: team-a       # required for ServiceAccount subjects
+    namespace: team-a
 EOF
-``` 
+```
 
-## Installation of MCP in the AI Agent
+### Configure and register
 
-Set "agent" ServiceAccount values in a dedicated profile for the [EvalHub CLI](/guides/cli/):
+Set up an "agent" configuration profile for the CLI:
 
 ```sh
 evalhub --profile agent config set base_url https://evalhub-opendatahub.apps.(...).openshiftapps.com
@@ -63,48 +65,30 @@ evalhub --profile agent config set tenant team-a
 evalhub --profile agent config set token $(oc create token team-a-agent -n team-a --duration=8760h)
 ```
 
-This makes an "agent" configuration profile for the CLI:
-
-```yaml
-active_profile: default
-profiles:
-  agent:
-    base_url: https://evalhub-opendatahub.apps.(...).openshiftapps.com
-    tenant: team-a
-    token: ...
-```
-
-Then add MCP "evalhub" via `evalhub` CLI (this example assumes Claude as the AI Agent):
+Register MCP with Claude Code:
 
 ```sh
 claude mcp add evalhub -- evalhub --profile agent mcp
 ```
 
-Please notice this adds the mcp to the current (Claude's) Project, to add globally you need:
-- use `-s user` when adding MCP so to install the MCP globally in `~/.claude.json` for all `projects`
-- you need evalhub CLI available system-wide
+To install globally (for all Claude Code projects), add `-s user`:
 
-## Troubleshooting
+```sh
+claude mcp add -s user evalhub -- evalhub --profile agent mcp
+```
 
-Ensure evalhub "agent" configuration is healthy:
+### Troubleshooting
+
+Verify the EvalHub connection is healthy:
 
 ```sh
 evalhub --profile agent health
 ```
 
-Use evalhub "agent" configuration with MCP Inspector by starting it where the evalhub CLI is available:
+Use MCP Inspector to debug:
 
 ```sh
 npx @modelcontextprotocol/inspector
 ```
 
-Use:
-
-```
-command:
-evalhub
-
-arguments:
---profile agent mcp
-```
-
+Configure with command `evalhub` and arguments `--profile agent mcp`.

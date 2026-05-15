@@ -79,6 +79,19 @@ export default defineConfig({
           ],
         },
         {
+          label: 'MCP',
+          items: [
+            { label: 'Overview', slug: 'mcp' },
+            { label: 'Installation', slug: 'mcp/installation' },
+            { label: 'Quick Start', slug: 'mcp/quickstart' },
+            { label: 'Configuration', slug: 'mcp/configuration' },
+            { label: 'Tool Reference', slug: 'mcp/tools' },
+            { label: 'Resource Reference', slug: 'mcp/resources' },
+            { label: 'Prompt Reference', slug: 'mcp/prompts' },
+            { label: 'Troubleshooting', slug: 'mcp/troubleshooting' },
+          ],
+        },
+        {
           label: 'Adapters',
           items: [
             {

@@ -1,0 +1,259 @@
+---
+title: "Quick Start"
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Connect your AI assistant to EvalHub in under 5 steps.
+
+## Claude Code
+
+<Tabs>
+<TabItem label="stdio (Recommended)">
+
+The stdio transport is simplest for individual use — Claude Code manages the server process automatically.
+
+<Steps>
+
+1. **Install the MCP server**
+
+   ```bash
+   brew install evalhub-mcp
+   ```
+
+   Or [download the binary](/mcp/installation/) for your platform.
+
+2. **Set your EvalHub credentials**
+
+   ```bash
+   export EVALHUB_BASE_URL="https://<your-evalhub-instance>"
+   export EVALHUB_TOKEN="<your-token>"
+   export EVALHUB_TENANT="<your-tenant>"
+   ```
+
+3. **Register the server with Claude Code**
+
+   ```bash
+   claude mcp add evalhub --transport stdio -- evalhub-mcp
+   ```
+
+4. **Verify the connection**
+
+   ```bash
+   claude mcp list
+   ```
+
+   `evalhub` should appear with transport `stdio` and status available.
+
+5. **Start using it**
+
+   Open a Claude Code conversation and try:
+
+   ```
+   List the available evaluation providers from EvalHub.
+   ```
+
+</Steps>
+
+</TabItem>
+<TabItem label="HTTP">
+
+Use HTTP transport when the MCP server should run as a shared service (e.g. on a remote machine or for team use).
+
+<Steps>
+
+1. **Install the MCP server**
+
+   ```bash
+   brew install evalhub-mcp
+   ```
+
+2. **Start the server**
+
+   ```bash
+   export EVALHUB_BASE_URL="https://<your-evalhub-instance>"
+   export EVALHUB_TOKEN="<your-token>"
+   export EVALHUB_TENANT="<your-tenant>"
+
+   evalhub-mcp --transport http --host localhost --port 3001
+   ```
+
+   For dev environments with self-signed certificates:
+
+   ```bash
+   evalhub-mcp --transport http --host localhost --port 3001 --insecure
+   ```
+
+3. **Register with Claude Code** (in a separate terminal)
+
+   ```bash
+   claude mcp add evalhub --transport http http://localhost:3001
+   ```
+
+4. **Verify the connection**
+
+   ```bash
+   claude mcp list
+   ```
+
+5. **Start using it**
+
+   Open a Claude Code conversation and try:
+
+   ```
+   List the available evaluation providers from EvalHub.
+   ```
+
+</Steps>
+
+</TabItem>
+</Tabs>
+
+### Using the EvalHub CLI instead
+
+If you have the [EvalHub CLI](/guides/cli/) installed, you can use it as the MCP server directly:
+
+```bash
+# Configure a CLI profile for the agent
+evalhub --profile agent config set base_url https://<your-evalhub-instance>
+evalhub --profile agent config set token <your-token>
+evalhub --profile agent config set tenant <your-tenant>
+
+# Register with Claude Code
+claude mcp add evalhub -- evalhub --profile agent mcp
+```
+
+## VS Code / GitHub Copilot
+
+<Tabs>
+<TabItem label="stdio (Recommended)">
+
+<Steps>
+
+1. **Install the MCP server**
+
+   ```bash
+   brew install evalhub-mcp
+   ```
+
+2. **Set your EvalHub credentials**
+
+   ```bash
+   export EVALHUB_BASE_URL="https://<your-evalhub-instance>"
+   export EVALHUB_TOKEN="<your-token>"
+   export EVALHUB_TENANT="<your-tenant>"
+   ```
+
+3. **Add to VS Code settings**
+
+   Open your VS Code `settings.json` (Cmd/Ctrl+Shift+P → "Preferences: Open User Settings (JSON)") and add:
+
+   ```json
+   {
+     "mcp": {
+       "servers": {
+         "evalhub": {
+           "command": "evalhub-mcp",
+           "args": [],
+           "env": {
+             "EVALHUB_BASE_URL": "https://<your-evalhub-instance>",
+             "EVALHUB_TOKEN": "<your-token>",
+             "EVALHUB_TENANT": "<your-tenant>"
+           }
+         }
+       }
+     }
+   }
+   ```
+
+4. **Reload VS Code**
+
+   Restart the window or run "Developer: Reload Window" from the command palette.
+
+5. **Start using it**
+
+   In GitHub Copilot Chat, ask:
+
+   ```
+   @evalhub List the available evaluation providers.
+   ```
+
+</Steps>
+
+</TabItem>
+<TabItem label="HTTP">
+
+<Steps>
+
+1. **Install and start the MCP server**
+
+   ```bash
+   export EVALHUB_BASE_URL="https://<your-evalhub-instance>"
+   export EVALHUB_TOKEN="<your-token>"
+   export EVALHUB_TENANT="<your-tenant>"
+
+   evalhub-mcp --transport http --host localhost --port 3001
+   ```
+
+2. **Add to VS Code settings**
+
+   ```json
+   {
+     "mcp": {
+       "servers": {
+         "evalhub": {
+           "url": "http://localhost:3001"
+         }
+       }
+     }
+   }
+   ```
+
+3. **Reload VS Code**
+
+   Restart the window or run "Developer: Reload Window".
+
+4. **Verify**
+
+   Open GitHub Copilot Chat and ask about available tools.
+
+5. **Start using it**
+
+   ```
+   @evalhub List the available benchmarks.
+   ```
+
+</Steps>
+
+</TabItem>
+</Tabs>
+
+## What to Try Next
+
+Once connected, try these example prompts with your AI assistant:
+
+**Browse what's available:**
+```
+Show me all evaluation providers and their benchmarks.
+```
+
+**Submit an evaluation:**
+```
+Submit an evaluation named "my-first-eval" using the leaderboard-v2 collection
+against my model at http://localhost:11434/v1 named qwen2.5:1.5b.
+```
+
+**Check status:**
+```
+What's the status of my evaluation job?
+```
+
+**Follow a structured workflow:**
+```
+Use the edd_workflow prompt for a RAG application.
+```
+
+For the full list of available tools, resources, and prompts, see the reference pages:
+- [Tools](/mcp/tools/)
+- [Resources](/mcp/resources/)
+- [Prompts](/mcp/prompts/)
