@@ -1,86 +1,150 @@
 ---
-title: "EvalHub"
+title: EvalHub
+description: LLM evaluation on Kubernetes. Consistent, reproducible, CI-ready.
+template: splash
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { LinkButton, CardGrid, Card, Code } from '@astrojs/starlight/components';
+import mascot from '../../assets/evalhub-mascot.png';
 
-Open source evaluation orchestration platform for Large Language Models.
+<style>{`
+  /* hide the Starlight-injected page title panel (contains h1#_top) */
+  .content-panel:has(#_top) {
+    display: none;
+  }
+  /* pull the splash content up — Starlight adds a large top gap on this template */
+  .sl-markdown-content {
+    padding-top: 0 !important;
+  }
+  [data-has-hero] .hero {
+    padding-block: 0 !important;
+  }
+  .eh-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: center;
+    padding: 1rem 0 2.5rem;
+  }
+  .eh-hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .eh-mascot {
+    width: 260px;
+    height: auto;
+  }
+  .eh-title {
+    font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+    line-height: 1.1;
+    margin: 0;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: -0.02em;
+  }
+  .eh-tagline {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+    font-style: italic;
+    margin: 0;
+    max-width: 38ch;
+  }
+  .eh-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+  }
+  /* smaller button radius, matching mise */
+  .eh-buttons a {
+    border-radius: 4px !important;
+  }
+  /* rounded corners on all code blocks */
+  .eh-hero-code figure,
+  .expressive-code figure {
+    margin: 0;
+    border-radius: 8px !important;
+    overflow: hidden;
+  }
+  .expressive-code .frame {
+    border-radius: 8px !important;
+  }
+  .eh-divider {
+    border: none;
+    border-top: 1px solid var(--sl-color-gray-5);
+    margin: 3rem 0 2.5rem;
+  }
+  .eh-features-label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sl-color-accent);
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+  }
+  @media (max-width: 60rem) {
+    .eh-hero {
+      grid-template-columns: 1fr;
+      padding: 2rem 0;
+    }
+  }
+`}</style>
 
-EvalHub provides a unified way to evaluate LLMs across multiple frameworks — submit evaluations via CLI, Python SDK, or REST API and let EvalHub handle orchestration, tracking, and artifact storage. It runs locally for development and scales on Kubernetes for production.
-
-## Key Features
-
-<CardGrid>
-  <Card title="Multi-framework" icon="puzzle">
-    Evaluate with LightEval, GuideLLM, lm-eval-harness, Garak, MTEB, IBM CLEAR, or bring your own framework.
-  </Card>
-  <Card title="Kubernetes-native" icon="rocket">
-    Each evaluation runs as an isolated Kubernetes Job with automatic lifecycle management.
-  </Card>
-  <Card title="Benchmark Collections" icon="list-format">
-    Group benchmarks with weighted scoring for domain-specific evaluations in a single API call.
-  </Card>
-  <Card title="MLflow Integration" icon="open-book">
-    Track experiments, compare runs, and persist metrics to MLflow automatically.
-  </Card>
-</CardGrid>
-
-- **Versioned REST API** (v1) with OpenAPI specification
-- **Provider registry** with benchmark discovery
-- **OCI artifact persistence** for evaluation results
-- **Prometheus metrics** and OpenTelemetry tracing
-- **Multi-tenancy** with namespace-based isolation and Kubernetes RBAC
-
-## How It Works
-
-![EvalHub architecture overview](/images/diagrams/index-architecture.svg)
-
-EvalHub consists of three components:
-
-- **[Server](https://github.com/eval-hub/eval-hub)** — Go REST API that orchestrates evaluation jobs, manages providers, and stores results (SQLite or PostgreSQL)
-- **[SDK](https://github.com/eval-hub/eval-hub-sdk)** — Python client library, CLI, and adapter framework for building integrations
-- **[Contrib](https://github.com/eval-hub/eval-hub-contrib)** — Community-contributed framework adapters packaged as container images
-
-There are some animatated diagrams that show the flow of data through the system.
-
-- [Job Workflow](/images/diagrams/eval-hub-eval-job-flow.html) - shows the flow of data through the system when an evaluation job is run.
-- [MCP EDD Workflow](/images/diagrams/eval-hub-mcp-edd-flow.html) - shows the flow of data through the system when an MCP EDD job is run.
-
-## Available Adapters
-
-| Adapter | Provider | Support Tier | What it measures |
-|---------|----------|:------------:|------------------|
-| **lm-eval-harness** | `lm_evaluation_harness` | Core | 167 benchmarks across 12 categories (MMLU, HellaSwag, GSM8K, ...) |
-| **LightEval** | `lighteval` | Core | Language model benchmarks: accuracy, exact match |
-| **Garak** | `garak` | Core | Safety and vulnerability scanning (OWASP Top 10) |
-| **GuideLLM** | `guidellm` | Validated | Inference performance: TTFT, ITL, throughput, latency |
-| **IBM CLEAR** | `ibm-clear` | Validated | Agentic trace evaluation: LLM-as-judge failure pattern analysis on JSON traces |
-| **MTEB** | `mteb` | Community | Embedding evaluation: STS, retrieval, classification |
-
-## Quick Taste
-
-```bash
+<div class="eh-hero">
+  <div class="eh-hero-text">
+    <img src={mascot.src} alt="EvalHub mascot" class="eh-mascot" />
+    <h1 class="eh-title">AI evaluation,<br />done right.</h1>
+    <p class="eh-tagline">
+      EvalHub orchestrates reproducible LLM evaluations on Kubernetes —
+      broad benchmark coverage, curated domain collections, and native CI/CD support.
+    </p>
+    <div class="eh-buttons">
+      <LinkButton href="/getting-started/installation/">Getting Started</LinkButton>
+      <LinkButton href="https://github.com/eval-hub" variant="secondary">GitHub</LinkButton>
+    </div>
+  </div>
+  <div class="eh-hero-code">
+    <Code frame="terminal" lang="bash" code={`# Install the CLI
 pip install "eval-hub-sdk[cli]"
 
-evalhub eval run \
-  --name my-first-eval \
-  --model-url http://localhost:11434/v1 \
-  --model-name qwen2.5:1.5b \
-  --provider lm_evaluation_harness \
-  --benchmark mmlu \
-  --wait
-```
+# Connect to your cluster
+evalhub config set base_url https://evalhub.apps.cluster.example.com
+evalhub config set token $(kubectl create token evalhub-sa -n evalhub)
 
-## Get Started
+# Run an evaluation
+evalhub eval run \\
+  --model-url  https://llama3.example.com/v1 \\
+  --model-name meta-llama/Llama-3.2-8B-Instruct \\
+  --benchmark  mmlu --wait
+
+# Job submitted: eval-a1b2c3d4
+# ✓ completed  mmlu       acc       0.723
+# ✓ completed  hellaswag  acc_norm  0.801`} />
+  </div>
+</div>
+
+<hr class="eh-divider" />
+
+<p class="eh-features-label">What's inside</p>
 
 <CardGrid>
-  <LinkCard title="Installation" href="/getting-started/installation/" description="Install the server and a client" />
-  <LinkCard title="Quick Start" href="/getting-started/quickstart/" description="Run your first evaluation step by step" />
-  <LinkCard title="CLI Reference" href="/guides/cli/" description="Full command reference for the evalhub CLI" />
-  <LinkCard title="Python SDK" href="/reference/sdk-client/" description="Programmatic access with sync and async clients" />
-  <LinkCard title="MCP support" href="/mcp/index" description="Exposing EvalHub as a MCP server" />
+  <Card title="Multi-framework benchmarks" icon="star">
+    Evaluate against MMLU, HellaSwag, GSM8K, and more via lm-evaluation-harness,
+    Garak, GuideLLM, and LightEval — all from a single CLI command.
+  </Card>
+  <Card title="Domain collections" icon="open-book">
+    Curated benchmark sets for healthcare, finance, and automotive safety with
+    weighted scoring and configurable pass thresholds.
+  </Card>
+  <Card title="Kubernetes-native" icon="rocket">
+    Each evaluation runs as an isolated Kubernetes Job. Multi-tenant, OCI artifact
+    storage, and MLflow experiment tracking built in.
+  </Card>
+  <Card title="CI/CD ready" icon="github">
+    Block on results with <code>--wait</code>, export JSON for downstream tooling,
+    and automate with the Python SDK or REST API.
+  </Card>
 </CardGrid>
-
-## License
-
-Apache 2.0 — see [LICENSE](https://github.com/eval-hub/eval-hub/blob/main/LICENSE).

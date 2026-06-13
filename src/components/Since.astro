@@ -1,0 +1,44 @@
+---
+import { Image } from 'astro:assets';
+import mascot from '../assets/evalhub-mascot-badge.png';
+
+interface Props {
+  version: string;
+}
+const { version } = Astro.props;
+---
+
+<span class="since-badge">
+  <Image src={mascot} alt="" width={22} height={20} class="since-mascot" aria-hidden="true" />
+  <span class="since-text">since&nbsp;{version}</span>
+</span>
+
+<style>
+  .since-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.15em 0.65em 0.15em 0.3em;
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 40%, transparent);
+    background: color-mix(in srgb, var(--sl-color-accent) 8%, transparent);
+    border-radius: 999px;
+    white-space: nowrap;
+    vertical-align: middle;
+    line-height: 1.5;
+  }
+
+  .since-mascot {
+    display: block;
+    height: 1.3rem;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .since-text {
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--sl-font-mono);
+    letter-spacing: 0.03em;
+    color: var(--sl-color-accent-high);
+  }
+</style>

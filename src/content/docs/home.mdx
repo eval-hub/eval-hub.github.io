@@ -1,0 +1,86 @@
+---
+title: "EvalHub"
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Open source evaluation orchestration platform for Large Language Models.
+
+EvalHub provides a unified way to evaluate LLMs across multiple frameworks — submit evaluations via CLI, Python SDK, or REST API and let EvalHub handle orchestration, tracking, and artifact storage. It runs locally for development and scales on Kubernetes for production.
+
+## Key Features
+
+<CardGrid>
+  <Card title="Multi-framework" icon="puzzle">
+    Evaluate with LightEval, GuideLLM, lm-eval-harness, Garak, MTEB, IBM CLEAR, or bring your own framework.
+  </Card>
+  <Card title="Kubernetes-native" icon="rocket">
+    Each evaluation runs as an isolated Kubernetes Job with automatic lifecycle management.
+  </Card>
+  <Card title="Benchmark Collections" icon="list-format">
+    Group benchmarks with weighted scoring for domain-specific evaluations in a single API call.
+  </Card>
+  <Card title="MLflow Integration" icon="open-book">
+    Track experiments, compare runs, and persist metrics to MLflow automatically.
+  </Card>
+</CardGrid>
+
+- **Versioned REST API** (v1) with OpenAPI specification
+- **Provider registry** with benchmark discovery
+- **OCI artifact persistence** for evaluation results
+- **Prometheus metrics** and OpenTelemetry tracing
+- **Multi-tenancy** with namespace-based isolation and Kubernetes RBAC
+
+## How It Works
+
+![EvalHub architecture overview](/images/diagrams/index-architecture.svg)
+
+EvalHub consists of three components:
+
+- **[Server](https://github.com/eval-hub/eval-hub)** — Go REST API that orchestrates evaluation jobs, manages providers, and stores results (SQLite or PostgreSQL)
+- **[SDK](https://github.com/eval-hub/eval-hub-sdk)** — Python client library, CLI, and adapter framework for building integrations
+- **[Contrib](https://github.com/eval-hub/eval-hub-contrib)** — Community-contributed framework adapters packaged as container images
+
+There are some animatated diagrams that show the flow of data through the system.
+
+- [Job Workflow](/images/diagrams/eval-hub-eval-job-flow.html) - shows the flow of data through the system when an evaluation job is run.
+- [MCP EDD Workflow](/images/diagrams/eval-hub-mcp-edd-flow.html) - shows the flow of data through the system when an MCP EDD job is run.
+
+## Available Adapters
+
+| Adapter | Provider | Support Tier | What it measures |
+|---------|----------|:------------:|------------------|
+| **lm-eval-harness** | `lm_evaluation_harness` | Core | 167 benchmarks across 12 categories (MMLU, HellaSwag, GSM8K, ...) |
+| **LightEval** | `lighteval` | Core | Language model benchmarks: accuracy, exact match |
+| **Garak** | `garak` | Core | Safety and vulnerability scanning (OWASP Top 10) |
+| **GuideLLM** | `guidellm` | Validated | Inference performance: TTFT, ITL, throughput, latency |
+| **IBM CLEAR** | `ibm-clear` | Validated | Agentic trace evaluation: LLM-as-judge failure pattern analysis on JSON traces |
+| **MTEB** | `mteb` | Community | Embedding evaluation: STS, retrieval, classification |
+
+## Quick Taste
+
+```bash
+pip install "eval-hub-sdk[cli]"
+
+evalhub eval run \
+  --name my-first-eval \
+  --model-url http://localhost:11434/v1 \
+  --model-name qwen2.5:1.5b \
+  --provider lm_evaluation_harness \
+  --benchmark mmlu \
+  --wait
+```
+
+## Get Started
+
+<CardGrid>
+  <LinkCard title="Installation" href="/getting-started/installation/" description="Install the server and a client" />
+  <LinkCard title="Quick Start" href="/getting-started/quickstart/" description="Run your first evaluation step by step" />
+  <LinkCard title="CLI Reference" href="/guides/cli/" description="Full command reference for the evalhub CLI" />
+  <LinkCard title="Python SDK" href="/reference/sdk-client/" description="Programmatic access with sync and async clients" />
+  <LinkCard title="MCP support" href="/mcp/index" description="Exposing EvalHub as a MCP server" />
+</CardGrid>
+
+## License
+
+Apache 2.0 — see [LICENSE](https://github.com/eval-hub/eval-hub/blob/main/LICENSE).

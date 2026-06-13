@@ -1,0 +1,148 @@
+---
+title: "Quick Start: Claude Code"
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Connect the EvalHub MCP server to Claude Code in under 5 steps.
+
+## Option A: stdio transport (recommended)
+
+Stdio is the simplest setup — Claude Code launches the MCP server as a child process.
+
+### Using the standalone binary
+
+<Steps>
+
+1. **Install the MCP server**
+
+   Download the binary, see [Install the MCP server](/mcp/installation/#install-the-mcp-server).
+
+2. **Create a config file**
+
+   ```bash
+   mkdir -p ~/.evalhub
+   cat > ~/.evalhub/config.yaml <<EOF
+   base_url: "https://evalhub.apps.my-cluster.example.com"
+   token: "YOUR_TOKEN"
+   tenant: "my-team"
+   EOF
+   ```
+
+   Replace `base_url` and `token` with your EvalHub instance details. For local mode, use `http://localhost:8080` and omit the token.
+
+3. **Register the MCP server with Claude Code**
+
+   ```bash
+   claude mcp add evalhub -- evalhub-mcp --config ~/.evalhub/config.yaml
+   ```
+
+4. **Verify the connection**
+
+   Start Claude Code and ask:
+
+   ```text
+   List the available evaluation providers
+   ```
+
+   Claude should query the `evalhub://providers` resource and return the list of registered providers.
+
+</Steps>
+
+### Using the Python SDK
+
+<Steps>
+
+1. **Install the SDK with MCP support**
+
+   ```bash
+   pip install "eval-hub-sdk[mcp]"
+   ```
+
+2. **Configure the connection**
+
+   ```bash
+   evalhub config set base_url https://evalhub.apps.my-cluster.example.com
+   evalhub config set token YOUR_TOKEN
+   evalhub config set tenant my-team
+   ```
+
+3. **Register the MCP server with Claude Code**
+
+   ```bash
+   claude mcp add evalhub -- evalhub mcp
+   ```
+
+   To use a named profile:
+
+   ```bash
+   claude mcp add evalhub -- evalhub --profile agent mcp
+   ```
+
+4. **Verify the connection**
+
+   Start Claude Code and ask:
+
+   ```text
+   List the available evaluation providers
+   ```
+
+</Steps>
+
+### Scope: project vs global
+
+By default, `claude mcp add` registers the server for the current project only. To make it available globally:
+
+```bash
+claude mcp add -s user evalhub -- evalhub-mcp --config ~/.evalhub/config.yaml
+```
+
+## Option B: HTTP transport
+
+Use HTTP when the MCP server runs remotely or you want to share a single server across multiple clients.
+
+<Steps>
+
+1. **Start the MCP server**
+
+   ```bash
+   evalhub-mcp --transport http --port 3001 --config ~/.evalhub/config.yaml
+   ```
+
+2. **Register with Claude Code**
+
+   ```bash
+   claude mcp add evalhub --transport http http://localhost:3001/
+   ```
+
+   For a remote server, replace `localhost` with the server's hostname.
+
+3. **Verify the connection**
+
+   Start Claude Code and ask:
+
+   ```text
+   What benchmarks are available?
+   ```
+
+</Steps>
+
+## Example interactions
+
+Once connected, try these with Claude Code:
+
+```text
+Evaluate the model at https://my-model.example.com/v1 using the leaderboard-v2 collection
+```
+
+```text
+What's the status of job abc123?
+```
+
+```text
+Cancel job abc123
+```
+
+```text
+Walk me through an Evaluation-Driven Development workflow for a RAG application
+```

@@ -12,6 +12,17 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'EvalHub',
+      logo: {
+        src: './src/assets/evalhub-mascot-nav.png',
+        alt: 'EvalHub mascot',
+      },
+      head: [
+        // Preload the two heading font files so they are fetched before CSS runs,
+        // eliminating the FOUT flash on first load and View Transition navigation.
+        { tag: 'link', attrs: { rel: 'preload', href: '/fonts/cormorant-garamond-latin-600-normal.woff2', as: 'font', type: 'font/woff2', crossorigin: 'anonymous' } },
+        { tag: 'link', attrs: { rel: 'preload', href: '/fonts/cormorant-garamond-latin-600-italic.woff2', as: 'font', type: 'font/woff2', crossorigin: 'anonymous' } },
+        { tag: 'link', attrs: { rel: 'preload', href: '/fonts/dm-sans-latin-wght-normal.woff2', as: 'font', type: 'font/woff2', crossorigin: 'anonymous' } },
+      ],
       plugins: [
         starlightBlog({
           authors: {
@@ -39,7 +50,11 @@ export default defineConfig({
         }),
         starlightClientMermaid(),
       ],
+      favicon: '/favicon.ico',
       customCss: ['./src/styles/custom.css'],
+      components: {
+        ThemeSelect: './src/components/ThemeSelect.astro',
+      },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/eval-hub' },
       ],
@@ -47,7 +62,7 @@ export default defineConfig({
         baseUrl: 'https://github.com/eval-hub/eval-hub.github.io/edit/main/',
       },
       sidebar: [
-        { label: 'Home', slug: 'index' },
+        { label: 'Home', slug: 'home' },
         {
           label: 'Getting Started',
           items: [

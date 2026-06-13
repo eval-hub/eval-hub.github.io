@@ -1,7 +1,164 @@
-/* Ensure architecture diagrams display at full content width */
+/* ── Fonts — served from /fonts/ (stable paths, font-display:block) ───────── */
+/* Files copied from node_modules at install time into public/fonts/.          */
+/* font-display:block prevents FOUT on Astro View Transition navigation.       */
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('/fonts/dm-sans-latin-wght-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: block;
+  src: url('/fonts/dm-sans-latin-wght-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/cormorant-garamond-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/cormorant-garamond-latin-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/cormorant-garamond-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: italic;
+  font-weight: 600;
+  font-display: block;
+  src: url('/fonts/cormorant-garamond-latin-600-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('/fonts/cormorant-garamond-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+  src: url('/fonts/cormorant-garamond-latin-700-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: block;
+  src: url('/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 100 800;
+  font-display: block;
+  src: url('/fonts/jetbrains-mono-latin-wght-italic.woff2') format('woff2');
+}
+
+/* ── Colour palette — dark mode (Starlight default) ──────────────── */
+:root {
+  --sl-color-accent-low:  #1E1B4B;
+  --sl-color-accent:      #818CF8;
+  --sl-color-accent-high: #A5B4FC;
+
+  --sl-color-white:   #E0E0F5;
+  --sl-color-gray-1:  #BBBDE8;
+  --sl-color-gray-2:  #8B8DB8;
+  --sl-color-gray-3:  #5E5E88;
+  --sl-color-gray-4:  #2D2B4A;
+  --sl-color-gray-5:  #211F38;
+  --sl-color-gray-6:  #181728;
+  --sl-color-gray-7:  #131220;
+  --sl-color-black:   #0F0F1A;
+
+  --sl-color-bg:             #0F0F1A;
+  --sl-color-bg-nav:         #0C0C16;
+  --sl-color-bg-sidebar:     #0F0F1A;
+  --sl-color-bg-inline-code: #1E1B38;
+
+  --sl-font:      'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, monospace;
+}
+
+/* ── Colour palette — light mode ─────────────────────────────────── */
+:root[data-theme='light'] {
+  --sl-color-accent-low:  #EEF2FF;
+  --sl-color-accent:      #4F46E5;
+  --sl-color-accent-high: #3730A3;
+
+  --sl-color-white:   #1A1A35;
+  --sl-color-gray-1:  #2D2B55;
+  --sl-color-gray-2:  #4A4870;
+  --sl-color-gray-3:  #6B6890;
+  --sl-color-gray-4:  #C7D2FE;
+  --sl-color-gray-5:  #D5DAFF;
+  --sl-color-gray-6:  #E8EAFF;
+  --sl-color-gray-7:  #F0F1FF;
+  --sl-color-black:   #FFFFFF;
+
+  --sl-color-bg:             #F8F8FF;
+  --sl-color-bg-nav:         #EEF2FF;
+  --sl-color-bg-sidebar:     #F8F8FF;
+  --sl-color-bg-inline-code: #E8EAFF;
+}
+
+/* ── Typography — headings use the serif face ─────────────────────── */
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+.sl-markdown-content h5,
+h1#_top,
+.preview h2,
+.site-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ── Navbar logo — slightly smaller than the full nav height ─────── */
+.site-title img {
+  height: 2rem;
+}
+
+/* ── Active sidebar item — mise-style left accent bar ─────────────── */
+/* Only add the bar; let Starlight own background-color and color so
+   text stays readable against its solid accent background.          */
+nav a[aria-current='page'] {
+  box-shadow: inset 3px 0 0 var(--sl-color-accent);
+  border-radius: 0 6px 6px 0;
+}
+
+/* ── Code block rounded corners (site-wide) ──────────────────────── */
+.expressive-code figure,
+.expressive-code .frame {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+/* ── Architecture diagram sizing (preserved from original) ─────────── */
 img[src*="diagrams/"] {
   width: 100%;
   max-width: 100%;
   height: auto;
 }
-

@@ -2,9 +2,10 @@
 title: "MCP Installation"
 ---
 
-import { Tabs, TabItem, Badge } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Since from '../../../components/Since.astro';
 
-<Badge text="Since 0.4.2" variant="note" size="small" />
+<Since version="0.4.2" />
 
 ## Summary
 
@@ -82,7 +83,7 @@ evalhub-mcp --version
 </TabItem>
 <TabItem label="Homebrew (macOS / Linux)">
 
-<Badge text="Since X.X.X (coming soon)" variant="note" size="small" />
+<Since version="X.X.X" /> <span style="font-size:0.75rem;color:var(--sl-color-gray-3)">(coming soon)</span>
 
 ```bash
 brew install eval-hub/evalhub/evalhub-mcp
@@ -97,7 +98,7 @@ evalhub-mcp --version
 </TabItem>
 <TabItem label="Python SDK">
 
-<Badge text="Since 0.1.5 eval-hub-sdk (deprecated)" variant="note" size="small" />
+<Since version="0.1.5" /> <span style="font-size:0.75rem;color:var(--sl-color-gray-3)">eval-hub-sdk (deprecated)</span>
 
 ```text
 ```
