@@ -1,0 +1,167 @@
+---
+title: "Agent Skills"
+description: "eval-hub-skills plugin for Claude Code and other AI coding agents"
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+The [eval-hub-skills](https://github.com/eval-hub/eval-hub-skills) plugin gives AI coding agents scripted access to EvalHub discovery, job submission, and monitoring. Skills complement the [MCP server](/mcp/) — use MCP when connected to a cluster; use skills as a fallback or for script-based workflows.
+
+Skills consume the same [agent metadata](/mcp/agent-discoverability/) returned by the REST API. All provider and collection knowledge comes from live API responses — never hardcoded IDs.
+
+## Skills overview
+
+| Skill | Purpose |
+| ----- | ------- |
+| `evalhub` | Full skill — discovery, evaluation, job lifecycle, and EDD workflows |
+| `evalhub-discovery` | Discover providers, benchmarks, and collections; read agent metadata |
+| `evalhub-eval` | Submit evaluation jobs against benchmarks or collections |
+| `evalhub-jobs` | Monitor, wait on, cancel, and fetch logs for evaluation jobs |
+
+## Installation
+
+### Prerequisites
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) (scripts use PEP 723 inline metadata for auto-dependency resolution)
+- Network access to an EvalHub service
+- Environment variables (see below)
+
+### Claude Code plugin (recommended)
+
+```bash
+/plugin marketplace add eval-hub/eval-hub-skills
+/plugin install evalhub@evalhub
+```
+
+The skill is then available as `/evalhub:evalhub` in any Claude Code session.
+
+### Local development
+
+```bash
+git clone https://github.com/eval-hub/eval-hub-skills
+cd eval-hub-skills
+make install-all   # symlinks all four skills into ~/.claude/skills/
+```
+
+Changes to skill source are reflected immediately without reinstalling.
+
+### Connect MCP alongside skills
+
+When EvalHub exposes an MCP server on your cluster, register it with Claude Code:
+
+```bash
+export EVALHUB_BASE_URL="https://evalhub.apps.my-cluster.example.com"
+export EVALHUB_TOKEN="$(oc whoami -t)"
+export EVALHUB_TENANT="eval-test"
+
+claude mcp add evalhub "$EVALHUB_BASE_URL/mcp" \
+  --transport http \
+  --header "Authorization: Bearer $EVALHUB_TOKEN" \
+  --header "x-tenant: $EVALHUB_TENANT"
+```
+
+:::note
+OpenShift tokens expire. If you get 401 errors, refresh with `export EVALHUB_TOKEN="$(oc whoami -t)"` and re-run the command.
+:::
+
+## Configuration
+
+| Variable | Purpose | Example |
+| -------- | ------- | ------- |
+| `EVALHUB_BASE_URL` | EvalHub API base URL | `https://evalhub.apps.cluster.example.com` |
+| `EVALHUB_TOKEN` | Bearer token for auth | `sha256~...` (from `oc whoami -t`) |
+| `EVALHUB_TENANT` | Namespace / tenant | `eval-test` |
+| `EVALHUB_INSECURE` | Skip TLS verification | `true` (for self-signed certs) |
+| `EVALHUB_MCP_URL` | MCP server HTTP URL (optional) | Enables MCP mode in skills |
+
+```bash
+export EVALHUB_BASE_URL="https://evalhub.apps.my-cluster.example.com"
+export EVALHUB_TOKEN="$(oc whoami -t)"
+export EVALHUB_TENANT="eval-test"
+```
+
+## Discovery commands
+
+The default discovery workflow runs two parallel calls to fetch full agent metadata:
+
+```bash
+uv run ~/.claude/skills/evalhub/scripts/evalhub_providers.py --agent 2>/dev/null
+uv run ~/.claude/skills/evalhub/scripts/evalhub_collections.py --agent 2>/dev/null
+```
+
+The `--agent` output contains the complete agent metadata block for every provider or collection. Do not fetch individual providers afterwards — everything is already included.
+
+**Filter when user intent is clear:**
+
+```bash
+uv run ~/.claude/skills/evalhub/scripts/evalhub_providers.py --target-type model 2>/dev/null
+uv run ~/.claude/skills/evalhub/scripts/evalhub_providers.py --evaluates safety 2>/dev/null
+uv run ~/.claude/skills/evalhub/scripts/evalhub_collections.py --evaluates safety 2>/dev/null
+```
+
+**List benchmarks:**
+
+```bash
+uv run ~/.claude/skills/evalhub/scripts/evalhub_providers.py --benchmarks 2>/dev/null
+uv run ~/.claude/skills/evalhub/scripts/evalhub_providers.py --benchmarks --provider garak 2>/dev/null
+```
+
+All scripts output JSON to stdout. Errors go to stderr with exit code 1.
+
+## Skills vs MCP
+
+| Capability | MCP (preferred) | Agent Skills |
+| ---------- | --------------- | ------------ |
+| Discovery | `discover_providers` tool or `evalhub://providers` resource | `evalhub_providers.py --agent` |
+| Submit job | `submit_evaluation` tool | `evalhub_eval.py` |
+| Monitor job | `get_job_status` tool | `evalhub_status.py --wait` |
+| EDD workflow | `edd_workflow` prompt | EDD references in skill docs |
+| Setup | `claude mcp add` or VS Code MCP config | `make install-all` |
+
+Use MCP when the EvalHub MCP server is connected — it provides structured tool outputs and the `discover_providers` filter. Use skills when MCP is unavailable, for CI scripts, or when you need direct REST access via the Python SDK.
+
+### MCP resource mapping
+
+When MCP is connected, skills prefer MCP resources over Python scripts:
+
+| MCP Resource URI | Replaces |
+| ---------------- | -------- |
+| `evalhub://providers` | `evalhub_providers.py --agent` |
+| `evalhub://providers/{id}` | `evalhub_providers.py PROVIDER_ID` |
+| `evalhub://benchmarks` | `evalhub_providers.py --benchmarks` |
+| `evalhub://benchmarks?label=safety` | `evalhub_providers.py --evaluates safety` |
+| `evalhub://collections` | `evalhub_collections.py --agent` |
+| `evalhub://collections/{id}` | `evalhub_collections.py COLLECTION_ID` |
+
+## Example session
+
+**You:** Which providers can evaluate my model for safety?
+
+The skill fetches live metadata and filters by `evaluates`:
+
+```json
+[
+  {
+    "id": "garak",
+    "summary": "Red-team an LLM for safety vulnerabilities, toxicity, and OWASP risks",
+    "target_type": "model",
+    "evaluates": ["safety", "security", "red_teaming", "toxicity"]
+  }
+]
+```
+
+**You:** Run a quick safety scan on my model at `http://vllm:8000/v1`.
+
+The skill reads `hints`, submits a job, and monitors until complete — then interprets results using `result_interpretation`.
+
+See [Evaluation-Driven Development](/guides/evaluation-driven-development/) for the full before/after workflow.
+
+## Related
+
+<CardGrid>
+  <LinkCard title="Agent Discoverability" href="/mcp/agent-discoverability/" description="Metadata model and discovery APIs" />
+  <LinkCard title="MCP Installation" href="/mcp/installation/" description="Connect Claude Code or VS Code to EvalHub MCP" />
+  <LinkCard title="MCP Tools" href="/mcp/tools/" description="discover_providers and job management tools" />
+  <LinkCard title="GitHub: eval-hub-skills" href="https://github.com/eval-hub/eval-hub-skills" description="Source repository and development guide" />
+</CardGrid>

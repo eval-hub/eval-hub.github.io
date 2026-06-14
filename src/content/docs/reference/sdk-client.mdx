@@ -89,7 +89,65 @@ Auth resolution order: explicit token → token file → Kubernetes ServiceAccou
 ```python
 providers = client.providers.list()
 provider = client.providers.get("lm_evaluation_harness")
+
+# Filter by agent metadata (client-side)
+safety_providers = client.providers.list(evaluates="safety", target_type="model")
 ```
+
+## Agent discoverability
+
+Providers and benchmarks may include an optional `agent` metadata block returned by the API. Use it to discover evaluations by capability, read operational hints, and interpret results.
+
+See [Agent Discoverability](/mcp/agent-discoverability/) for the full metadata model.
+
+<Tabs>
+<TabItem label="Synchronous">
+
+```python
+import os
+from evalhub import SyncEvalHubClient
+
+with SyncEvalHubClient(
+    base_url=os.environ["EVALHUB_BASE_URL"],
+    auth_token=os.environ["EVALHUB_TOKEN"],
+    tenant=os.environ["EVALHUB_TENANT"],
+) as client:
+    for p in client.providers.list(evaluates="safety", target_type="model"):
+        if p.agent:
+            print(f"{p.resource.id}: {p.agent.summary}")
+            for hint in p.agent.hints:
+                print(f"  hint: {hint}")
+
+    provider = client.providers.get("garak")
+    if provider.agent:
+        for line in provider.agent.result_interpretation:
+            print(line)
+```
+
+</TabItem>
+<TabItem label="Asynchronous">
+
+```python
+import os
+from evalhub import AsyncEvalHubClient
+
+async with AsyncEvalHubClient(
+    base_url=os.environ["EVALHUB_BASE_URL"],
+    auth_token=os.environ["EVALHUB_TOKEN"],
+    tenant=os.environ["EVALHUB_TENANT"],
+) as client:
+    providers = await client.providers.list(evaluates="safety", target_type="model")
+    for p in providers:
+        if p.agent:
+            print(p.resource.id, p.agent.summary)
+```
+
+</TabItem>
+</Tabs>
+
+:::note
+`client.providers.list(target_type=, evaluates=)` fetches all providers then filters client-side. The CLI `evalhub providers list` does not expose filter flags yet. Collection `agent` metadata is available via REST and MCP but not yet modeled on the SDK `Collection` type.
+:::
 
 ### Benchmarks
 
@@ -185,7 +243,7 @@ except ClientError as e:
 
 | Resource | Methods |
 |----------|---------|
-| `client.providers` | `list()`, `get(id)` |
+| `client.providers` | `list(target_type?, evaluates?)`, `get(id)` |
 | `client.benchmarks` | `list(provider_id?, category?, limit?)` |
 | `client.collections` | `list()`, `get(id)`, `create(request)`, `delete(id)` |
 | `client.jobs` | `submit(request)`, `get(id)`, `list(status?, limit?)`, `cancel(id, hard_delete?)`, `wait_for_completion(id, timeout?, poll_interval?)` |
@@ -201,4 +259,6 @@ except ClientError as e:
 | `EvaluationJob` | Job status and results |
 | `JobStatus` | Enum: PENDING, RUNNING, COMPLETED, FAILED, CANCELLED |
 | `Provider` | Provider metadata and benchmarks |
+| `AgentMetadata` | Provider-level agent discoverability metadata |
+| `BenchmarkAgentMetadata` | Benchmark-level agent metadata (result interpretation, score ranges) |
 | `Collection` | Benchmark collection |

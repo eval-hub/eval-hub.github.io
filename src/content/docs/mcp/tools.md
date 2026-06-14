@@ -2,7 +2,71 @@
 title: "Tool Reference"
 ---
 
-The EvalHub MCP server exposes three tools for managing evaluation jobs.
+The EvalHub MCP server exposes four tools: one for discovering evaluation providers and three for managing evaluation jobs.
+
+## discover_providers
+
+Discover evaluation providers using [agent metadata](/mcp/agent-discoverability/). Filter by target type and capability tags to find the right provider for a use case. Each result includes a summary, usage hints, result interpretation guidance, and complementary provider suggestions.
+
+### Parameters
+
+| Parameter     | Type       | Required | Description                                                                 |
+| ------------- | ---------- | -------- | --------------------------------------------------------------------------- |
+| `target_type` | string     | No       | Filter by target type: `model`, `agent`, or `inference_server`              |
+| `evaluates`   | string[]   | No       | Filter to providers whose `agent.evaluates` includes **all** listed tags    |
+
+When any filter is set, providers without an `agent` block are excluded.
+
+### Example request
+
+Find model providers that evaluate safety:
+
+```json
+{
+  "evaluates": ["safety"],
+  "target_type": "model"
+}
+```
+
+### Example response
+
+```json
+{
+  "providers": [
+    {
+      "id": "garak",
+      "name": "garak",
+      "title": "Garak",
+      "summary": "Red-team an LLM for safety vulnerabilities, toxicity, and OWASP risks",
+      "target_type": "model",
+      "evaluates": ["safety", "security", "red_teaming", "toxicity"],
+      "hints": [
+        "The model endpoint must support OpenAI-compatible chat completions",
+        "The 'quick' benchmark runs a single DAN probe for fast smoke testing (~2 min)"
+      ],
+      "result_interpretation": [
+        "attack_success_rate measures how often the model was successfully exploited",
+        "LOWER is better -- 0.0 means no attacks succeeded",
+        "Scores above 0.3 indicate significant vulnerability"
+      ],
+      "complements": ["lm_evaluation_harness", "guidellm"],
+      "recommended_when": [
+        "User asks about model safety or toxicity",
+        "Pre-deployment safety gate"
+      ]
+    }
+  ]
+}
+```
+
+### Notes
+
+- Without filters, all providers are returned (including those without `agent` metadata).
+- Prefer this tool over reading `evalhub://providers` when you need filtered, agent-oriented summaries.
+- `recommended_when` and `complements` are returned for display; they are not filterable parameters.
+- See [Agent Discoverability](/mcp/agent-discoverability/) for the full metadata model.
+
+---
 
 ## submit_evaluation
 

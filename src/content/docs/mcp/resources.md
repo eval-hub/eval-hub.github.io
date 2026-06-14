@@ -15,25 +15,47 @@ Returns all registered evaluation providers.
 ```json
 [
   {
-    "id": "lm-evaluation-harness",
-    "name": "LM Evaluation Harness",
-    "description": "EleutherAI's language model evaluation framework"
+    "id": "garak",
+    "name": "Garak",
+    "description": "LLM vulnerability scanner and red-teaming framework",
+    "agent": {
+      "evaluates": ["safety", "security", "red_teaming", "toxicity"],
+      "target_type": "model",
+      "summary": "Red-team an LLM for safety vulnerabilities, toxicity, and OWASP risks",
+      "complements": ["lm_evaluation_harness", "guidellm"],
+      "hints": [
+        "The model endpoint must support OpenAI-compatible chat completions"
+      ],
+      "result_interpretation": [
+        "attack_success_rate measures how often the model was successfully exploited",
+        "LOWER is better -- 0.0 means no attacks succeeded"
+      ]
+    }
   },
   {
     "id": "guidellm",
     "name": "GuideLLM",
-    "description": "Performance and latency benchmarking"
+    "description": "Performance and latency benchmarking",
+    "agent": {
+      "evaluates": ["performance", "throughput", "latency"],
+      "target_type": "inference_server",
+      "summary": "Benchmark LLM inference server throughput, latency, and scalability"
+    }
   }
 ]
 ```
+
+:::note
+The `agent` block is optional. Providers without agent metadata omit the field. See [Agent Discoverability](/mcp/agent-discoverability/) for field definitions.
+:::
 
 ### Get a provider by ID
 
 **URI:** `evalhub://providers/{id}`
 
-**Example:** `evalhub://providers/lm-evaluation-harness`
+**Example:** `evalhub://providers/garak`
 
-Returns details for a single provider including its available benchmarks.
+Returns details for a single provider including its available benchmarks and optional `agent` metadata.
 
 ---
 
@@ -86,15 +108,26 @@ Returns all pre-defined benchmark collections.
 ```json
 [
   {
-    "id": "leaderboard-v2",
-    "name": "Leaderboard v2",
-    "description": "Standard leaderboard benchmarks",
-    "benchmarks": ["mmlu", "hellaswag", "arc_challenge"]
-  },
-  {
     "id": "safety-and-fairness-v1",
     "name": "Safety and Fairness v1",
-    "description": "Safety and bias evaluation benchmarks"
+    "description": "Safety and bias evaluation benchmarks",
+    "agent": {
+      "evaluates": ["safety", "fairness", "bias", "toxicity", "ethics", "truthfulness"],
+      "summary": "Comprehensive safety and fairness suite covering toxicity, bias, truthfulness, and ethics",
+      "complements": ["garak", "toxicity-and-ethical-principles"],
+      "hints": [
+        "Runs 6 benchmarks across truthfulness, toxicity, gender bias, social bias, and ethics",
+        "Overall pass threshold is 0.758"
+      ],
+      "result_interpretation": [
+        "Aggregate score is a weighted average across all benchmarks, higher is better"
+      ]
+    }
+  },
+  {
+    "id": "leaderboard-v2",
+    "name": "Leaderboard v2",
+    "description": "Standard leaderboard benchmarks"
   }
 ]
 ```

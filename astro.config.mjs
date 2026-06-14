@@ -79,6 +79,7 @@ export default defineConfig({
             { label: 'Disconnected Cluster', slug: 'guides/disconnected-cluster' },
             { label: 'Local Mode', slug: 'guides/local-mode' },
             { label: 'Local Mode Tutorial', slug: 'guides/local-mode-tutorial' },
+            { label: 'Evaluation-Driven Development', slug: 'guides/evaluation-driven-development' },
           ],
         },
         {
@@ -136,6 +137,8 @@ export default defineConfig({
                 { label: 'VS Code', slug: 'mcp/quickstart-vscode' },
               ],
             },
+            { label: 'Agent Discoverability', slug: 'mcp/agent-discoverability' },
+            { label: 'Agent Skills', slug: 'mcp/skills' },
             { label: 'Tools', slug: 'mcp/tools' },
             { label: 'Resources', slug: 'mcp/resources' },
             { label: 'Prompts', slug: 'mcp/prompts' },

@@ -18,7 +18,7 @@ The EvalHub MCP (Model Context Protocol) server lets AI agents submit evaluation
     Submit model evaluation jobs with benchmarks or pre-defined collections, configure MLflow experiments, and track progress.
   </Card>
   <Card title="Browse Catalogs" icon="magnifier">
-    Discover available providers, benchmarks, and collections through MCP resources with filtering.
+    Discover providers, benchmarks, and collections through MCP resources and semantic agent metadata.
   </Card>
   <Card title="Monitor Jobs" icon="bars" >
     Poll job status with per-benchmark progress, cancel running jobs, and compare results across runs.
@@ -39,6 +39,7 @@ The MCP server is available as:
 ## Get started
 
 <CardGrid>
+  <LinkCard title="Agent Discoverability" href="/mcp/agent-discoverability/" description="How agents choose and interpret evaluations" />
   <LinkCard title="Installation" href="/mcp/installation/" description="Install on macOS, Linux, or Windows" />
   <LinkCard title="Claude Code Quick Start" href="/mcp/quickstart-claude/" description="Connect to Claude Code in under 5 steps" />
   <LinkCard title="VS Code Quick Start" href="/mcp/quickstart-vscode/" description="Connect to VS Code / GitHub Copilot" />
@@ -47,7 +48,8 @@ The MCP server is available as:
 ## Reference
 
 <CardGrid>
-  <LinkCard title="Tools" href="/mcp/tools/" description="submit_evaluation, cancel_job, get_job_status" />
+  <LinkCard title="Tools" href="/mcp/tools/" description="discover_providers, submit_evaluation, cancel_job, get_job_status" />
+  <LinkCard title="Agent Skills" href="/mcp/skills/" description="eval-hub-skills plugin for Claude Code" />
   <LinkCard title="Resources" href="/mcp/resources/" description="evalhub:// URI scheme for providers, benchmarks, collections, jobs" />
   <LinkCard title="Prompts" href="/mcp/prompts/" description="edd_workflow, evaluate_model, compare_runs" />
   <LinkCard title="Troubleshooting" href="/mcp/troubleshooting/" description="Common issues and how to fix them" />
