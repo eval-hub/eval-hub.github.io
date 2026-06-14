@@ -5,6 +5,9 @@ site/
 dist/
 .astro/
 
+# Generated provider catalog (fetched at build time)
+src/generated/
+
 # Node
 node_modules/
 

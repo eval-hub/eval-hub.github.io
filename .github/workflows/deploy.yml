@@ -37,6 +37,7 @@ jobs:
       - name: Build documentation
         env:
           ASTRO_BASE: ${{ github.repository != 'eval-hub/eval-hub.github.io' && format('/{0}', github.event.repository.name) || '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build
 
       - name: Upload artifact

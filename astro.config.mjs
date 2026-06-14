@@ -51,7 +51,7 @@ export default defineConfig({
         starlightClientMermaid(),
       ],
       favicon: '/favicon.ico',
-      customCss: ['./src/styles/custom.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/provider-catalog.css'],
       components: {
         ThemeSelect: './src/components/ThemeSelect.astro',
       },
@@ -140,6 +140,12 @@ export default defineConfig({
             { label: 'Resources', slug: 'mcp/resources' },
             { label: 'Prompts', slug: 'mcp/prompts' },
             { label: 'Troubleshooting', slug: 'mcp/troubleshooting' },
+          ],
+        },
+        {
+          label: 'Providers',
+          items: [
+            { label: 'Provider Catalog', slug: 'providers/catalog' },
           ],
         },
         {

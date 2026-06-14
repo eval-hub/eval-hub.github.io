@@ -1,0 +1,30 @@
+---
+title: Provider Catalog
+description: Browse community-contributed evaluation providers from eval-hub-contrib and download Kubernetes ConfigMaps.
+tableOfContents: false
+---
+
+import ProviderCatalog from '../../../components/ProviderCatalog.astro';
+
+Browse community-contributed evaluation providers from [eval-hub-contrib](https://github.com/eval-hub/eval-hub-contrib). Each provider ships a `provider.yaml` that defines benchmarks, runtime settings, and container image references.
+
+The catalog is synced from the contrib repository at **site build time**. Use the filters below to find a provider, then download either the raw `provider.yaml` or a ready-to-apply Kubernetes ConfigMap.
+
+<ProviderCatalog />
+
+## Applying a ConfigMap
+
+After downloading a ConfigMap YAML, apply it to your cluster:
+
+```bash
+oc apply -f evalhub-provider-<id>.yaml
+```
+
+For full OpenShift deployment steps, see [OpenShift Setup](/deployment/openshift-setup/).
+
+The EvalHub operator discovers providers via ConfigMap labels:
+
+- `trustyai.opendatahub.io/evalhub-provider-type`
+- `trustyai.opendatahub.io/evalhub-provider-name`
+
+You can customize namespace and label values in the detail panel before downloading.

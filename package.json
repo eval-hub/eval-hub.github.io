@@ -4,6 +4,9 @@
   "private": true,
   "description": "Documentation site for EvalHub.",
   "scripts": {
+    "fetch-providers": "node scripts/fetch-contrib-providers.mjs",
+    "prebuild": "npm run fetch-providers",
+    "predev": "npm run fetch-providers",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview --host 0.0.0.0"
@@ -19,5 +22,8 @@
     "astro": "6.3.3",
     "sharp": "^0.34.5",
     "starlight-blog": "^0.26.1"
+  },
+  "devDependencies": {
+    "js-yaml": "^4.1.0"
   }
 }

@@ -1,0 +1,483 @@
+/* Provider catalog — uses Starlight theme tokens */
+
+/* Let the catalog page use all available horizontal space */
+:has(.provider-catalog) .sl-container {
+  max-width: none;
+}
+
+.provider-catalog {
+  margin-block: 1.5rem;
+}
+
+/* ── Toolbar ────────────────────────────────────────────────── */
+
+.catalog-toolbar {
+  display: flex;
+  gap: 0.65rem;
+  align-items: end;
+  padding: 0.85rem 1rem;
+  background: var(--sl-color-bg-nav);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.catalog-toolbar label {
+  flex: 1 1 auto;
+}
+
+.catalog-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+
+.catalog-toolbar input,
+.catalog-toolbar select {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.4rem;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-text);
+  font-family: var(--sl-font);
+  font-size: 0.88rem;
+  transition: border-color 0.15s;
+}
+
+.catalog-toolbar input::placeholder {
+  color: var(--sl-color-gray-4);
+  opacity: 1;
+}
+
+.catalog-toolbar input:focus,
+.catalog-toolbar select:focus {
+  outline: none;
+  border-color: var(--sl-color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sl-color-accent) 20%, transparent);
+}
+
+.catalog-toolbar button {
+  align-self: end;
+  padding: 0.42rem 0.9rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.4rem;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-gray-2);
+  font-size: 0.83rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.catalog-toolbar button:hover {
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-accent-high);
+}
+
+/* ── Status bar ─────────────────────────────────────────────── */
+
+.catalog-status {
+  font-size: 0.8rem;
+  color: var(--sl-color-gray-3);
+  margin-bottom: 0.85rem;
+}
+
+/* ── Two-column layout ──────────────────────────────────────── */
+
+.catalog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 1.1rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .catalog-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Cards ──────────────────────────────────────────────────── */
+
+.catalog-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.provider-card {
+  position: relative;
+  padding: 0.8rem 1rem 0.8rem 1.1rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.55rem;
+  background: var(--sl-color-bg-nav);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.provider-card::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.55rem;
+  inset-inline-start: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--sl-color-gray-5);
+  transition: background 0.15s;
+}
+
+.provider-card:hover {
+  border-color: color-mix(in srgb, var(--sl-color-accent) 50%, transparent);
+  background: color-mix(in srgb, var(--sl-color-accent) 4%, var(--sl-color-bg-nav));
+}
+
+.provider-card:hover::before {
+  background: color-mix(in srgb, var(--sl-color-accent) 60%, transparent);
+}
+
+.provider-card.is-selected {
+  border-color: var(--sl-color-accent);
+  background: color-mix(in srgb, var(--sl-color-accent) 6%, var(--sl-color-bg-nav));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--sl-color-accent) 12%, transparent);
+}
+
+.provider-card.is-selected::before {
+  background: var(--sl-color-accent);
+}
+
+.provider-card.is-hidden {
+  display: none;
+}
+
+.provider-card h3 {
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  font-family: var(--sl-font-headings);
+  font-weight: 600;
+  color: var(--sl-color-text);
+}
+
+.provider-card .provider-id {
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  color: var(--sl-color-accent-high);
+  margin-bottom: 0.4rem;
+  opacity: 0.85;
+}
+
+.provider-card .provider-desc {
+  font-size: 0.82rem;
+  color: var(--sl-color-gray-2);
+  margin: 0 0 0.55rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.provider-card .provider-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+/* ── Chips ──────────────────────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--sl-color-accent) 10%, transparent);
+  color: var(--sl-color-accent-high);
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 25%, transparent);
+}
+
+/* ── Detail panel ───────────────────────────────────────────── */
+
+.catalog-detail {
+  position: sticky;
+  top: var(--sl-nav-height, 3.5rem);
+  max-height: calc(100vh - var(--sl-nav-height, 3.5rem) - 1rem);
+  overflow-y: auto;
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.6rem;
+  background: var(--sl-color-bg-nav);
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-color-gray-5) transparent;
+}
+
+.catalog-detail.is-empty {
+  color: var(--sl-color-gray-3);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6rem;
+  text-align: center;
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.detail-title-group {
+  min-width: 0;
+}
+
+.catalog-detail h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.1rem;
+  font-family: var(--sl-font-headings);
+  font-weight: 700;
+  color: var(--sl-color-text);
+}
+
+.catalog-detail .detail-id {
+  font-family: var(--sl-font-mono);
+  font-size: 0.8rem;
+  color: var(--sl-color-accent-high);
+}
+
+.detail-github-link {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem;
+  border-radius: 0.35rem;
+  color: var(--sl-color-gray-3);
+  transition: color 0.15s, background 0.15s;
+  text-decoration: none;
+}
+
+.detail-github-link:hover {
+  color: var(--sl-color-text);
+  background: color-mix(in srgb, var(--sl-color-accent) 10%, transparent);
+}
+
+.catalog-detail p {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 0 0 0.75rem;
+}
+
+.catalog-detail a {
+  color: var(--sl-color-accent-high);
+  font-size: 0.83rem;
+}
+
+/* ── Detail sections ────────────────────────────────────────── */
+
+.detail-section {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--sl-color-gray-6);
+}
+
+.detail-section h4 {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-color-gray-3);
+}
+
+.detail-runtime {
+  font-family: var(--sl-font-mono);
+  font-size: 0.78rem;
+  word-break: break-all;
+  padding: 0.4rem 0.65rem;
+  background: var(--sl-color-bg);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.35rem;
+}
+
+/* ── Benchmarks table ───────────────────────────────────────── */
+
+.benchmarks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.benchmarks-table th,
+.benchmarks-table td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--sl-color-gray-6);
+  text-align: left;
+  vertical-align: top;
+}
+
+.benchmarks-table th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sl-color-gray-3);
+  padding-bottom: 0.45rem;
+}
+
+.benchmarks-table tr:last-child td {
+  border-bottom: none;
+}
+
+.benchmarks-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--sl-color-accent) 4%, transparent);
+}
+
+/* ── ConfigMap form ─────────────────────────────────────────── */
+
+.configmap-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+@media (max-width: 600px) {
+  .configmap-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.configmap-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--sl-color-gray-3);
+}
+
+.configmap-form input {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.35rem;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-text);
+  font-family: var(--sl-font-mono);
+  font-size: 0.8rem;
+  transition: border-color 0.15s;
+}
+
+.configmap-form input:focus {
+  outline: none;
+  border-color: var(--sl-color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sl-color-accent) 20%, transparent);
+}
+
+/* ── Download actions ───────────────────────────────────────── */
+
+.download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.download-actions button,
+.download-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.4rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  border: 1px solid var(--sl-color-accent);
+  background: var(--sl-color-accent);
+  color: var(--sl-color-black);
+}
+
+.download-actions button.secondary,
+.download-actions a.secondary {
+  background: transparent;
+  color: var(--sl-color-accent-high);
+}
+
+.download-actions button:hover,
+.download-actions a:hover {
+  opacity: 0.85;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+}
+
+/* ── ConfigMap preview ──────────────────────────────────────── */
+
+.configmap-preview {
+  margin-top: 0.85rem;
+}
+
+.configmap-preview summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sl-color-accent-high);
+  user-select: none;
+}
+
+.configmap-preview summary:hover {
+  text-decoration: underline;
+}
+
+.configmap-preview pre {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.4rem;
+  background: var(--sl-color-bg);
+  border: 1px solid var(--sl-color-gray-5);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  max-height: 14rem;
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+
+.catalog-footer {
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--sl-color-gray-5);
+  font-size: 0.78rem;
+  color: var(--sl-color-gray-3);
+}
+
+.catalog-footer a {
+  color: var(--sl-color-accent-high);
+  text-decoration: none;
+}
+
+.catalog-footer a:hover {
+  text-decoration: underline;
+}
+
+/* ── Empty state ────────────────────────────────────────────── */
+
+.catalog-empty-state {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--sl-color-gray-3);
+  border: 1px dashed var(--sl-color-gray-5);
+  border-radius: 0.6rem;
+  font-size: 0.9rem;
+}

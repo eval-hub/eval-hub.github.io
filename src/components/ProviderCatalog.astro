@@ -1,0 +1,295 @@
+---
+import catalog from '../generated/providers-catalog.json';
+
+const { providers, fetchedAt, source } = catalog;
+
+const fetchedDate = new Date(fetchedAt).toLocaleString(undefined, {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
+---
+
+<div
+  class="provider-catalog"
+  id="provider-catalog"
+  data-providers={JSON.stringify(providers)}
+>
+  <div class="catalog-toolbar">
+    <label>
+      Search
+      <input type="search" id="catalog-search" placeholder="Name, id, description…" autocomplete="off" />
+    </label>
+    <button type="button" id="catalog-clear">Clear filters</button>
+  </div>
+
+  <p class="catalog-status" id="catalog-status">
+    Showing {providers.length} of {providers.length} providers
+  </p>
+
+  <div class="catalog-layout">
+    <div class="catalog-cards" id="catalog-cards">
+      {providers.map((provider) => (
+        <button
+          type="button"
+          class="provider-card"
+          data-provider-id={provider.id}
+          aria-pressed="false"
+        >
+          <h3>{provider.name}</h3>
+          <div class="provider-id">{provider.id}</div>
+          <p class="provider-desc">{provider.description}</p>
+          <div class="provider-meta">
+            <span class="chip">{provider.benchmarkCount} benchmarks</span>
+            {provider.categories.slice(0, 3).map((cat) => (
+              <span class="chip">{cat}</span>
+            ))}
+          </div>
+        </button>
+      ))}
+    </div>
+
+    <aside class="catalog-detail is-empty" id="catalog-detail" aria-live="polite">
+      Select a provider to view details and download configuration.
+    </aside>
+  </div>
+
+  <footer class="catalog-footer">
+    Catalog synced from{' '}
+    <a href={`https://github.com/${source.repo}/tree/${source.ref}`} target="_blank" rel="noopener noreferrer">
+      {source.repo}@{source.ref}
+    </a>{' '}
+    at {fetchedDate}.
+  </footer>
+</div>
+
+<script>
+  function buildConfigMapYaml({
+    providerId,
+    providerYaml,
+    namespace,
+    name,
+    providerType,
+    providerName,
+  }) {
+    const dataKey = `${providerId}.yaml`;
+    const indented = providerYaml
+      .split('\n')
+      .map((line) => `    ${line}`)
+      .join('\n');
+
+    return `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${name}
+  namespace: ${namespace}
+  labels:
+    trustyai.opendatahub.io/evalhub-provider-type: ${providerType}
+    trustyai.opendatahub.io/evalhub-provider-name: ${providerName}
+data:
+  ${dataKey}: |
+${indented}
+`;
+  }
+
+  function downloadText(filename, content) {
+    const blob = new Blob([content], { type: 'text/yaml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function initCatalog() {
+    const root = document.getElementById('provider-catalog');
+    if (!root) return;
+
+    /** @type {Array<any>} */
+    const providers = JSON.parse(root.dataset.providers ?? '[]');
+    const providerMap = new Map(providers.map((p) => [p.id, p]));
+
+    const searchInput = document.getElementById('catalog-search');
+    const clearBtn = document.getElementById('catalog-clear');
+    const statusEl = document.getElementById('catalog-status');
+    const cardsEl = document.getElementById('catalog-cards');
+    const detailEl = document.getElementById('catalog-detail');
+
+    /** @type {string | null} */
+    let selectedId = null;
+
+    function matchesFilters(provider) {
+      const query = (searchInput?.value ?? '').trim().toLowerCase();
+      if (query) {
+        const haystack = `${provider.name} ${provider.id} ${provider.description}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      return true;
+    }
+
+    function applyFilters() {
+      let visible = 0;
+      cardsEl?.querySelectorAll('.provider-card').forEach((card) => {
+        const id = card.getAttribute('data-provider-id');
+        const provider = providerMap.get(id);
+        const show = provider && matchesFilters(provider);
+        card.classList.toggle('is-hidden', !show);
+        if (show) visible += 1;
+      });
+
+      if (statusEl) {
+        statusEl.textContent = `Showing ${visible} of ${providers.length} providers`;
+      }
+    }
+
+    function renderDetail(provider) {
+      if (!detailEl) return;
+
+      detailEl.classList.remove('is-empty');
+
+      const benchmarksRows = provider.benchmarks
+        .map(
+          (b) =>
+            `<tr>
+              <td><code>${escapeHtml(b.id)}</code></td>
+              <td>${escapeHtml(b.name)}</td>
+              <td>${escapeHtml(b.category)}</td>
+            </tr>`,
+        )
+        .join('');
+
+      const image = provider.runtime?.k8s?.image ?? '—';
+
+      detailEl.innerHTML = `
+        <div class="detail-header">
+          <div class="detail-title-group">
+            <h3>${escapeHtml(provider.name)}</h3>
+            <div class="detail-id">${escapeHtml(provider.id)}</div>
+          </div>
+          <a class="detail-github-link" href="${escapeHtml(provider.sourceUrl)}" target="_blank" rel="noopener noreferrer" title="View provider.yaml on GitHub" aria-label="View provider.yaml on GitHub">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+          </a>
+        </div>
+        <p>${escapeHtml(provider.description)}</p>
+
+        <div class="detail-section">
+          <h4>Runtime</h4>
+          <div class="detail-runtime">${escapeHtml(image)}</div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Benchmarks (${provider.benchmarkCount})</h4>
+          <table class="benchmarks-table">
+            <thead>
+              <tr><th>ID</th><th>Name</th><th>Category</th></tr>
+            </thead>
+            <tbody>${benchmarksRows}</tbody>
+          </table>
+        </div>
+
+        <div class="detail-section">
+          <h4>ConfigMap options</h4>
+          <form class="configmap-form" id="configmap-form">
+            <label>
+              Namespace
+              <input type="text" name="namespace" value="opendatahub" />
+            </label>
+            <label>
+              ConfigMap name
+              <input type="text" name="name" value="evalhub-provider-${escapeHtml(provider.id)}" />
+            </label>
+            <label>
+              Label: evalhub-provider-name
+              <input type="text" name="providerName" value="${escapeHtml(provider.id)}" />
+            </label>
+          </form>
+
+          <div class="download-actions">
+            <button type="button" id="download-configmap">Download ConfigMap</button>
+          </div>
+
+          <details class="configmap-preview">
+            <summary>Preview ConfigMap YAML</summary>
+            <pre id="configmap-preview"></pre>
+          </details>
+        </div>
+      `;
+
+      const form = detailEl.querySelector('#configmap-form');
+      const previewEl = detailEl.querySelector('#configmap-preview');
+
+      function getConfigMapOptions() {
+        const fd = new FormData(form);
+        return {
+          providerId: provider.id,
+          providerYaml: provider.yaml,
+          namespace: String(fd.get('namespace') ?? 'opendatahub'),
+          name: String(fd.get('name') ?? `evalhub-provider-${provider.id}`),
+          providerType: String(fd.get('providerType') ?? 'system'),
+          providerName: String(fd.get('providerName') ?? provider.id),
+        };
+      }
+
+      function updatePreview() {
+        if (previewEl) {
+          previewEl.textContent = buildConfigMapYaml(getConfigMapOptions());
+        }
+      }
+
+      form?.querySelectorAll('input').forEach((input) => {
+        input.addEventListener('input', updatePreview);
+      });
+
+      updatePreview();
+
+      detailEl.querySelector('#download-configmap')?.addEventListener('click', () => {
+        const opts = getConfigMapOptions();
+        downloadText(`${opts.name}.yaml`, buildConfigMapYaml(opts));
+      });
+    }
+
+    function selectProvider(id) {
+      selectedId = id;
+      cardsEl?.querySelectorAll('.provider-card').forEach((card) => {
+        const isSelected = card.getAttribute('data-provider-id') === id;
+        card.classList.toggle('is-selected', isSelected);
+        card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
+
+      const provider = providerMap.get(id);
+      if (provider) renderDetail(provider);
+    }
+
+    cardsEl?.querySelectorAll('.provider-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const id = card.getAttribute('data-provider-id');
+        if (id) selectProvider(id);
+      });
+    });
+
+    searchInput?.addEventListener('input', applyFilters);
+
+    clearBtn?.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      applyFilters();
+    });
+
+    applyFilters();
+
+    if (providers.length === 1) {
+      selectProvider(providers[0].id);
+    }
+  }
+
+  initCatalog();
+</script>
