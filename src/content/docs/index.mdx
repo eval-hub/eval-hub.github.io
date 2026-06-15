@@ -85,6 +85,27 @@ import mascot from '../../assets/evalhub-mascot.png';
     margin-bottom: 1.5rem;
     font-weight: 600;
   }
+  .eh-cta {
+    text-align: center;
+    padding: 3rem 0 1rem;
+  }
+  .eh-cta-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 600;
+    font-style: italic;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    letter-spacing: -0.02em;
+    margin: 0 0 1.25rem;
+  }
+  .eh-cta-buttons {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .eh-cta-buttons a {
+    border-radius: 4px !important;
+  }
   @media (max-width: 60rem) {
     .eh-hero {
       grid-template-columns: 1fr;
@@ -148,3 +169,13 @@ evalhub eval run \\
     and automate with the Python SDK or REST API.
   </Card>
 </CardGrid>
+
+<hr class="eh-divider" />
+
+<div class="eh-cta">
+  <h2 class="eh-cta-title">Explore AI Evaluations with EvalHub</h2>
+  <div class="eh-cta-buttons">
+    <LinkButton href="/getting-started/installation/">Getting Started</LinkButton>
+    <LinkButton href="https://github.com/eval-hub" variant="secondary">GitHub</LinkButton>
+  </div>
+</div>
