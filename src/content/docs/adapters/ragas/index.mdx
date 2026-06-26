@@ -1,0 +1,111 @@
+---
+title: "RAGAS Adapter"
+description: "Evaluate RAG pipeline quality with RAGAS metrics through EvalHub"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Since from '../../../../components/Since.astro';
+
+The RAGAS adapter integrates [RAGAS](https://github.com/explodinggradients/ragas) (Retrieval Augmented Generation Assessment) with the eval-hub evaluation service using the evalhub-sdk framework adapter pattern.
+
+## Overview
+
+RAGAS is an open-source framework purpose-built for evaluating RAG pipeline quality. It provides metrics that directly measure whether a RAG system is correctly grounding its answers in retrieved documents: faithfulness, answer relevancy, context precision, context recall, and more.
+
+RAG pipelines are among the most widely deployed AI application patterns in enterprise settings, yet faithfulness evaluation, verifying that model-generated answers match the retrieved context rather than hallucinating, remains one of the least commonly performed evaluation steps. The RAGAS adapter brings these metrics into EvalHub's unified evaluation control plane.
+
+### Key Features
+
+- **RAG-specific metrics**: Faithfulness, answer relevancy, context precision/recall, answer correctness, and more
+- **LLM-as-judge evaluation**: Uses an LLM judge endpoint for metrics that require semantic understanding
+- **Embedding-based metrics**: Supports separate embedding model configuration for similarity-based metrics
+- **Flexible data input**: JSONL and JSON datasets with configurable column mapping
+- **Two benchmark suites**: Default (4 core metrics) and Full (11 metrics) evaluation suites
+- **OpenAI-compatible**: Works with any OpenAI-compatible model endpoint (vLLM, TGI, Ollama, etc.)
+
+### Supported Backends
+
+- OpenAI-compatible chat completions endpoints (vLLM, Text Generation Inference, Ollama, etc.)
+- OpenAI-compatible embeddings endpoints (for metrics that require embeddings)
+
+## Architecture
+
+The adapter follows the eval-hub framework adapter pattern with automatic configuration:
+
+**Workflow:**
+
+1. **Settings-based configuration**: Runtime settings loaded automatically from environment
+2. **Automatic JobSpec loading**: Job configuration auto-loaded from mounted ConfigMap
+3. **Dataset resolution**: Evaluation data loaded from `/test_data` (S3 init container), `/data`, or an explicit path
+4. **LLM and embeddings setup**: OpenAI-compatible wrappers configured for the RAGAS evaluation engine
+5. **RAGAS evaluation**: Metrics computed per sample using the RAGAS library
+6. **Callback-based communication**: Progress updates and artifacts sent to sidecar via callbacks
+7. **OCI artifact persistence**: Results persisted as OCI artifacts via the sidecar
+8. **Structured results**: Returns `JobResults` with per-metric scores and overall aggregate
+
+## Quick Start
+
+### Building the Container
+
+```bash
+make image-ragas
+```
+
+### Running Locally
+
+<Tabs>
+<TabItem label="Basic Usage">
+
+```bash
+# Set environment for local mode
+export EVALHUB_MODE=local
+export EVALHUB_JOB_SPEC_PATH=meta/job.json
+
+# Run the adapter
+python main.py
+```
+
+</TabItem>
+
+<TabItem label="With Ollama">
+
+```bash
+# Start Ollama and pull a model
+ollama run qwen2.5:1.5b
+
+# Run RAGAS evaluation against Ollama
+export EVALHUB_MODE=local
+export EVALHUB_JOB_SPEC_PATH=meta/job.json
+python main.py
+```
+
+</TabItem>
+</Tabs>
+
+## Container Image
+
+```bash
+# Pull from registry
+podman pull quay.io/evalhub/community-ragas:latest
+
+# Run with custom job spec
+podman run \
+  -e EVALHUB_MODE=local \
+  -e EVALHUB_JOB_SPEC_PATH=/meta/job.json \
+  -v $(pwd)/job.json:/meta/job.json:ro \
+  -v $(pwd)/data:/data:ro \
+  quay.io/evalhub/community-ragas:latest
+```
+
+## Provider Details
+
+| Field | Value |
+|---|---|
+| Provider ID | `ragas` |
+| Default Benchmark | `ragas_rag_default` |
+| Full Benchmark | `ragas_rag_full` |
+
+## Source
+
+- **Adapter**: [eval-hub-contrib/adapters/ragas](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/ragas)
+- **Upstream**: [explodinggradients/ragas](https://github.com/explodinggradients/ragas)

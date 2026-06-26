@@ -120,6 +120,7 @@ export default defineConfig({
           items: [
             {
               label: 'GuideLLM',
+              collapsed: true,
               items: [
                 { label: 'Overview', slug: 'adapters/guidellm' },
                 { label: 'Configuration', slug: 'adapters/guidellm/configuration' },
@@ -130,6 +131,7 @@ export default defineConfig({
             },
             {
               label: 'LightEval',
+              collapsed: true,
               items: [
                 { label: 'Overview', slug: 'adapters/lighteval' },
                 { label: 'Configuration', slug: 'adapters/lighteval/configuration' },
@@ -139,8 +141,19 @@ export default defineConfig({
             },
             {
               label: 'IBM CLEAR',
+              collapsed: true,
               items: [
                 { label: 'Overview', slug: 'adapters/clear' },
+              ],
+            },
+            {
+              label: 'RAGAS',
+              collapsed: true,
+              items: [
+                { label: 'Overview', slug: 'adapters/ragas' },
+                { label: 'Configuration', slug: 'adapters/ragas/configuration' },
+                { label: 'Metrics', slug: 'adapters/ragas/metrics' },
+                { label: 'Examples', slug: 'adapters/ragas/examples' },
               ],
             },
           ],

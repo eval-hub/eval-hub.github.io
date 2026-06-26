@@ -1,0 +1,204 @@
+---
+title: "Examples"
+description: "Worked examples for evaluating RAG pipelines with the RAGAS adapter"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
+
+## End-to-End RAG Evaluation
+
+This example walks through evaluating a RAG pipeline from dataset preparation to results retrieval using the EvalHub SDK CLI.
+
+### Prerequisites
+
+- EvalHub server running (local or on OpenShift)
+- An OpenAI-compatible model endpoint serving a judge model (e.g. vLLM, Ollama)
+- An embeddings endpoint (can be the same server if it supports `/v1/embeddings`)
+- The `eval-hub-sdk` CLI installed: `pip install eval-hub-sdk`
+
+### Prepare the Dataset
+
+<Steps>
+
+1. **Create a JSONL dataset** with your RAG pipeline outputs. Each line must contain the four RAGAS columns:
+
+   ```jsonl
+   {"user_input": "What is the capital of France?", "response": "The capital of France is Paris.", "retrieved_contexts": ["Paris is the capital and largest city of France. It is situated on the River Seine, in northern France."], "reference": "The capital of France is Paris."}
+   {"user_input": "Who wrote Romeo and Juliet?", "response": "Romeo and Juliet was written by William Shakespeare.", "retrieved_contexts": ["Romeo and Juliet is a tragedy written by William Shakespeare early in his career about the romance between two Italian youths from feuding families."], "reference": "William Shakespeare wrote Romeo and Juliet."}
+   {"user_input": "What is photosynthesis?", "response": "Photosynthesis is the process by which green plants convert sunlight into chemical energy.", "retrieved_contexts": ["Photosynthesis is a process used by plants and other organisms to convert light energy into chemical energy that can be stored and later released to fuel the organism's activities."], "reference": "Photosynthesis is the process by which plants convert light energy into chemical energy stored in glucose."}
+   ```
+
+2. **Upload the dataset** to an S3 bucket accessible from your cluster, or mount it as a volume at `/data/dataset.jsonl`.
+
+3. If your dataset uses different column names, prepare a `column_map`:
+
+   ```json
+   {
+     "column_map": {
+       "question": "user_input",
+       "answer": "response",
+       "contexts": "retrieved_contexts",
+       "ground_truth": "reference"
+     }
+   }
+   ```
+
+</Steps>
+
+### Submit a RAGAS Evaluation Job
+
+<Tabs>
+<TabItem label="SDK CLI">
+
+```bash
+# Submit a RAGAS evaluation job
+evalhub job submit \
+  --provider ragas \
+  --benchmark ragas_rag_default \
+  --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
+  --model-url "http://vllm-service:8000" \
+  --param embedding_model=all-MiniLM-L6-v2 \
+  --param embedding_url=http://embeddings-service:8001 \
+  --param max_tokens=512 \
+  --param temperature=0.1 \
+  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
+```
+
+</TabItem>
+
+<TabItem label="Python SDK">
+
+```python
+from evalhub import EvalHubClient
+
+client = EvalHubClient(base_url="http://localhost:8080")
+
+job = client.submit_job(
+    provider_id="ragas",
+    benchmark_id="ragas_rag_default",
+    model_name="Qwen/Qwen2.5-1.5B-Instruct",
+    model_url="http://vllm-service:8000",
+    parameters={
+        "embedding_model": "all-MiniLM-L6-v2",
+        "embedding_url": "http://embeddings-service:8001",
+        "max_tokens": 512,
+        "temperature": 0.1,
+    },
+    test_data_ref={"s3": "s3://my-bucket/ragas-dataset/dataset.jsonl"},
+)
+
+print(f"Job submitted: {job.id}")
+```
+
+</TabItem>
+</Tabs>
+
+### Retrieve Results
+
+```bash
+# Check job status
+evalhub job status <job-id>
+
+# Get results
+evalhub job results <job-id>
+```
+
+Results include per-metric scores:
+
+```json
+{
+  "id": "ragas-rag-eval-001",
+  "benchmark_id": "ragas_rag_default",
+  "overall_score": 0.87,
+  "results": [
+    {"metric_name": "faithfulness", "metric_value": 0.92, "num_samples": 3},
+    {"metric_name": "answer_relevancy", "metric_value": 0.88, "num_samples": 3},
+    {"metric_name": "context_precision", "metric_value": 0.85, "num_samples": 3},
+    {"metric_name": "context_recall", "metric_value": 0.83, "num_samples": 3}
+  ],
+  "num_examples_evaluated": 3,
+  "duration_seconds": 45.2
+}
+```
+
+## Running the Full Metric Suite
+
+To evaluate with all 11 metrics, use the `ragas_rag_full` benchmark:
+
+```bash
+evalhub job submit \
+  --provider ragas \
+  --benchmark ragas_rag_full \
+  --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
+  --model-url "http://vllm-service:8000" \
+  --param embedding_model=all-MiniLM-L6-v2 \
+  --param embedding_url=http://embeddings-service:8001 \
+  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
+```
+
+:::caution[Cost Consideration]
+The full suite runs 11 metrics, most of which require LLM judge calls. For a dataset of `N` samples, expect roughly `9N` judge calls (9 judge-based metrics) plus embeddings for 2 metrics. Consider starting with the default suite and expanding to the full suite once your pipeline is stable.
+:::
+
+## Evaluation Collection with RAGAS
+
+EvalHub Evaluation Collections let you run benchmarks from multiple providers in a single evaluation. This example combines RAGAS with LM Evaluation Harness benchmarks to evaluate both the RAG pipeline quality and the underlying model capabilities.
+
+### Define a Collection
+
+```yaml
+name: healthcare_rag_eval_v1
+description: Healthcare RAG pipeline evaluation: RAG quality + medical knowledge
+providers:
+  - provider_id: ragas
+    benchmarks:
+      - benchmark_id: ragas_rag_default
+        weight: 0.6
+        pass_criteria:
+          threshold: 0.7
+  - provider_id: lm_evaluation_harness
+    benchmarks:
+      - benchmark_id: medqa
+        weight: 0.2
+        pass_criteria:
+          threshold: 0.5
+      - benchmark_id: pubmedqa
+        weight: 0.2
+        pass_criteria:
+          threshold: 0.5
+```
+
+### Run the Collection
+
+```bash
+evalhub collection run healthcare_rag_eval_v1 \
+  --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
+  --model-url "http://vllm-service:8000" \
+  --param ragas.embedding_model=all-MiniLM-L6-v2 \
+  --param ragas.embedding_url=http://embeddings-service:8001 \
+  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
+```
+
+The collection produces a unified report with weighted scores from all providers, making it possible to set quality gates that cover both RAG-specific and general model capabilities.
+
+## Local Development Example
+
+For local testing without Kubernetes:
+
+```bash
+# Start a model server (e.g. Ollama)
+ollama serve &
+ollama pull qwen2.5:1.5b
+
+# Prepare a small test dataset
+cat > /tmp/dataset.jsonl << 'EOF'
+{"user_input": "What is machine learning?", "response": "Machine learning is a subset of AI that enables systems to learn from data.", "retrieved_contexts": ["Machine learning is a branch of artificial intelligence that focuses on building systems that learn from data."], "reference": "Machine learning is a subset of artificial intelligence focused on learning from data."}
+EOF
+
+# Run the adapter locally
+cd adapters/ragas
+export EVALHUB_MODE=local
+export EVALHUB_JOB_SPEC_PATH=meta/job.json
+python main.py
+```
