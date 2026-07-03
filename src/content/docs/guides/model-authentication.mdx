@@ -2,6 +2,8 @@
 title: "Model Authentication"
 ---
 
+import { Steps } from '@astrojs/starlight/components';
+
 EvalHub routes all model traffic through a sidecar proxy running alongside the adapter. The sidecar handles credential resolution and upstream TLS — the adapter never sees real API keys or SA tokens. A secret is required only when the model or an in-cluster service needs authentication.
 
 ## How It Works
