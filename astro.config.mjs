@@ -74,6 +74,7 @@ export default defineConfig({
       customCss: ['./src/styles/custom.css', './src/styles/provider-catalog.css'],
       components: {
         ThemeSelect: './src/components/ThemeSelect.astro',
+        MarkdownContent: './src/components/MarkdownContent.astro',
       },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/eval-hub' },

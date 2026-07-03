@@ -2,43 +2,47 @@
 title: "Model Authentication"
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
 EvalHub routes all model traffic through a sidecar proxy running alongside the adapter. The sidecar handles credential resolution and upstream TLS — the adapter never sees real API keys or SA tokens. A secret is required only when the model or an in-cluster service needs authentication.
 
 ## How It Works
 
-```
-  User Secret (user-provided)
-  ┌────────────────────────────────────┐
-  │ api-key:       <real>              │
-  │ ca_cert:       <pem>               │
-  │ hf-token:      <real>              │
-  │ mysvc_api-key: <real>              │
-  │ mysvc_url:     https://mysvc...    │
-  └──────┬─────────────────────────────┘
-         │
-         ├─────────────────────────────────────────────────────────────────────┐
-         │ EvalHub generates Internal Secret (api-key, *_api-key, *_sa_token,  │ mounted into Sidecar
-         │ *_url only)                                                         │ (all keys, real values)
-         ▼                                                                     ▼
-  ┌──────────────────────────────────────┐                   ┌──────────────────────────────────────┐
-  │ Internal Secret (ephemeral, per-job) │                   │ Sidecar                              │
-  │ api-key:       api-key:ref           │                   │ - api-key:       <real>              │
-  │ mysvc_api-key: mysvc_api-key:ref     │                   │ - ca_cert:       <pem>               │
-  │ mysvc_url:     http://localhost:8080 │                   │ - hf-token:      <real>              │
-  └──────┬───────────────────────────────┘                   │ - mysvc_api-key: <real>              │
-         │                                                   │ - mysvc_url:     https://mysvc...    │
-         │ projected volume (adapter mount)                  └──────────────────────────────────────┘
-         ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  Adapter                                                 │
-  │  api-key:       api-key:ref          (internal secret)   │
-  │  mysvc_api-key: mysvc_api-key:ref    (internal secret)   │
-  │  mysvc_url:     http://localhost:8080 (internal secret)  │
-  │  hf-token:      <real>               (user secret)       │
-  │  ca_cert:       <pem>                (user secret)       │
-  └──────────────────────────────────────────────────────────┘
+```mermaid
+%%{init: {"flowchart": {"curve": "stepBefore"}}}%%
+flowchart LR
+    US["`**User Secret** (user-provided)
+api-key: REAL
+ca_cert: PEM
+hf-token: REAL
+mysvc_api-key: REAL
+mysvc_url: https://mysvc...`"]
+
+    IS["`**Internal Secret** (ephemeral, per-job)
+api-key: api-key:ref
+mysvc_api-key: mysvc_api-key:ref
+mysvc_url: http://localhost:8080`"]
+
+    SC["`**Sidecar**
+api-key: REAL
+ca_cert: PEM
+hf-token: REAL
+mysvc_api-key: REAL
+mysvc_url: https://mysvc...`"]
+
+    AD["`**Adapter**
+api-key: api-key:ref
+mysvc_api-key: mysvc_api-key:ref
+mysvc_url: http://localhost:8080
+hf-token: REAL
+ca_cert: PEM`"]
+
+    US -->|"`EvalHub generates
+ref secret`"| IS
+    US -->|"mounted, real values"| SC
+    IS -->|"projected volume"| AD
+    US -.->|"`passthrough:
+hf-token, ca_cert`"| AD
 ```
 
 > **Note:** The diagram illustrates the `api-key` / `*_api-key` / `*_url` pattern. Other patterns exist — see the scenarios below for details.
@@ -177,6 +181,8 @@ kubectl create secret generic vllm-api-key -n team-a \
 
    Set `model.auth.secret_ref` to the secret name when submitting the evaluation job.
 
+   <Tabs>
+   <TabItem label="curl">
    ```bash {10-12}
    curl -k -X POST "$HOST/api/v1/evaluations/jobs" \
      -H "Authorization: Bearer $token" \
@@ -204,10 +210,9 @@ kubectl create secret generic vllm-api-key -n team-a \
      ]
    }'
    ```
-
-   **Using the Python SDK:**
-
-   ```python
+   </TabItem>
+   <TabItem label="Python SDK">
+   ```python {13}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
@@ -233,6 +238,8 @@ kubectl create secret generic vllm-api-key -n team-a \
        headers={"X-Tenant": "team-a"},
    )
    ```
+   </TabItem>
+   </Tabs>
 
    Adapters that use `resolve_model_credentials()` get `api-key:ref` automatically — no extra code needed for single-model API key auth.
 
@@ -291,6 +298,8 @@ If the endpoint uses a custom CA for TLS only, create a secret with just `ca_cer
 
    Omit `model.auth` unless the endpoint uses a custom CA certificate.
 
+   <Tabs>
+   <TabItem label="curl">
    ```bash
    curl -k -X POST "$HOST/api/v1/evaluations/jobs" \
      -H "Authorization: Bearer $token" \
@@ -315,6 +324,35 @@ If the endpoint uses a custom CA for TLS only, create a secret with just `ca_cer
      ]
    }'
    ```
+   </TabItem>
+   <TabItem label="Python SDK">
+   ```python
+   import os
+   from evalhub import SyncEvalHubClient
+   from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
+
+   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+
+   job = client.jobs.submit(
+       JobSubmissionRequest(
+           name="SA token model test",
+           model=ModelConfig(
+               url="https://gpt2-team-a.apps.rosa.prabhu-comhub.xqmp.p3.openshiftapps.com/v1",
+               name="gpt2",
+           ),
+           benchmarks=[
+               BenchmarkConfig(
+                   id="arc_easy",
+                   provider_id="lm_evaluation_harness",
+                   parameters={"limit": 5, "num_examples": 10, "tokenizer": "google/flan-t5-small"},
+               )
+           ],
+       ),
+       headers={"X-Tenant": "team-a"},
+   )
+   ```
+   </TabItem>
+   </Tabs>
 
 </Steps>
 
@@ -345,7 +383,9 @@ kubectl create secret generic kfp-creds \
 
 1. **Reference the secret in the job**
 
-   ```bash
+   <Tabs>
+   <TabItem label="curl">
+   ```bash {10-12}
    curl -k -X POST "$HOST/api/v1/evaluations/jobs" \
      -H "Authorization: Bearer $token" \
      -H "Content-Type: application/json" \
@@ -372,6 +412,36 @@ kubectl create secret generic kfp-creds \
      ]
    }'
    ```
+   </TabItem>
+   <TabItem label="Python SDK">
+   ```python {13}
+   import os
+   from evalhub import SyncEvalHubClient
+   from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
+
+   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+
+   job = client.jobs.submit(
+       JobSubmissionRequest(
+           name="kfp sa token test",
+           model=ModelConfig(
+               url="https://your-model-endpoint/v1",
+               name="gpt2",
+               auth={"secret_ref": "kfp-creds"},
+           ),
+           benchmarks=[
+               BenchmarkConfig(
+                   id="arc_easy",
+                   provider_id="lm_evaluation_harness",
+                   parameters={"limit": 5, "num_examples": 10, "tokenizer": "google/flan-t5-small"},
+               )
+           ],
+       ),
+       headers={"X-Tenant": "team-a"},
+   )
+   ```
+   </TabItem>
+   </Tabs>
 
 2. **Call KFP from your adapter**
 
@@ -414,7 +484,9 @@ kubectl create secret generic multi-model-creds \
 
 1. **Reference the secret in the job**
 
-   ```bash
+   <Tabs>
+   <TabItem label="curl">
+   ```bash {10-12}
    curl -k -X POST "$HOST/api/v1/evaluations/jobs" \
      -H "Authorization: Bearer $token" \
      -H "Content-Type: application/json" \
@@ -441,6 +513,36 @@ kubectl create secret generic multi-model-creds \
      ]
    }'
    ```
+   </TabItem>
+   <TabItem label="Python SDK">
+   ```python {13}
+   import os
+   from evalhub import SyncEvalHubClient
+   from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
+
+   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+
+   job = client.jobs.submit(
+       JobSubmissionRequest(
+           name="multi-model test",
+           model=ModelConfig(
+               url="https://model1.example.com/v1",
+               name="model-1",
+               auth={"secret_ref": "multi-model-creds"},
+           ),
+           benchmarks=[
+               BenchmarkConfig(
+                   id="arc_easy",
+                   provider_id="lm_evaluation_harness",
+                   parameters={"limit": 5, "num_examples": 10, "tokenizer": "google/flan-t5-small"},
+               )
+           ],
+       ),
+       headers={"X-Tenant": "team-a"},
+   )
+   ```
+   </TabItem>
+   </Tabs>
 
 2. **Use ref tokens in your adapter**
 
