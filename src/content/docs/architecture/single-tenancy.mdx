@@ -1,0 +1,410 @@
+---
+title: "Single-Tenancy"
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Step-by-step guide for deploying EvalHub with `spec.tenancy: single` on OpenShift. EvalHub runs in the same namespace as the workloads it serves — ideal for a single team or project that does not need a shared control-plane instance.
+
+For shared concepts — tenant isolation, SAR authorisation, ClusterRoles, and common troubleshooting — see the [Tenancy overview](/architecture/tenancy/).
+
+## Prerequisites
+
+Before setting up single-tenancy, ensure you have:
+
+- The TrustyAI Operator installed and reconciling
+- Namespace-admin access in the workload namespace (no cluster-admin required for tenant labelling)
+- A namespace for your team or project (e.g. `team-a`)
+
+## Set up
+
+<Steps>
+
+1. **Deploy EvalHub**
+
+   Create an EvalHub instance in the workload namespace:
+
+   ```yaml
+   apiVersion: trustyai.opendatahub.io/v1alpha1
+   kind: EvalHub
+   metadata:
+     name: evalhub
+     namespace: team-a
+   spec:
+     tenancy: single
+     replicas: 1
+     database:
+       type: sqlite
+     providers:
+       - lm-evaluation-harness
+       - garak
+       - garak-kfp
+       - guidellm
+       - lighteval
+       - ibm-clear
+     collections:
+       - leaderboard-v2
+       - safety-and-fairness-v1
+       - toxicity-and-ethical-principles
+   ```
+
+   For production workloads, use PostgreSQL instead of SQLite:
+
+   ```yaml
+   database:
+     type: postgresql
+     secret: evalhub-db-credentials
+   ```
+
+   The operator automatically creates in the instance namespace:
+
+   | Resource | Purpose |
+   |----------|---------|
+   | `evalhub-service` SA | API server identity |
+   | `evalhub-team-a-job` SA | Identity for evaluation job pods |
+   | ClusterRole RoleBindings | jobs-writer, job-config, auth-reviewer, MLFlow |
+   | `evalhub-tenant-admin` Role | Full CRUD on virtual EvalHub resources; MLflow read-only (get, list) |
+   | `evalhub-user` Role | Read providers/collections, submit via `evalhubs/proxy`, create status-events, MLflow create/get |
+   | `evalhub-tenant-admin-binding` | Binds admin Role to `system:serviceaccounts:team-a` |
+
+   :::note[Default admin access and job submission]
+   The operator binds **all** ServiceAccounts in the namespace to `evalhub-tenant-admin`. That Role grants `evaluations` create but MLflow `experiments` are read-only. `POST /api/v1/evaluations/jobs` also requires MLflow `create` and `get` — bind principals to `evalhub-user` for those permissions (RBAC unions across bindings). For restricted access without admin CRUD, bind `evalhub-user` only.
+   :::
+
+2. **Grant user access**
+
+   Unlike multi-tenancy, you do not need to write a custom `evalhub-evaluator` Role. The operator creates `evalhub-user` and `evalhub-tenant-admin` for you. Bind your principals to `evalhub-user` for standard evaluation access.
+
+   EvalHub supports three principal types:
+
+   | Principal | Token source | RoleBinding `kind` | Has home namespace? |
+   |-----------|-------------|-------------------|---------------------|
+   | ServiceAccount | `oc create token` | `ServiceAccount` | Yes (where SA lives) |
+   | OpenShift User | `oc whoami -t` (OAuth) | `User` | No |
+   | OpenShift Group | `oc whoami -t` (OAuth, via member) | `Group` | No |
+
+   <Tabs>
+   <TabItem label="ServiceAccount">
+
+   **Create the ServiceAccount:**
+
+   ```bash
+   oc apply -f - <<EOF
+   apiVersion: v1
+   kind: ServiceAccount
+   metadata:
+     name: team-a-user
+     namespace: team-a
+   EOF
+   ```
+
+   **Bind to the operator-created `evalhub-user` Role:**
+
+   ```bash
+   oc apply -f - <<EOF
+   apiVersion: rbac.authorization.k8s.io/v1
+   kind: RoleBinding
+   metadata:
+     name: evalhub-user-binding
+     namespace: team-a
+   roleRef:
+     apiGroup: rbac.authorization.k8s.io
+     kind: Role
+     name: evalhub-user
+   subjects:
+     - kind: ServiceAccount
+       name: team-a-user
+       namespace: team-a
+   EOF
+   ```
+
+   </TabItem>
+
+   <TabItem label="OpenShift User">
+
+   **Bind an OpenShift User to `evalhub-user`:**
+
+   ```bash
+   oc apply -f - <<EOF
+   apiVersion: rbac.authorization.k8s.io/v1
+   kind: RoleBinding
+   metadata:
+     name: evalhub-user-binding
+     namespace: team-a
+   roleRef:
+     apiGroup: rbac.authorization.k8s.io
+     kind: Role
+     name: evalhub-user
+   subjects:
+     - kind: User
+       name: alice
+       apiGroup: rbac.authorization.k8s.io
+   EOF
+   ```
+
+   :::caution[Username must match exactly]
+   The `name` field must match the OpenShift username as returned by `oc whoami`.
+   :::
+
+   </TabItem>
+
+   <TabItem label="OpenShift Group">
+
+   **Create the Group and add members:**
+
+   ```bash
+   oc adm groups new team-a-evaluators
+   oc adm groups add-users team-a-evaluators alice
+   oc adm groups add-users team-a-evaluators bob
+   ```
+
+   **Bind the group to `evalhub-user`:**
+
+   ```bash
+   oc apply -f - <<EOF
+   apiVersion: rbac.authorization.k8s.io/v1
+   kind: RoleBinding
+   metadata:
+     name: evalhub-user-group-binding
+     namespace: team-a
+   roleRef:
+     apiGroup: rbac.authorization.k8s.io
+     kind: Role
+     name: evalhub-user
+   subjects:
+     - kind: Group
+       name: team-a-evaluators
+       apiGroup: rbac.authorization.k8s.io
+   EOF
+   ```
+
+   :::note[Group membership propagation]
+   After adding a user to a group, the user must re-authenticate (`oc login`) to obtain a fresh OAuth token that includes the new group membership.
+   :::
+
+   </TabItem>
+   </Tabs>
+
+3. **Access the API**
+
+   All evaluation API requests must include the `X-Tenant` header set to the EvalHub instance namespace. In single-tenancy mode, this is always the namespace where EvalHub is deployed.
+
+   **Get the EvalHub route:**
+
+   ```bash
+   EVALHUB_URL=$(oc get route evalhub -n team-a -o jsonpath='{.spec.host}')
+   ```
+
+   **Get a token:**
+
+   <Tabs>
+   <TabItem label="ServiceAccount">
+
+   ```bash
+   TOKEN=$(oc create token team-a-user -n team-a --duration=1h)
+   ```
+
+   </TabItem>
+
+   <TabItem label="OpenShift User">
+
+   ```bash
+   oc login --username=alice --password=<password>
+   TOKEN=$(oc whoami -t)
+   ```
+
+   </TabItem>
+
+   <TabItem label="OpenShift Group">
+
+   ```bash
+   oc login --username=alice --password=<password>
+   TOKEN=$(oc whoami -t)
+   ```
+
+   </TabItem>
+   </Tabs>
+
+   **List providers:**
+
+   <Tabs syncKey="interface">
+   <TabItem label="CLI">
+
+   ```bash
+   evalhub providers list --token $TOKEN --tenant team-a
+   ```
+
+   </TabItem>
+   <TabItem label="Python SDK">
+
+   ```python
+   client = SyncEvalHubClient(
+       base_url=os.environ["EVALHUB_URL"],
+       auth_token=TOKEN,
+       tenant="team-a"
+   )
+   providers = client.providers.list()
+   ```
+
+   </TabItem>
+   <TabItem label="REST API">
+
+   ```bash
+   curl -sS -k \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "X-Tenant: team-a" \
+     "https://$EVALHUB_URL/api/v1/evaluations/providers" | jq .
+   ```
+
+   </TabItem>
+   </Tabs>
+
+   **Submit an evaluation job:**
+
+   <Tabs syncKey="interface">
+   <TabItem label="CLI">
+
+   ```bash
+   evalhub eval run \
+     --token $TOKEN \
+     --tenant team-a \
+     --name mmlu-eval \
+     --model-url http://vllm-server.team-a.svc.cluster.local:8000/v1 \
+     --model-name meta-llama/Llama-3.2-1B-Instruct \
+     --provider lm_evaluation_harness \
+     --benchmark mmlu
+   ```
+
+   </TabItem>
+   <TabItem label="Python SDK">
+
+   ```python
+   job = client.jobs.submit(JobSubmissionRequest(
+       name="mmlu-eval",
+       model=ModelConfig(
+           url="http://vllm-server.team-a.svc.cluster.local:8000/v1",
+           name="meta-llama/Llama-3.2-1B-Instruct"
+       ),
+       benchmarks=[
+           BenchmarkConfig(id="mmlu", provider_id="lm_evaluation_harness")
+       ]
+   ))
+   ```
+
+   </TabItem>
+   <TabItem label="REST API">
+
+   ```bash
+   curl -sS -k -X POST \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "X-Tenant: team-a" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "model": {
+         "url": "http://vllm-server.team-a.svc.cluster.local:8000/v1",
+         "name": "meta-llama/Llama-3.2-1B-Instruct"
+       },
+       "benchmarks": [
+         {
+           "id": "mmlu",
+           "provider_id": "lm_evaluation_harness"
+         }
+       ]
+     }' \
+     "https://$EVALHUB_URL/api/v1/evaluations/jobs" | jq .
+   ```
+
+   </TabItem>
+   </Tabs>
+
+   The job pod is created in `team-a` using the `evalhub-team-a-job` ServiceAccount.
+
+</Steps>
+
+## RBAC reference — convenience Roles
+
+In single-tenancy mode, the operator creates these namespace-scoped Roles (garbage-collected when the EvalHub CR is deleted):
+
+### `evalhub-tenant-admin`
+
+| API group | Resources | Verbs |
+|-----------|-----------|-------|
+| `trustyai.opendatahub.io` | `evaluations`, `collections`, `providers`, `status-events` | get, list, watch, create, update, patch, delete |
+| `trustyai.opendatahub.io` | `evalhubs/proxy` (scoped to instance name) | get, create |
+| `mlflow.kubeflow.org` | `experiments` | get, list |
+
+MLflow access is read-only — no `create` verb. Although this Role includes `evaluations` create, `POST /api/v1/evaluations/jobs` also performs SAR checks for MLflow `experiments` with `create` and `get`. Bind principals to [`evalhub-user`](#evalhub-user) for MLflow submission permissions.
+
+Bound to `system:serviceaccounts:{namespace}` via `evalhub-tenant-admin-binding`, so all ServiceAccounts in the namespace receive admin access by default.
+
+### `evalhub-user`
+
+| API group | Resources | Verbs |
+|-----------|-----------|-------|
+| `trustyai.opendatahub.io` | `collections`, `providers` | get, list, watch |
+| `trustyai.opendatahub.io` | `evalhubs/proxy` (scoped to instance name) | get, create |
+| `trustyai.opendatahub.io` | `status-events` | create |
+| `mlflow.kubeflow.org` | `experiments` | get, list, create |
+
+Bind individual principals to this Role for standard evaluation access without full admin permissions.
+
+## Tenant provider and collection ConfigMaps
+
+You can add custom providers and collections in the instance namespace without modifying the operator namespace. Label ConfigMaps with:
+
+- Providers: `trustyai.opendatahub.io/evalhub-provider-type=tenant`
+- Collections: `trustyai.opendatahub.io/evalhub-collection-type=tenant`
+
+The operator discovers these in-place and mounts them at `/config/providers/tenant/` and `/config/collections/tenant/` — separate from system configs at `/config/providers/` and `/config/collections/` to avoid shadowing.
+
+Changes to tenant ConfigMaps trigger reconciliation via the operator's ConfigMap watch; no CR edit is required.
+
+## What does not happen
+
+In single-tenancy mode, the operator does **not**:
+
+- Watch for `evalhub.trustyai.opendatahub.io/tenant` labels on other namespaces
+- Provision job ServiceAccounts or RoleBindings in namespaces other than the instance namespace
+- Create `evalhub-discovery` ConfigMaps in other namespaces
+
+## Verifying the setup
+
+```bash
+# Convenience Roles created by the operator
+oc get role evalhub-tenant-admin evalhub-user -n team-a
+oc get rolebinding evalhub-tenant-admin-binding -n team-a
+
+# Job SA in the instance namespace
+oc get sa evalhub-team-a-job -n team-a
+
+# Confirm no EvalHub resources in a second namespace
+oc get sa,role,rolebinding -n team-b 2>/dev/null | grep evalhub || echo "No cross-namespace resources (expected)"
+```
+
+Test API access with the correct tenant header:
+
+```bash
+oc auth can-i get providers.trustyai.opendatahub.io \
+  -n team-a \
+  --as=system:serviceaccount:team-a:team-a-user
+```
+
+## Troubleshooting
+
+For common issues such as 403 Forbidden responses, see [Troubleshooting on the Tenancy overview](/architecture/tenancy/#troubleshooting).
+
+### Wrong `X-Tenant` value
+
+In single-tenancy mode, `X-Tenant` must be set to the EvalHub instance namespace — not a different namespace. A request with `X-Tenant: other-ns` is rejected unless the caller has a RoleBinding in `other-ns`.
+
+### Missing `X-Tenant` header
+
+Requests without the `X-Tenant` header are rejected even though there is only one tenant. Always set `X-Tenant` to the instance namespace.
+
+### Default admin binding vs `evalhub-user`
+
+If a ServiceAccount can access the API without an explicit `evalhub-user` RoleBinding, it is likely receiving permissions through `evalhub-tenant-admin-binding` (which binds all namespace ServiceAccounts to admin). To enforce least privilege, remove or avoid relying on the default binding and bind principals explicitly to `evalhub-user`.
+
+---
+
+For shared control-plane deployments serving multiple teams, see [Multi-Tenancy](/architecture/multi-tenancy/).
