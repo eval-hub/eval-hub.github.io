@@ -50,7 +50,7 @@ Two pre-defined benchmark suites are available:
 
 ### `ragas_rag_default`: Default Suite
 
-Runs the four core RAG evaluation metrics. Suitable for most use cases.
+Runs the four retrieval-and-grounding metrics. Suitable for most use cases. The fifth core metric, answer correctness (`factual_correctness`), is available via `ragas_rag_full` or by adding it to `parameters.metrics` — see [Metrics reference](metrics/#five-core-ragas-metrics).
 
 | Setting | Value |
 |---------|-------|
