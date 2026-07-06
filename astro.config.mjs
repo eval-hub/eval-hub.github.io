@@ -107,7 +107,15 @@ export default defineConfig({
           label: 'Architecture',
           items: [
             { label: 'System Overview', slug: 'architecture/system-overview' },
-            { label: 'Multi-Tenancy', slug: 'architecture/multi-tenancy' },
+            {
+              label: 'Tenancy',
+              collapsed: false,
+              items: [
+                { label: 'Overview', slug: 'architecture/tenancy' },
+                { label: 'Multi-Tenancy', slug: 'architecture/multi-tenancy' },
+                { label: 'Single-Tenancy', slug: 'architecture/single-tenancy' },
+              ],
+            },
           ],
         },
         {

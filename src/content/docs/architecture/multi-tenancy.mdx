@@ -4,47 +4,9 @@ title: "Multi-Tenancy"
 
 import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-Guide for deploying EvalHub with namespace-based multi-tenancy on OpenShift.
+Step-by-step guide for deploying EvalHub with `spec.tenancy: multi` (the default) on OpenShift. One EvalHub instance in a control-plane namespace serves multiple tenant namespaces.
 
-## Overview
-
-EvalHub uses Kubernetes namespaces as tenant boundaries. Each tenant operates in its own namespace, and access is enforced through Kubernetes RBAC via SubjectAccessReview (SAR) checks.
-
-The core principle is: **namespace = tenant = MLFlow workspace**.
-
-```mermaid
-flowchart LR
-    subgraph "Control Plane (opendatahub)"
-        Operator[TrustyAI Operator]
-        EvalHub[EvalHub API]
-    end
-
-    subgraph "Tenant A (team-a)"
-        SA_A[Job SA]
-        Job_A[Eval Job]
-    end
-
-    subgraph "Tenant B (team-b)"
-        SA_B[Job SA]
-        Job_B[Eval Job]
-    end
-
-    Operator -->|creates RBAC| SA_A
-    Operator -->|creates RBAC| SA_B
-    EvalHub -->|schedules jobs| Job_A
-    EvalHub -->|schedules jobs| Job_B
-```
-
-### How tenant isolation works
-
-1. **Authentication** -- Bearer tokens are validated via the Kubernetes TokenReview API. The token can belong to a ServiceAccount, an OpenShift User, or a member of an OpenShift Group — EvalHub treats all identically at this stage.
-2. **Authorisation** -- Every API request includes an `X-Tenant` header specifying the target namespace. EvalHub runs a SAR check: _"can this principal perform this action in that namespace?"_
-3. **Data isolation** -- All database queries are filtered by `tenant_id`
-4. **Job isolation** -- Evaluation jobs run in the tenant namespace with a scoped ServiceAccount
-
-:::note[Tenant ID and user identity are independent]
-The tenant is always determined by the `X-Tenant` request header — **not** by the identity in the token. A ServiceAccount has a home namespace, but EvalHub does not use it. A real OpenShift User or Group member has no namespace at all. In all cases the caller must supply `X-Tenant` explicitly, and a matching RoleBinding (for the User, ServiceAccount, or Group) must exist in that namespace.
-:::
+For shared concepts — tenant isolation, SAR authorisation, ClusterRoles, and common troubleshooting — see the [Tenancy overview](/architecture/tenancy/).
 
 ## Prerequisites
 
@@ -60,7 +22,7 @@ Before setting up multi-tenancy, ensure you have:
 
 1. **Deploy EvalHub**
 
-   Create an EvalHub instance in the control-plane namespace. For multi-tenancy, a persistent database is recommended:
+   Create an EvalHub instance in the control-plane namespace. `spec.tenancy: multi` is the default and can be omitted. For multi-tenancy, a persistent database is recommended:
 
    ```yaml
    apiVersion: trustyai.opendatahub.io/v1alpha1
@@ -295,10 +257,6 @@ Before setting up multi-tenancy, ensure you have:
    </TabItem>
    </Tabs>
 
-   :::note[Virtual resources]
-   The resources in the Role (`evaluations`, `collections`, `providers`, `status-events`) are virtual -- they don't correspond to actual Kubernetes API resources. EvalHub uses them as SAR targets to enforce fine-grained access control via the Kubernetes authorisation API.
-   :::
-
 4. **Access the API with tenant scoping**
 
    All evaluation API requests must include the `X-Tenant` header set to the target namespace. The header is the sole source of the tenant ID — it is not derived from the token.
@@ -488,121 +446,7 @@ Before setting up multi-tenancy, ensure you have:
 
 </Steps>
 
-## Authorisation model
-
-EvalHub uses an embedded SAR authoriser. The auth config (`config/auth.yaml`) maps API endpoints to Kubernetes resource attributes:
-
-| Endpoint | Resource | Verb | Namespace source |
-|----------|----------|------|------------------|
-| `POST /api/v1/evaluations/jobs` | `evaluations` | `create` | `X-Tenant` header |
-| `GET /api/v1/evaluations/jobs` | `evaluations` | `get` | `X-Tenant` header |
-| `POST /api/v1/evaluations/jobs/*/events` | `status-events` | `create` | `X-Tenant` header |
-| `* /api/v1/evaluations/collections` | `collections` | _(from HTTP method)_ | `X-Tenant` header |
-| `* /api/v1/evaluations/providers` | `providers` | _(from HTTP method)_ | `X-Tenant` header |
-
-For `POST /api/v1/evaluations/jobs`, two additional SAR checks are performed for MLFlow access (`mlflow.kubeflow.org/experiments` with `create` and `get` verbs).
-
-### Request flow
-
-The flow is identical for both principal types. The only difference is what the TokenReview returns and which subject kind is matched in the RoleBinding.
-
-<Tabs>
-<TabItem label="ServiceAccount">
-
-```mermaid
-sequenceDiagram
-    participant User as Tenant SA
-    participant EH as EvalHub API
-    participant K8s as Kubernetes API
-    participant Job as Eval Job Pod
-
-    User->>EH: POST /jobs (Bearer token + X-Tenant: team-a)
-    EH->>K8s: TokenReview (validate token)
-    K8s-->>EH: user=system:serviceaccount:team-a:team-a-user
-    EH->>K8s: SAR (can SA create evaluations in team-a?)
-    K8s-->>EH: Allowed (kind:ServiceAccount RoleBinding matched)
-    EH->>K8s: Create Job in team-a (SA: evalhub-opendatahub-job)
-    K8s-->>EH: Job created
-    EH-->>User: 202 Accepted
-
-    Job->>EH: POST /jobs/{id}/events (job SA token + X-Tenant: team-a)
-    EH->>K8s: SAR (can job SA create status-events in team-a?)
-    K8s-->>EH: Allowed
-    EH-->>Job: 200 OK
-```
-
-</TabItem>
-
-<TabItem label="OpenShift User">
-
-```mermaid
-sequenceDiagram
-    participant User as OpenShift User (alice)
-    participant EH as EvalHub API
-    participant K8s as Kubernetes API
-    participant Job as Eval Job Pod
-
-    User->>EH: POST /jobs (OAuth token + X-Tenant: team-a)
-    EH->>K8s: TokenReview (validate token)
-    K8s-->>EH: user=alice
-    EH->>K8s: SAR (can alice create evaluations in team-a?)
-    K8s-->>EH: Allowed (kind:User RoleBinding matched)
-    EH->>K8s: Create Job in team-a (SA: evalhub-opendatahub-job)
-    K8s-->>EH: Job created
-    EH-->>User: 202 Accepted
-
-    Job->>EH: POST /jobs/{id}/events (job SA token + X-Tenant: team-a)
-    EH->>K8s: SAR (can job SA create status-events in team-a?)
-    K8s-->>EH: Allowed
-    EH-->>Job: 200 OK
-```
-
-</TabItem>
-
-<TabItem label="OpenShift Group">
-
-```mermaid
-sequenceDiagram
-    participant User as Group Member (alice)
-    participant EH as EvalHub API
-    participant K8s as Kubernetes API
-    participant Job as Eval Job Pod
-
-    User->>EH: POST /jobs (OAuth token + X-Tenant: team-a)
-    EH->>K8s: TokenReview (validate token)
-    K8s-->>EH: user=alice, groups=[team-a-evaluators, ...]
-    EH->>K8s: SAR (can alice create evaluations in team-a?)
-    K8s-->>EH: Allowed (kind:Group RoleBinding matched via group membership)
-    EH->>K8s: Create Job in team-a (SA: evalhub-opendatahub-job)
-    K8s-->>EH: Job created
-    EH-->>User: 202 Accepted
-
-    Job->>EH: POST /jobs/{id}/events (job SA token + X-Tenant: team-a)
-    EH->>K8s: SAR (can job SA create status-events in team-a?)
-    K8s-->>EH: Allowed
-    EH-->>Job: 200 OK
-```
-
-</TabItem>
-</Tabs>
-
-Note that the job pod always runs as the operator-provisioned job ServiceAccount (`evalhub-opendatahub-job`), regardless of whether the submitter was a User, Group member, or a ServiceAccount.
-
-## RBAC reference
-
-### ClusterRoles (installed by operator)
-
-| ClusterRole | Purpose | Key permissions |
-|-------------|---------|-----------------|
-| `evalhub-auth-reviewer-role` | Token and SAR validation | `tokenreviews`, `subjectaccessreviews` |
-| `evalhub-jobs-writer` | Create evaluation jobs | `batch/jobs` (create, delete) |
-| `evalhub-job-config` | Manage job config | `configmaps` (create, get, update, delete) |
-| `evalhub-providers-access` | Providers endpoint SAR | `providers` (get) |
-| `evalhub-collections-access` | Collections endpoint SAR | `collections` (get) |
-| `evalhub-mlflow-access` | API server MLFlow access | `experiments` (create, get, list, update, delete) |
-| `evalhub-mlflow-jobs-access` | Job pod MLFlow access | `experiments` (create, get, list) |
-
-### Per-tenant resources (operator-provisioned)
+## RBAC reference — per-tenant resources
 
 For each namespace labelled with `evalhub.trustyai.opendatahub.io/tenant`, the operator creates:
 
@@ -716,66 +560,7 @@ oc get pod -n team-a -l app.kubernetes.io/part-of=eval-hub \
 
 ## Troubleshooting
 
-### 403 Forbidden on API calls
-
-The SAR check is failing. Verify:
-
-1. The `X-Tenant` header matches a namespace where the principal has a RoleBinding
-2. The Role includes the correct resources and verbs
-3. The RoleBinding `subjects[].kind` matches the principal type (`ServiceAccount`, `User`, or `Group`)
-
-<Tabs>
-<TabItem label="ServiceAccount">
-
-```bash
-oc auth can-i create evaluations.trustyai.opendatahub.io \
-  -n team-a \
-  --as=system:serviceaccount:team-a:team-a-user -v=6
-```
-
-</TabItem>
-
-<TabItem label="OpenShift User">
-
-```bash
-oc auth can-i create evaluations.trustyai.opendatahub.io \
-  -n team-a \
-  --as=alice -v=6
-```
-
-Also confirm the RoleBinding subject kind is `User` and has no `namespace` field:
-
-```bash
-oc get rolebinding evalhub-evaluator-binding -n team-a -o yaml | grep -A5 subjects
-```
-
-</TabItem>
-
-<TabItem label="OpenShift Group">
-
-```bash
-oc auth can-i create evaluations.trustyai.opendatahub.io \
-  -n team-a \
-  --as=alice --as-group=team-a-evaluators -v=6
-```
-
-If the SAR check passes with `--as-group` but real requests still fail:
-
-1. **Token doesn't include group claims** -- The user must re-login (`oc login`) after being added to the group. Existing OAuth tokens may not include the new group membership.
-2. **Verify group membership:**
-
-    ```bash
-    oc get group team-a-evaluators -o jsonpath='{.users[*]}'
-    ```
-
-3. **Confirm the RoleBinding subject kind is `Group`:**
-
-    ```bash
-    oc get rolebinding evalhub-evaluator-group-binding -n team-a -o yaml | grep -A5 subjects
-    ```
-
-</TabItem>
-</Tabs>
+For common issues such as 403 Forbidden responses and missing `X-Tenant` headers, see [Troubleshooting on the Tenancy overview](/architecture/tenancy/#troubleshooting).
 
 ### Jobs not created in tenant namespace
 
@@ -794,3 +579,7 @@ oc auth can-i create status-events.trustyai.opendatahub.io \
   -n team-a \
   --as=system:serviceaccount:team-a:evalhub-opendatahub-job
 ```
+
+---
+
+For single-namespace deployments, see [Single-Tenancy](/architecture/single-tenancy/).
