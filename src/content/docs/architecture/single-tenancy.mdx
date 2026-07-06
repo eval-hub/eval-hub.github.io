@@ -63,12 +63,12 @@ Before setting up single-tenancy, ensure you have:
    | `evalhub-service` SA | API server identity |
    | `evalhub-team-a-job` SA | Identity for evaluation job pods |
    | ClusterRole RoleBindings | jobs-writer, job-config, auth-reviewer, MLFlow |
-   | `evalhub-tenant-admin` Role | Full CRUD on virtual EvalHub resources + MLflow read |
-   | `evalhub-user` Role | Read providers/collections, submit via `evalhubs/proxy`, create status-events |
+   | `evalhub-tenant-admin` Role | Full CRUD on virtual EvalHub resources; MLflow read-only (get, list) |
+   | `evalhub-user` Role | Read providers/collections, submit via `evalhubs/proxy`, create status-events, MLflow create/get |
    | `evalhub-tenant-admin-binding` | Binds admin Role to `system:serviceaccounts:team-a` |
 
-   :::note[Default admin access]
-   The operator binds **all** ServiceAccounts in the namespace to `evalhub-tenant-admin`. For restricted access, create an explicit RoleBinding to `evalhub-user` instead.
+   :::note[Default admin access and job submission]
+   The operator binds **all** ServiceAccounts in the namespace to `evalhub-tenant-admin`. That Role grants `evaluations` create but MLflow `experiments` are read-only. `POST /api/v1/evaluations/jobs` also requires MLflow `create` and `get` — bind principals to `evalhub-user` for those permissions (RBAC unions across bindings). For restricted access without admin CRUD, bind `evalhub-user` only.
    :::
 
 2. **Grant user access**
@@ -332,6 +332,8 @@ In single-tenancy mode, the operator creates these namespace-scoped Roles (garba
 | `trustyai.opendatahub.io` | `evaluations`, `collections`, `providers`, `status-events` | get, list, watch, create, update, patch, delete |
 | `trustyai.opendatahub.io` | `evalhubs/proxy` (scoped to instance name) | get, create |
 | `mlflow.kubeflow.org` | `experiments` | get, list |
+
+MLflow access is read-only — no `create` verb. Although this Role includes `evaluations` create, `POST /api/v1/evaluations/jobs` also performs SAR checks for MLflow `experiments` with `create` and `get`. Bind principals to [`evalhub-user`](#evalhub-user) for MLflow submission permissions.
 
 Bound to `system:serviceaccounts:{namespace}` via `evalhub-tenant-admin-binding`, so all ServiceAccounts in the namespace receive admin access by default.
 
