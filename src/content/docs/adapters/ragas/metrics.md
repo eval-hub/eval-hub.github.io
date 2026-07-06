@@ -5,6 +5,38 @@ description: "Reference for all RAGAS evaluation metrics supported by the EvalHu
 
 The RAGAS adapter supports 11 evaluation metrics, divided into core metrics (available since RAGAS v0.1) and extended metrics (class-based, available since RAGAS v0.4+).
 
+## Five Core RAGAS Metrics
+
+RAGAS defines five canonical metrics for RAG pipeline evaluation. The table below maps the common names to the metric IDs used in EvalHub job specs and results:
+
+| Common name | Metric ID | In `ragas_rag_default` |
+|-------------|-----------|------------------------|
+| Faithfulness | `faithfulness` | Yes |
+| Answer relevance | `answer_relevancy` | Yes |
+| Context precision | `context_precision` | Yes |
+| Context recall | `context_recall` | Yes |
+| Answer correctness | `factual_correctness` | No — use `ragas_rag_full` or add via `parameters.metrics` |
+
+:::note[Answer correctness vs answer accuracy]
+**Answer correctness** is implemented as `factual_correctness`. It checks whether factual claims in the generated answer match the reference answer. Do not confuse it with `nv_accuracy` (Answer Accuracy), which uses a different LLM-based comparison approach. See [Answer Correctness](#answer-correctness-factual_correctness) and [Answer Accuracy](#answer-accuracy-nv_accuracy) below.
+:::
+
+The default benchmark (`ragas_rag_default`) runs the four retrieval-and-grounding metrics. Add `factual_correctness` when you need to score answers against a ground-truth reference:
+
+```json
+{
+  "parameters": {
+    "metrics": [
+      "answer_relevancy",
+      "context_precision",
+      "faithfulness",
+      "context_recall",
+      "factual_correctness"
+    ]
+  }
+}
+```
+
 ## Metrics Overview
 
 | Metric | Category | LLM Judge | Embeddings | Input Requirements |
@@ -15,7 +47,7 @@ The RAGAS adapter supports 11 evaluation metrics, divided into core metrics (ava
 | `context_recall` | Core | Yes | No | `retrieved_contexts`, `reference` |
 | `answer_similarity` | Core | No | Yes | `response`, `reference` |
 | `context_entity_recall` | Core | No | No | `retrieved_contexts`, `reference` |
-| `factual_correctness` | Extended | Yes | No | `response`, `reference` |
+| `factual_correctness` | Core (answer correctness) | Yes | No | `response`, `reference` |
 | `noise_sensitivity` | Extended | Yes | No | `user_input`, `response`, `retrieved_contexts`, `reference` |
 | `nv_accuracy` | Extended | Yes | No | `user_input`, `response`, `reference` |
 | `nv_context_relevance` | Extended | Yes | No | `user_input`, `retrieved_contexts` |
@@ -91,13 +123,21 @@ Measures the overlap of named entities between the retrieved context and the ref
 
 These metrics use class-based implementations and are available from RAGAS v0.4+.
 
-### Factual Correctness
+### Answer Correctness (`factual_correctness`)
 
-Measures whether the factual claims in the generated answer match the reference answer. Unlike faithfulness (which checks against the context), factual correctness checks against the ground truth.
+This is the fifth core RAGAS metric. In EvalHub and the RAGAS library it is exposed as `factual_correctness` (class-based, RAGAS v0.4+).
 
-**When to use**: When you have a reference answer and want to verify that the generated answer is factually correct, regardless of what the context contains.
+Measures whether the factual claims in the generated answer match the reference answer. Unlike faithfulness (which checks against the retrieved context), answer correctness checks against the ground truth.
+
+**When to use**: When you have a reference answer and want to verify that the generated answer is factually correct, regardless of what the context contains. Complements faithfulness: an answer can be faithful to a misleading context but still incorrect against the reference.
+
+**How it works**: The LLM judge extracts factual claims from the generated answer, then verifies each claim against the reference answer. The score reflects the fraction of claims that are supported.
 
 **Required columns**: `response`, `reference`
+
+:::tip
+Include `factual_correctness` in your metric list or use the `ragas_rag_full` benchmark to evaluate all five core metrics plus extended ones.
+:::
 
 ### Noise Sensitivity
 
@@ -109,7 +149,7 @@ Measures how sensitive the model is to irrelevant information in the retrieved c
 
 ### Answer Accuracy (`nv_accuracy`)
 
-Measures the accuracy of the generated answer against the reference answer, using LLM-based semantic comparison rather than embedding similarity.
+Measures the accuracy of the generated answer against the reference answer, using LLM-based semantic comparison rather than embedding similarity. This is a separate metric from answer correctness (`factual_correctness`): accuracy evaluates overall answer quality, while factual correctness evaluates individual factual claims.
 
 **When to use**: When you need a judge-based accuracy score that goes beyond surface-level similarity. Provides a more nuanced assessment than `answer_similarity`.
 
