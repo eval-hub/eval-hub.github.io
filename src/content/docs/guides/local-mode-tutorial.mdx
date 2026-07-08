@@ -5,7 +5,7 @@ title: "Local Mode Tutorial"
 import { Steps } from '@astrojs/starlight/components';
 import Since from '../../../components/Since.astro';
 
-<Since version="0.4.2" />
+<Since version="0.4.3 eval-hub-sdk" />
 
 End-to-end walkthrough: run a LightEval evaluation locally with EvalHub, MLflow experiment tracking, and OCI artifact storage — no Kubernetes required.
 
@@ -30,26 +30,26 @@ Install the following tools before starting:
    uv venv --python 3.12
    ```
 
-2. **Install dependencies**
-
-   Install the EvalHub server and CLI:
-
-   ```bash
-   uv pip install "eval-hub-sdk[server,cli]"
-   ```
-
    :::tip
-   Whenever the tutorial asks you to open or use another terminal, activate the virtual environment first with `source .venv/bin/activate` — even when not explicitly mentioned.
+   Whenever the tutorial asks you to open or use another terminal, activate the virtual environment first with `source .venv/bin/activate`, or prefix commands with `uv run` if not activating the venv — even when not explicitly mentioned.
    :::
 
-3. **Download the LightEval adapter**
+2. **Download the LightEval adapter**
 
-   Download the adapter driver and its requirements from eval-hub-contrib, then install them:
+   Download the adapter driver and its requirements from eval-hub-contrib:
 
    ```bash
    curl -o main.py https://raw.githubusercontent.com/eval-hub/eval-hub-contrib/main/adapters/lighteval/main.py
    curl -o requirements.txt https://raw.githubusercontent.com/eval-hub/eval-hub-contrib/main/adapters/lighteval/requirements.txt
+   ```
+
+3. **Install dependencies**
+
+   Install the EvalHub server, CLI, and adapter requirements:
+
+   ```bash
    uv pip install -r requirements.txt
+   uv pip install "eval-hub-sdk[server,cli]>=0.4.3"
    ```
 
 4. **Start MLflow (optional)**
@@ -149,8 +149,6 @@ Install the following tools before starting:
      Logs: ~/.config/evalhub/server/server.log
    ```
 
-   To stop the server later, run `evalhub server stop`.
-
    Verify the server is healthy:
 
    ```bash
@@ -174,6 +172,8 @@ Install the following tools before starting:
      local:
        command: "python main.py"
        env:
+         - name: MLFLOW_TRACKING_URI
+           value: http://localhost:5000
          - name: OCI_INSECURE
            value: "true"
    benchmarks:
@@ -350,4 +350,3 @@ After completing setup, you have four services on localhost:
 
 - Browse the MLflow UI at `http://localhost:5000` to see experiment metrics
 - Read the [Local Mode guide](/guides/local-mode/) for provider configuration details and troubleshooting
-- Try other adapters by registering additional providers with `evalhub providers create --file <file>.yaml`

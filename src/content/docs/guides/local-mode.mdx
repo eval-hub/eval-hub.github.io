@@ -77,7 +77,7 @@ For full details on `evalhub server` commands, see the [CLI guide — "I want to
 |---|---|---|
 | **Job execution** | Kubernetes Jobs (containers) | Host subprocesses (`sh -c "<command>"`) |
 | **Authentication** | Enabled (configurable) | Disabled automatically |
-| **Multi-tenancy** | Tenant isolation via `X-Tenant` header | Single-tenant only |
+| **Multi-tenancy** | Single-tenant or multi-tenant (`X-Tenant` header) | Single-tenant only |
 | **CORS** | Disabled by default | Enabled |
 | **Sidecar proxy** | Injected into job pods | Not used; adapters call services directly |
 | **Init container** | Downloads test data to `/test_data` | Not used |
