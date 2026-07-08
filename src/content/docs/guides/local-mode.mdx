@@ -4,9 +4,9 @@ title: "Local Mode"
 
 import Since from '../../../components/Since.astro';
 
-<Since version="0.4.2" />
+<Since version="0.4.3 eval-hub-sdk" />
 
-Local mode runs the full EvalHub evaluation pipeline on your workstation without a Kubernetes cluster. Activate it with the `--local` flag. The REST API is identical to cluster mode — the same endpoints, request bodies, and response schemas apply.
+Local mode runs the full EvalHub evaluation pipeline on your workstation without a Kubernetes cluster. The REST API is identical to cluster mode — the same endpoints, request bodies, and response schemas apply.
 
 Local mode is useful for:
 
@@ -19,30 +19,57 @@ For a hands-on walkthrough, see the [Local Mode Tutorial](/guides/local-mode-tut
 
 ## Starting the Server in Local Mode
 
-```bash
-pip install eval-hub-server          # Standalone
-# or
-pip install eval-hub-sdk[server]     # Via the SDK extra
-eval-hub-server --version
-```
-
-The server requires a `--configdir` pointing to a directory containing a server `config.yaml` (see the [Local Mode Tutorial](/guides/local-mode-tutorial/) for a step-by-step setup). The `--local` flag disables authentication and enables CORS. The server starts at `http://localhost:8080` with SQLite in-memory storage.
+Install the SDK with the `server` and `cli` extras:
 
 ```bash
-eval-hub-server --local --configdir ./config
+pip install "eval-hub-sdk[server,cli]"
 ```
 
-**Custom port:**
+Create a server configuration file (e.g. `my-config.yaml`):
+
+```yaml
+service:
+  port: 8080
+
+database:
+  driver: sqlite
+  url: file::eval_hub:?mode=memory&cache=shared
+
+mlflow:
+  tracking_uri: http://localhost:5000
+```
+
+Set the configuration and start the server:
 
 ```bash
-PORT=8090 eval-hub-server --local --configdir ./config
+evalhub config set server_config_file my-config.yaml
+evalhub server start
 ```
 
-**With MLflow tracking:**
+```text
+Server started (PID 12345).
+  URL:  http://localhost:8080
+  Logs: ~/.config/evalhub/server/server.log
+```
+
+Stop the server when you're done:
 
 ```bash
-MLFLOW_TRACKING_URI=http://localhost:5000 eval-hub-server --local --configdir ./config
+evalhub server stop
 ```
+
+The server runs evaluation jobs as subprocesses in local mode. Authentication is disabled and CORS is enabled automatically.
+
+:::note[MLflow tracking URI]
+The MLflow tracking URI appears in two places with distinct purposes:
+
+- **Server config YAML** (`mlflow.tracking_uri`) — tells the EvalHub server where MLflow is, so it can create experiments and link evaluation results to MLflow runs.
+- **Provider YAML** (`runtime.local.env`) — passed to the adapter subprocess as the `MLFLOW_TRACKING_URI` environment variable, so the adapter can log metrics and artifacts to MLflow directly.
+
+Both should point to the same MLflow instance.
+:::
+
+For full details on `evalhub server` commands, see the [CLI guide — "I want to manage the local server"](/guides/cli/#i-want-to-manage-the-local-server).
 
 ## Differences from Cluster Mode
 
@@ -70,7 +97,7 @@ When an evaluation job is submitted in local mode, for each benchmark the server
 
 ```mermaid
 flowchart TD
-    A["REST API\nPOST /api/v1/evaluations/jobs"] --> B["eval-hub-server\n(--local flag)"]
+    A["REST API\nPOST /api/v1/evaluations/jobs"] --> B["evalhub server"]
     B --> C["Write job.json"]
     C --> D["Spawn adapter process"]
     D --> E["Adapter Process\n(e.g. python main.py)"]
@@ -95,86 +122,83 @@ flowchart TD
                 └── jobrun.log          # Stdout/stderr from the adapter process
 ```
 
-### Job specification (job.json)
-
-The job specification is the same structure used in cluster mode (where it is mounted into the container as a ConfigMap). It contains all the information the adapter needs to run the benchmark:
-
-```json
-{
-  "id": "<job_id>",
-  "provider_id": "<provider_id>",
-  "benchmark_id": "<benchmark_id>",
-  "benchmark_index": 0,
-  "model": {
-    "url": "http://localhost:11434/v1",
-    "name": "llama3.2:3b-instruct-q4_K_M"
-  },
-  "num_examples": 10,
-  "parameters": {},
-  "experiment_name": "my-experiment",
-  "tags": [
-    { "key": "model", "value": "llama3.2:3b-instruct-q4_K_M" }
-  ],
-  "callback_url": "http://localhost:8080",
-  "exports": {
-    "oci": {
-      "coordinates": {
-        "oci_host": "localhost:5001",
-        "oci_repository": "eval-results"
-      }
-    }
-  }
-}
-```
-
-:::note[OCI registry credentials]
-In local mode, the OCI persister reads credentials from `~/.docker/config.json`. If your OCI registry requires authentication, run [`docker login`](https://docs.docker.com/reference/cli/docker/login/) (or `podman login`) before starting an evaluation. For local registries without authentication, set `OCI_INSECURE=true` in the provider's `runtime.local.env` instead.
-:::
-
 ## Provider Configuration for Local Mode
 
 Each provider must have a `runtime.local` section specifying the adapter command and optional environment variables. The `runtime.local.command` is executed via `sh -c "<command>"`.
 
 ```yaml
-id: my-provider
-name: My Evaluation Provider
-description: Custom evaluation framework adapter
+name: my-provider
+title: My Provider
+description: My BYOF
 runtime:
   local:
     command: "python main.py"
     env:
+      - name: MLFLOW_TRACKING_URI
+        value: http://localhost:5000
       - name: OCI_INSECURE
         value: "true"
 benchmarks:
-  - id: my_benchmark
-    name: My benchmark
-    description: Description of what this benchmark measures
-    category: reasoning
+  - id: my-benchmark
+    name: My Benchmark
+    description: |-
+      Mock evaluation benchmark with accuracy and exact_match metrics.
+    category: general
     metrics:
-      - acc
+      - accuracy
+      - exact_match
+    num_few_shot: 0
+    dataset_size: 500
+    tags:
+      - general
+      - custom
+      - byof
     primary_score:
-      metric: acc
+      metric: accuracy
       lower_is_better: false
     pass_criteria:
       threshold: 0.25
 ```
 
+The `OCI_INSECURE` variable allows pushing artifacts to a local OCI registry running without TLS. For registries that require authentication, the OCI persister reads credentials from `~/.docker/config.json` — run `docker login` (or `podman login`) before starting an evaluation.
+
 A provider configuration can include both `runtime.local` and `runtime.k8s` sections, allowing the same definition to work in both modes.
 
 :::tip[Registering providers]
-Providers can be registered using the `evalhub` CLI (`evalhub providers create --file <file>.yaml`) or via the [REST API](/reference/server-api/) (`POST /api/v1/evaluations/providers`) after the server is running. See the [Local Mode Tutorial](/guides/local-mode-tutorial/) for a complete example.
+Register providers with `evalhub providers create --file <file>.yaml` after the server is running. See the [Local Mode Tutorial](/guides/local-mode-tutorial/) for a complete example.
 :::
 
-### Environment variables
+## Running an Evaluation
 
-The adapter process receives the following environment variables:
+Once the server is running and a provider is registered, submit a job using a config file or CLI flags. Here is a sample `job.yaml`:
 
-| Variable | Description |
-|---|---|
-| `EVALHUB_JOB_SPEC_PATH` | Absolute path to the `job.json` file |
-| Custom env vars from `runtime.local.env` | Any additional variables defined in the provider config |
+```yaml
+name: my-job
+model:
+  url: http://localhost:11434/v1
+  name: llama3.2:3b-instruct-q4_K_M
+benchmarks:
+  - id: my-benchmark
+    provider_id: <provider-id>
+    parameters:
+      num_examples: 10
+      num_few_shot: 0
+experiment:
+  name: my-experiment
+exports:
+  oci:
+    coordinates:
+      oci_host: localhost:5001
+      oci_repository: myorg/eval-results
+```
 
-See [System Overview — AdapterSettings](/architecture/system-overview/#adaptersettings) for the complete list of adapter environment variables.
+Replace `<provider-id>` with the ID returned by `evalhub providers create`. The `experiment` and `exports` sections are optional — omit them if you are not using MLflow or an OCI registry.
+
+```bash
+evalhub eval run --config job.yaml --wait
+```
+
+See the [CLI guide](/guides/cli/#i-want-to-run-an-evaluation) for the full set of `eval run` options, including inline flags and output formats.
 
 ## Writing Adapters for Both Modes
 
@@ -201,7 +225,13 @@ cat /tmp/evalhub-jobs/<job_id>/<benchmark_index>/<provider_id>/<benchmark_id>/jo
 
 ### Server logs
 
-The server logs structured JSON to stderr. Look for `local runtime` messages:
+The server log file is managed by `evalhub server` and stored at `~/.config/evalhub/server/server.log`. Check its location with:
+
+```bash
+evalhub server status
+```
+
+Look for `local runtime` messages in the log:
 
 - `local runtime job spec written` — job spec was created successfully
 - `local runtime process started` — adapter process was launched with the logged PID and command
@@ -214,5 +244,5 @@ The server logs structured JSON to stderr. Look for `local runtime` messages:
 | Job fails immediately | Adapter command not found | Verify `runtime.local.command` path and that dependencies are installed |
 | Job stays in `running` state | Adapter is not reporting back | Check the adapter logs in `jobrun.log`; verify the callback URL is reachable |
 | `provider has no local runtime configured` | Missing `runtime.local` in provider YAML | Add a `runtime.local.command` to the provider configuration |
-| MLflow experiment not created | MLflow not configured | Set `MLFLOW_TRACKING_URI` or `mlflow.tracking_uri` in `config.yaml` |
+| MLflow experiment not created | MLflow not configured | Set `mlflow.tracking_uri` in the server config YAML (`server_config_file`) |
 | OCI push fails | Registry not reachable or requires auth | Verify the registry is running; run `docker login`/`podman login` for authenticated registries or set `OCI_INSECURE=true` for local ones |
