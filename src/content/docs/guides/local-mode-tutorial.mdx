@@ -5,7 +5,7 @@ title: "Local Mode Tutorial"
 import { Steps } from '@astrojs/starlight/components';
 import Since from '../../../components/Since.astro';
 
-<Since version="0.4.2" />
+<Since version="0.4.3 eval-hub-sdk" />
 
 End-to-end walkthrough: run a LightEval evaluation locally with EvalHub, MLflow experiment tracking, and OCI artifact storage — no Kubernetes required.
 
@@ -30,26 +30,26 @@ Install the following tools before starting:
    uv venv --python 3.12
    ```
 
-2. **Install dependencies**
-
-   Install eval-hub-server and the evalhub CLI:
-
-   ```bash
-   uv pip install "eval-hub-sdk[server,cli]"
-   ```
-
    :::tip
-   Whenever the tutorial asks you to open or use another terminal, activate the virtual environment first with `source .venv/bin/activate` — even when not explicitly mentioned.
+   Whenever the tutorial asks you to open or use another terminal, activate the virtual environment first with `source .venv/bin/activate`, or prefix commands with `uv run` if not activating the venv — even when not explicitly mentioned.
    :::
 
-3. **Download the LightEval adapter**
+2. **Download the LightEval adapter**
 
-   Download the adapter driver and its requirements from eval-hub-contrib, then install them:
+   Download the adapter driver and its requirements from eval-hub-contrib:
 
    ```bash
    curl -o main.py https://raw.githubusercontent.com/eval-hub/eval-hub-contrib/main/adapters/lighteval/main.py
    curl -o requirements.txt https://raw.githubusercontent.com/eval-hub/eval-hub-contrib/main/adapters/lighteval/requirements.txt
+   ```
+
+3. **Install dependencies**
+
+   Install the EvalHub server, CLI, and adapter requirements:
+
+   ```bash
    uv pip install -r requirements.txt
+   uv pip install "eval-hub-sdk[server,cli]>=0.4.3"
    ```
 
 4. **Start MLflow (optional)**
@@ -118,29 +118,38 @@ Install the following tools before starting:
      }'
    ```
 
-7. **Start eval-hub-server**
+7. **Start the EvalHub server**
 
-   Download the template `config.yaml` from the eval-hub repository:
+   Create a server configuration file `my-config.yaml`:
 
-   ```bash
-   mkdir -p config
-   curl -o config/config.yaml https://raw.githubusercontent.com/eval-hub/eval-hub/main/config/config.yaml
+   ```yaml
+   service:
+     port: 8080
+
+   database:
+     driver: sqlite
+     url: file::eval_hub:?mode=memory&cache=shared
+
+   mlflow:
+     tracking_uri: http://localhost:5000
    ```
 
-   In another terminal, start the server:
+   If you skipped the MLflow step, omit the `mlflow` section.
+
+   Set the configuration and start the server:
 
    ```bash
-   eval-hub-server --local --configdir ./config
+   evalhub config set server_config_file my-config.yaml
+   evalhub server start
    ```
 
-   If MLflow is running, pass the tracking URI:
-
-   ```bash
-   MLFLOW_TRACKING_URI=http://localhost:5000 \
-     eval-hub-server --local --configdir ./config
+   ```text
+   Server started (PID 12345).
+     URL:  http://localhost:8080
+     Logs: ~/.config/evalhub/server/server.log
    ```
 
-   Verify from another terminal:
+   Verify the server is healthy:
 
    ```bash
    evalhub config set base_url http://localhost:8080
@@ -153,16 +162,17 @@ Install the following tools before starting:
 
 8. **Register the provider**
 
-   Create a provider definition file and register it with the CLI:
+   Create a provider definition file `lighteval.yaml`:
 
-   ```bash
-   cat > lighteval.yaml << 'EOF'
+   ```yaml
    name: lighteval
    description: LightEval adapter for evaluation framework
    runtime:
      local:
        command: "python main.py"
        env:
+         - name: MLFLOW_TRACKING_URI
+           value: http://localhost:5000
          - name: OCI_INSECURE
            value: "true"
    benchmarks:
@@ -186,9 +196,22 @@ Install the following tools before starting:
          lower_is_better: false
        pass_criteria:
          threshold: 0.25
-   EOF
+   ```
 
+   Register it with the CLI:
+
+   ```bash
    evalhub providers create --file lighteval.yaml
+   ```
+
+   ```text
+   Provider created: a578921e-053a-496a-889b-ecd97b8dbd1a
+   ```
+
+   Save the provider ID for subsequent commands (your ID will differ):
+
+   ```bash
+   PROVIDER_ID="a578921e-053a-496a-889b-ecd97b8dbd1a"
    ```
 
    See the [Local Mode guide — Provider Configuration](/guides/local-mode/#provider-configuration-for-local-mode) for details on the `runtime.local` section.
@@ -203,19 +226,19 @@ Install the following tools before starting:
    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
    ┃ ID                                   ┃ NAME      ┃ DESCRIPTION                                ┃ BENCHMARKS ┃
    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-   │ 11031769-2ee5-4433-a129-8c6ad84d7185 │ lighteval │ LightEval adapter for evaluation framework │ 1          │
+   │ a578921e-053a-496a-889b-ecd97b8dbd1a │ lighteval │ LightEval adapter for evaluation framework │ 1          │
    └──────────────────────────────────────┴───────────┴────────────────────────────────────────────┴────────────┘
    ```
 
-   Use the provider ID from the output above to query its available benchmarks (your ID will differ):
+   Query the provider's available benchmarks:
 
    ```bash
-   evalhub providers describe <provider-id>
+   evalhub providers describe $PROVIDER_ID
    ```
 
    ```text
    Provider: lighteval
-   ID:       11031769-2ee5-4433-a129-8c6ad84d7185
+   ID:       a578921e-053a-496a-889b-ecd97b8dbd1a
    Description: LightEval adapter for evaluation framework
 
    Benchmarks (1):
@@ -226,7 +249,11 @@ Install the following tools before starting:
    └───────┴─────────────────────────────────┴──────────┴──────────────────┘
    ```
 
-   The benchmark ID `gsm8k` is defined in the provider YAML above. Use the provider ID and benchmark ID from this output as the `--provider` and `--benchmark` values when running evaluations.
+   Save the benchmark ID for subsequent commands:
+
+   ```bash
+   BENCHMARK_ID="gsm8k"
+   ```
 
    :::note
    Providers can also be registered via the [REST API](/reference/server-api/) (`POST /api/v1/evaluations/providers`).
@@ -243,17 +270,27 @@ evalhub eval run \
   --name my-eval-job \
   --model-url http://localhost:11434/v1 \
   --model-name llama3.2:3b-instruct-q4_K_M \
-  --provider <provider-id> \
-  --benchmark <benchmark-id> \
+  --provider $PROVIDER_ID \
+  --benchmark $BENCHMARK_ID \
   --param num_examples=10 \
   --param num_few_shot=0 \
   --wait
 ```
 
-Check results:
+Save the job ID from the output and check results:
 
 ```bash
-evalhub eval results <job-id>
+JOB_ID="<job-id-from-output>"
+evalhub eval results $JOB_ID
+```
+
+```text
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+┃ BENCHMARK ┃ PROVIDER                             ┃ METRIC                 ┃ VALUE ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+│ gsm8k     │ a578921e-053a-496a-889b-ecd97b8dbd1a │ all.extractive_match   │ 0.7   │
+│ gsm8k     │ a578921e-053a-496a-889b-ecd97b8dbd1a │ gsm8k.extractive_match │ 0.7   │
+└───────────┴──────────────────────────────────────┴────────────────────────┴───────┘
 ```
 
 ### With MLflow experiments and OCI artifact storage
@@ -265,8 +302,8 @@ evalhub eval run \
   --name my-eval-job \
   --model-url http://localhost:11434/v1 \
   --model-name llama3.2:3b-instruct-q4_K_M \
-  --provider <provider-id> \
-  --benchmark <benchmark-id> \
+  --provider $PROVIDER_ID \
+  --benchmark $BENCHMARK_ID \
   --param num_examples=10 \
   --param num_few_shot=0 \
   --experiment my-local-experiment \
@@ -275,8 +312,17 @@ evalhub eval run \
   --wait
 ```
 
+```text
+Job submitted: ef42ad16-57b6-4bf4-a7ff-eb907e848bb1
+Waiting for job ef42ad16-57b6-4bf4-a7ff-eb907e848bb1 to complete...
+Job ef42ad16-57b6-4bf4-a7ff-eb907e848bb1 finished with state: completed
+```
+
+Save the job ID and check results:
+
 ```bash
-evalhub eval results <job-id> --format json
+JOB_ID="ef42ad16-57b6-4bf4-a7ff-eb907e848bb1"
+evalhub eval results $JOB_ID --format json
 ```
 
 Example output:
@@ -285,11 +331,11 @@ Example output:
 [
   {
     "id": "gsm8k",
-    "provider_id": "11031769-2ee5-4433-a129-8c6ad84d7185",
+    "provider_id": "a578921e-053a-496a-889b-ecd97b8dbd1a",
     "benchmark_index": 0,
     "metrics": {
       "all.extractive_match": 0.7,
-      "gsm8k|0.extractive_match": 0.7
+      "gsm8k.extractive_match": 0.7
     },
     "artifacts": {
       "evalhub.env_card": {
@@ -302,19 +348,19 @@ Example output:
         "k8s_pod_labels": {},
         "k8s_resource_limits": {},
         "key_packages": {
-          "mlflow": "3.12.0",
-          "torch": "2.12.0",
-          "transformers": "5.9.0"
+          "mlflow": "3.14.0",
+          "torch": "2.13.0",
+          "transformers": "5.13.0"
         },
-        "os_info": "macOS-26.5-arm64-arm-64bit",
+        "os_info": "macOS-26.5.2-arm64-arm-64bit",
         "per_task_results": {},
         "python_version": "3.12.12",
         "scorer_ids": []
       },
-      "oci_digest": "sha256:31f4da6f8aca49f50d97da92775eef691875701fae0bb81cf72c5b60fb7f9f20",
-      "oci_reference": "localhost:5001/local-eval-results:evalhub-bdf6096c95aff921cc5067a2c679829db76541f07ee8d607211666129bbcfef7@sha256:31f4da6f8aca49f50d97da92775eef691875701fae0bb81cf72c5b60fb7f9f20"
+      "oci_digest": "sha256:5f853d7fa2c67247ca35b511deaec78a56d64c98734974e274504c039bedc558",
+      "oci_reference": "localhost:5001/local-eval-results:evalhub-9129f2cac2db213158f8c106e1b658e0e05ecd9db54630dfe6bc2edf2cdb413b@sha256:5f853d7fa2c67247ca35b511deaec78a56d64c98734974e274504c039bedc558"
     },
-    "mlflow_run_id": "0a3505d2c1d24025b13f05d4ec96cb01",
+    "mlflow_run_id": "3c03bb8128a349fe822e793637b7ffe2",
     "logs_path": null
   }
 ]
@@ -330,7 +376,7 @@ After completing setup, you have four services on localhost:
 
 | Service | URL | Purpose |
 |---|---|---|
-| **eval-hub-server** | `http://localhost:8080` | Evaluation orchestration |
+| **EvalHub server** (`evalhub server`) | `http://localhost:8080` | Evaluation orchestration |
 | **MLflow** | `http://localhost:5000` | Experiment tracking dashboard |
 | **OCI registry** | `http://localhost:5001` | Artifact storage |
 | **Ollama** | `http://localhost:11434` | LLM inference |
@@ -339,4 +385,3 @@ After completing setup, you have four services on localhost:
 
 - Browse the MLflow UI at `http://localhost:5000` to see experiment metrics
 - Read the [Local Mode guide](/guides/local-mode/) for provider configuration details and troubleshooting
-- Try other adapters by registering additional providers with `evalhub providers create --file <file>.yaml`

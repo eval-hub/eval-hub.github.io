@@ -2,6 +2,8 @@
 title: "CLI"
 ---
 
+import Since from '../../../components/Since.astro';
+
 The `evalhub` command-line tool lets you submit evaluation jobs, check status, retrieve results, and manage collections and configuration — all from a terminal or shell script.
 
 EvalHub is assumed to be running on your OpenShift cluster. If it is not, see [Installation](/getting-started/installation/) first.
@@ -47,6 +49,34 @@ evalhub config use staging
 ```
 
 Switch back with `evalhub config use default`. Any command accepts `--profile <name>` to override at runtime without changing the active profile.
+
+### Remove a config value
+
+<Since version="0.4.3 eval-hub-sdk" />
+
+```bash
+evalhub config unset token
+```
+
+For file-based keys (`server_config_file`, `mcp_config_file`), `unset` also removes the stored file copy from the profile directory.
+
+### Inspect file-based config values
+
+<Since version="0.4.3 eval-hub-sdk" />
+
+Some config keys (`server_config_file`, `mcp_config_file`) point to YAML files. Use `--unfold` to print the file contents instead of just the stored path:
+
+```bash
+evalhub config get server_config_file --unfold
+```
+
+Sensitive values (such as tokens) are masked by default. Combine with `--unmask` to reveal them:
+
+```bash
+evalhub config get server_config_file --unfold --unmask
+```
+
+`--unmask` alone shows the raw path value without masking, while `--unfold` alone shows the file contents with sensitive values masked. Both flags can be combined to show unmasked file contents.
 
 ## I want to see what providers and benchmarks are available
 
@@ -350,6 +380,110 @@ evalhub collections delete bias-and-fairness-a1b2
 
 Pass `--yes` to skip the confirmation prompt in scripts.
 
+## I want to manage the local server
+
+<Since version="0.4.3 eval-hub-sdk" />
+
+The `evalhub server` commands manage the `eval-hub-server` binary on your local machine. The binary must be on your `PATH` (or set `EVALHUB_SERVER_BIN` to its location).
+
+### Configure the server
+
+Before starting the server, provide a configuration file. The CLI validates the file (must exist, be valid YAML, and be a mapping) and stores a profile-scoped copy under `~/.config/evalhub/server/<profile>/config.yaml`:
+
+```bash
+evalhub config set server_config_file server-config.yaml
+```
+
+Example `server-config.yaml`:
+
+```yaml
+service:
+  port: 8080
+```
+
+Verify the stored config:
+
+```bash
+evalhub config get server_config_file --unfold
+```
+
+To remove the server configuration:
+
+```bash
+evalhub config unset server_config_file
+```
+
+### Run in the foreground
+
+```bash
+evalhub server run
+```
+
+The server runs in the current terminal session. Press `Ctrl+C` to stop it.
+
+### Start as a background daemon
+
+```bash
+evalhub server start
+# Server started (PID 12345).
+#   URL:  http://localhost:8080
+#   Logs: ~/.config/evalhub/server/server.log
+```
+
+The CLI writes a PID file to `~/.config/evalhub/server/pid` and logs to `~/.config/evalhub/server/server.log`. It waits up to 30 seconds for the health endpoint (`/api/v1/health`) to respond before reporting success.
+
+### Stop the background server
+
+```bash
+evalhub server stop
+# Server stopped.
+```
+
+Sends `SIGTERM` for a graceful shutdown. If the process does not exit within 5 seconds, it is force-killed.
+
+### Check server status
+
+```bash
+evalhub server status
+# Server is running (PID 12345).
+#   Health: healthy
+#   URL:    http://localhost:8080
+#   Logs:   ~/.config/evalhub/server/server.log
+```
+
+### TLS
+
+If the server config includes `tls_cert_file` and `tls_key_file` under the `service` key, the server runs with TLS enabled. The CLI detects this automatically and reports `https://` URLs:
+
+```yaml
+service:
+  port: 8443
+  tls_cert_file: /path/to/cert.pem
+  tls_key_file: /path/to/key.pem
+```
+
+```bash
+evalhub server start
+# Server started (PID 12345).
+#   URL:  https://localhost:8443
+#   Logs: ~/.config/evalhub/server/server.log
+```
+
+## I want to manage the MCP server
+
+<Since version="0.4.3 eval-hub-sdk" />
+
+The `evalhub mcp` commands manage the `evalhub-mcp` Go binary. Like the server commands, the binary must be on your `PATH`.
+
+```bash
+evalhub mcp run      # run in foreground (defaults to stdio transport)
+evalhub mcp start    # start as background daemon (defaults to http transport)
+evalhub mcp stop     # stop the background daemon
+evalhub mcp status   # check if running (reports server name, version, and git hash)
+```
+
+MCP configuration is managed through `evalhub config set mcp_config_file <path>`. See the [MCP documentation](/mcp/installation/) for full configuration and usage details.
+
 ## Using in CI/CD
 
 The CLI is designed for scripted use. All commands return standard exit codes (0 on success, non-zero on failure), and every command that produces data supports `--format json` for machine-readable output.
@@ -426,9 +560,20 @@ ANSI colour codes are stripped automatically when stdout is not a TTY, so piped 
 | **providers** | |
 | `evalhub providers list` | List registered providers |
 | `evalhub providers describe <id>` | Show provider details |
+| **server** | |
+| `evalhub server run` | Run eval-hub-server in the foreground |
+| `evalhub server start` | Start eval-hub-server as a background daemon |
+| `evalhub server stop` | Stop the background server |
+| `evalhub server status` | Check server status and health |
+| **mcp** | |
+| `evalhub mcp run` | Run MCP server in the foreground |
+| `evalhub mcp start` | Start MCP server as a background daemon |
+| `evalhub mcp stop` | Stop the background MCP server |
+| `evalhub mcp status` | Check MCP server status |
 | **config** | |
 | `evalhub config set <key> <value>` | Set a config value |
 | `evalhub config get <key>` | Read a config value |
+| `evalhub config unset <key>` | Remove a config value |
 | `evalhub config list` | Show active profile |
 | `evalhub config use <profile>` | Switch profile |
 

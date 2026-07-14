@@ -96,26 +96,52 @@ evalhub-mcp --version
 ```
 
 </TabItem>
-<TabItem label="Python SDK">
+<TabItem label="Python SDK (CLI)">
 
-<Since version="0.1.5 eval-hub-sdk (deprecated)" />
+<Since version="0.4.3 eval-hub-sdk" />
 
-```text
-```
-
-If you already use the EvalHub Python SDK or CLI, the MCP server is included:
+If you already use the EvalHub Python SDK or CLI, the MCP server lifecycle is managed through the `evalhub mcp` commands:
 
 ```bash
 pip install "eval-hub-sdk[mcp]"
 ```
 
-Run the MCP server:
+Run the MCP server in the foreground (defaults to `stdio` transport):
 
 ```bash
-evalhub mcp
+evalhub mcp run
 ```
 
-The Python SDK MCP server uses stdio transport only and reads connection settings from `~/.config/evalhub/config.yaml` (managed by `evalhub config set`).
+Or start it as a background daemon (defaults to `http` transport):
+
+```bash
+evalhub mcp start
+# MCP server started (PID 12345).
+#   Transport: http
+#   URL:       http://localhost:3001
+#   Logs:      ~/.config/evalhub/mcp/mcp.log
+```
+
+Manage the background daemon:
+
+```bash
+evalhub mcp status   # check if running (reports server name, version, git hash)
+evalhub mcp stop     # stop the daemon
+```
+
+See [CLI-managed configuration](#cli-managed-configuration-evalhub-mcp) below for how to configure the MCP connection through the CLI.
+
+:::caution[Breaking change in 0.4.3 eval-hub-sdk]
+Between versions 0.1.5 and 0.4.3, running `evalhub mcp` started a stdio MCP server directly. This no longer works — `evalhub mcp` is now a command group. Use `evalhub mcp run` instead:
+
+```bash
+# 0.1.5 – 0.4.2
+evalhub mcp
+
+# 0.4.3 and later
+evalhub mcp run
+```
+:::
 
 </TabItem>
 </Tabs>
@@ -196,6 +222,80 @@ Settings are resolved in this order (highest priority first):
 | `http-sse` | HTTP + Server-Sent Events    | Legacy MCP clients (deprecated)       |
 
 The `http` transport includes a health endpoint at `GET /health` returning `{"status":"ok"}`.
+
+## CLI-managed configuration (`evalhub mcp`) — Python SDK CLI only
+
+<Since version="0.4.3 eval-hub-sdk" />
+
+This section applies when managing the Go MCP binary through the Python SDK CLI (`evalhub mcp` commands). If you run the `evalhub-mcp` binary directly, use the [configuration file](#configuration-file), [environment variables](#environment-variables), or [CLI flags](#cli-flags) above instead.
+
+Configuration is managed with a file-based config key instead of individual profile keys.
+
+### Set the MCP config file
+
+Provide a YAML config file with MCP-specific settings. The CLI validates the file and stores a profile-scoped copy:
+
+```bash
+evalhub config set mcp_config_file mcp-config.yaml
+```
+
+Example `mcp-config.yaml`:
+
+```yaml
+transport: http
+host: localhost
+port: 3001
+```
+
+### Config merging
+
+The CLI merges connection keys from the active profile (`base_url`, `token`, `tenant`, `insecure`) with the MCP config file. MCP config values take precedence. The merged result is written to `~/.config/evalhub/mcp/<profile>/mcp-config.yaml` and passed to the `evalhub-mcp` binary automatically.
+
+Resolution priority (highest first):
+
+1. Values in `mcp_config_file`
+2. Root profile values (`base_url`, `token`, `tenant`, `insecure`)
+
+If neither source provides a value, the key is omitted.
+
+### Inspect the config
+
+```bash
+evalhub config get mcp_config_file              # show stored path
+evalhub config get mcp_config_file --unfold      # show file contents (tokens masked)
+evalhub config get mcp_config_file --unfold --unmask  # show file contents with tokens revealed
+```
+
+### Remove the MCP config
+
+```bash
+evalhub config unset mcp_config_file
+```
+
+This removes the stored config file and cleans up the profile directory.
+
+### Default transports
+
+| Command | Default transport | Use case |
+|---|---|---|
+| `evalhub mcp run` | `stdio` | Local clients (Claude Code, VS Code) |
+| `evalhub mcp start` | `http` | Background daemon for remote clients |
+
+`evalhub mcp start` rejects `stdio` transport — use `evalhub mcp run` for stdio.
+
+### Checking MCP server status
+
+`evalhub mcp status` reports whether the background MCP server is running. If running, it performs a full MCP JSON-RPC handshake to report the server name, version, and git commit hash:
+
+```bash
+evalhub mcp status
+# MCP server is running (PID 12345).
+#   Name:    evalhub-mcp
+#   Version: 0.4.3
+#   Commit:  abc1234
+#   URL:     http://localhost:3001
+#   Logs:    ~/.config/evalhub/mcp/mcp.log
+```
 
 ## OpenShift multi-tenant setup
 
