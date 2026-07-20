@@ -230,7 +230,7 @@ Deploy an EvalHub instance using a custom resource.
    | `spec.providers` | No | List of built-in provider names to enable. Defaults to `garak`, `guidellm`, `lighteval`, `lm-evaluation-harness` when omitted. |
    | `spec.collections` | No | List of built-in collection names to expose (e.g. `leaderboard-v2`). |
    | `spec.env` | No | Additional environment variables injected into the EvalHub server container, as a list of `name`/`value` pairs. |
-   | `spec.otel` | No | OpenTelemetry configuration. See [System Overview](/architecture/system-overview/) for details. |
+   | `spec.otel` | No | OpenTelemetry configuration. See [OpenTelemetry](/guides/opentelemetry/) for details. |
 
 3. **Verify Deployment**
 

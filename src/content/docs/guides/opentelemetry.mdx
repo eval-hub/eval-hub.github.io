@@ -1,0 +1,234 @@
+---
+title: "OpenTelemetry"
+description: "Enable and use OpenTelemetry traces, metrics, and logs in EvalHub"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+EvalHub instruments the evaluation API and job-runtime sidecar with [OpenTelemetry](https://opentelemetry.io/) (OTEL). You can export traces, metrics, and logs to any OTLP-compatible collector (for example SigNoz, Jaeger, or an OpenShift Observability stack), and optionally scrape application metrics via Prometheus.
+
+OTEL is implemented in the [eval-hub](https://github.com/eval-hub/eval-hub) server. The [Python SDK](https://github.com/eval-hub/eval-hub-sdk) and [community adapters](https://github.com/eval-hub/eval-hub-contrib) do not ship their own OTEL exporters; adapter container logs can still be forwarded through the server when job log export is enabled.
+
+For low-level implementation details, see the developer doc in the server repo: [OTEL.md](https://github.com/eval-hub/eval-hub/blob/main/OTEL.md).
+
+## What is instrumented
+
+| Component | Traces | Metrics | Logs |
+|-----------|:------:|:-------:|:----:|
+| EvalHub API (`eval-hub`) | Yes | Yes | Optional |
+| Job runtime sidecar | Yes (when server OTEL is enabled) | OTLP only | Via shared exporter settings |
+| Adapter containers ([eval-hub-contrib](https://github.com/eval-hub/eval-hub-contrib)) | — | — | Optional export at job completion |
+| `evalhub-mcp` | — | — | — |
+| `eval-runtime-init` | — | — | — |
+
+Default OTEL `service.name` values:
+
+- API: `github.com/eval-hub/eval-hub`
+- Sidecar: `github.com/eval-hub/eval-runtime-sidecar`
+
+Override with `otel.service_name` (config) or `spec.otel.serviceName` (EvalHub CR).
+
+## Enabling OTEL
+
+OTEL is off by default. Turn it on in server config for local/dev, or on the EvalHub custom resource for OpenShift.
+
+:::caution[Prometheus alone is not enough]
+`prometheus.enabled` exposes a `/metrics` scrape endpoint, but HTTP, domain, and database **application** metrics require `otel.enabled` **and** `otel.enable_metrics` (or the CR equivalents).
+:::
+
+<Tabs>
+<TabItem label="config.yaml">
+
+```yaml
+otel:
+  enabled: true
+  exporter_type: "otlp-grpc"      # otlp-grpc | otlp-http | stdout
+  exporter_endpoint: "localhost:4317"
+  exporter_insecure: false
+  sampling_ratio: 1.0
+  enable_tracing: true
+  enable_metrics: true            # required for application metrics and OTEL-bridged /metrics
+  # enable_logs: true
+  # enable_job_container_logs: true  # requires enable_logs; exports adapter logs at job completion
+  # metric_export_interval: 60s
+  # service_name: "custom-service-name"
+
+prometheus:
+  enabled: true
+  port: 8081
+```
+
+| Flag | Effect |
+|------|--------|
+| `otel.enabled` | Master switch; required for any OTEL export |
+| `otel.enable_tracing` | TracerProvider and trace export |
+| `otel.enable_metrics` | MeterProvider, application metrics, DB pool metrics, and OTEL-bridged Prometheus scrape |
+| `otel.enable_logs` | LoggerProvider; bridges application `slog` output to OTEL Logs |
+| `otel.enable_job_container_logs` | Fetches adapter container logs when a job reaches a terminal state and emits them as OTEL log records (requires `enable_logs`) |
+| `prometheus.enabled` | Dedicated `/metrics` port; with `otel.enable_metrics`, registers the OTEL Prometheus reader as a dual sink |
+
+</TabItem>
+<TabItem label="OpenShift EvalHub CR">
+
+On OpenShift, set `spec.otel` on the `EvalHub` custom resource. The [TrustyAI service operator](https://github.com/trustyai-explainability/trustyai-service-operator) renders matching keys under `otel:` in the instance ConfigMap. **Presence of `spec.otel` enables OTEL**; omit the block to leave it disabled.
+
+```yaml
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: EvalHub
+metadata:
+  name: evalhub
+  namespace: evalhub
+spec:
+  replicas: 1
+  database:
+    type: sqlite
+  otel:
+    exporterType: otlp-grpc
+    exporterEndpoint: "otel-collector.observability.svc:4317"
+    exporterInsecure: true
+    samplingRatio: "1.0"
+    enableTracing: true
+    enableMetrics: true
+    enableLogs: true
+    enableJobContainerLogs: true
+    metricExportInterval: "60s"
+```
+
+| `config.yaml` key | EvalHub CR `spec.otel` field | Notes |
+|-------------------|------------------------------|-------|
+| `enabled` | *(presence of `spec.otel`)* | Omit `spec.otel` to disable OTEL |
+| `exporter_type` | `exporterType` | `otlp-grpc`, `otlp-http`, or `stdout` |
+| `exporter_endpoint` | `exporterEndpoint` | Collector host:port |
+| `exporter_insecure` | `exporterInsecure` | Skip TLS verify for the exporter |
+| `sampling_ratio` | `samplingRatio` | String float, e.g. `"0.5"` |
+| `enable_tracing` | `enableTracing` | |
+| `enable_metrics` | `enableMetrics` | Required for HTTP metrics and OTEL-bridged `/metrics` |
+| `enable_logs` | `enableLogs` | |
+| `enable_job_container_logs` | `enableJobContainerLogs` | Requires `enableLogs` |
+| `tracer_timeout` | `tracerTimeout` | Duration string, e.g. `"30s"` |
+| `tracer_batch_interval` | `tracerBatchInterval` | Duration string, e.g. `"5s"` |
+| `service_name` | `serviceName` | |
+| `enable_ecs_resource_detection` | `enableEcsResourceDetection` | |
+| `disable_redirect_otel_logs` | `disableRedirectOtelLogs` | |
+| `disable_database_otel_scan` | `disableDatabaseOtelScans` | |
+| `metric_export_interval` | `metricExportInterval` | Duration string, e.g. `"60s"` |
+
+Job-pod sidecars inherit the OTEL block from the EvalHub service config when jobs are created. See [OpenShift Setup](/deployment/openshift-setup/) for the full CR reference.
+
+</TabItem>
+</Tabs>
+
+## Traces
+
+When tracing is enabled, EvalHub exports spans over the configured OTLP (or stdout) exporter. Propagators are W3C Trace Context and Baggage.
+
+**API (inbound):** every registered HTTP route gets an `otelhttp` span named `{METHOD} {route_pattern}`. Evaluation, collection, and provider handlers add child spans.
+
+**API (outbound):** the MLflow HTTP client uses an instrumented transport.
+
+**Database:** SQL queries produce client spans via `otelsql` when storage scans or metrics are enabled. Disable query spans with `disable_database_otel_scan: true` / `disableDatabaseOtelScans: true` (metrics-only mode can still use `otelsql` when metrics are on).
+
+**Sidecar:** when OTEL is enabled on the server, settings are written into each job pod’s `sidecar_config.json`. The sidecar instruments inbound `/health` and proxy traffic, and outbound calls to EvalHub, MLflow, model endpoints, and OCI registries.
+
+:::note[Trace continuity]
+Background job execution is not linked to the create-job HTTP span today. Kubernetes API calls and the runtime init binary are also uninstrumented. See [known limitations](#known-limitations).
+:::
+
+## Metrics
+
+Application metrics require `otel.enable_metrics` (or `spec.otel.enableMetrics`).
+
+### HTTP
+
+| OTEL name | Typical Prometheus name | Notes |
+|-----------|-------------------------|-------|
+| `http.server.request.duration` | `http_server_request_duration_*` | Per-route duration |
+| `http.server.request.count` | `http_server_request_count` | Method, route, status; unmatched → `http.route=not_found` |
+| `http.server.active_requests` | `http_server_active_requests` | In-flight requests |
+| `http.server.request.body.size` | `http_server_request_body_size_*` | Request body size |
+| `http.server.response.body.size` | `http_server_response_body_size_*` | Response body size |
+
+The `/metrics` scrape endpoint itself is not instrumented (avoids self-scrape noise). Cluster scraping uses the dedicated metrics server on port **8081**; local mode also serves `/metrics` on the main API port.
+
+### Evaluation jobs
+
+| OTEL name | When recorded | Attributes |
+|-----------|---------------|------------|
+| `evalhub.evaluation_jobs` | Job created, cancelled, or runtime start failed | `action` = `created` \| `cancelled` \| `runtime_start_failed`; `runtime` on create/fail |
+| `evalhub.evaluation_job_completions` | Job reaches a terminal state | `state` = `completed` \| `failed` \| `cancelled` \| `partially_failed` |
+| `evalhub.benchmark_runtime_errors` | Runtime fails to schedule/start a benchmark | `runtime` = `kubernetes` \| `local` |
+
+There is no end-to-end job duration histogram and no per-tenant label on domain metrics yet.
+
+### Database
+
+When `otelsql` is active and metrics are enabled, EvalHub exports query timing (`go.sql.query_timing`) and connection-pool gauges/counters (`go.sql.connections_*`).
+
+### Prometheus dual sink
+
+When both `prometheus.enabled` and `otel.enable_metrics` are true, the OTEL Prometheus exporter is registered as an additional metric reader. Scrape `:8081/metrics` (or the main API port in local mode). See also [Server API](/reference/server-api/#health-and-metrics).
+
+## Logs
+
+With `otel.enable_logs` / `enableLogs`:
+
+1. **Service logs** — application structured logs are teed to the OTEL LoggerProvider (stdout JSON logs are preserved).
+2. **Export** — logs use the same `exporter_type` and endpoint as traces and metrics.
+
+With `otel.enable_job_container_logs` / `enableJobContainerLogs` (API only; requires logs enabled):
+
+- When a job reaches a terminal state (`completed`, `failed`, `partially_failed`, `cancelled`), EvalHub asynchronously fetches adapter container logs (tail capped at 1000 lines) and emits each line as an OTEL log record with attributes such as `evalhub.job.id`, `evalhub.benchmark.id`, and `evalhub.log.source=container`.
+- Export runs in a background goroutine so workload callbacks are not blocked.
+- Cancelled jobs may delete runtime resources before logs are fetched; export is not triggered on per-benchmark events (only the overall job terminal transition).
+
+This is how [eval-hub-contrib](https://github.com/eval-hub/eval-hub-contrib) adapter output becomes visible in your observability backend without instrumenting each adapter.
+
+## Local validation with SigNoz
+
+The eval-hub repository includes a Podman Compose stack for [SigNoz](https://signoz.io/) under `tests/otel/`. Requires Podman and at least 4GB memory.
+
+```bash
+cd tests/otel
+make start-signoz
+```
+
+| Endpoint | URL |
+|----------|-----|
+| SigNoz UI | <http://localhost:3301> |
+| OTLP gRPC | `localhost:4317` |
+| OTLP HTTP | `localhost:4318` |
+
+Point a local EvalHub at SigNoz:
+
+```yaml
+otel:
+  enabled: true
+  exporter_type: "otlp-grpc"
+  exporter_endpoint: "localhost:4317"
+  exporter_insecure: true
+  enable_tracing: true
+  enable_metrics: true
+  metric_export_interval: 10s
+```
+
+Start the API, generate traffic, then filter in SigNoz by `service.name` = `github.com/eval-hub/eval-hub` (or the sidecar name). Dual-sink Prometheus metrics remain on `:8081/metrics`.
+
+Stop the stack with `make stop-signoz` from `tests/otel`.
+
+## SDK and adapters
+
+| Project | Role in observability |
+|---------|------------------------|
+| [eval-hub](https://github.com/eval-hub/eval-hub) | OTEL SDK bootstrap, HTTP/DB instrumentation, domain metrics, log bridge, job container log export |
+| [eval-hub-sdk](https://github.com/eval-hub/eval-hub-sdk) | Adapters report job phase/status via callbacks; those updates drive server-side job metrics and (when configured) terminal-state log export. The Python client itself does not export OTEL signals. |
+| [eval-hub-contrib](https://github.com/eval-hub/eval-hub-contrib) | Framework adapters run in job pods; enable `enable_job_container_logs` to ship their stdout/stderr through EvalHub into your collector |
+
+## Known limitations
+
+- Runtime job work is detached from the create-job HTTP trace; K8s client calls and `eval-runtime-init` are not traced.
+- `evalhub-mcp` has no OTEL instrumentation.
+- No job duration histogram, benchmark success counters (errors only), or metric exemplars yet.
+- Sidecar has no Prometheus dual-sink and no sidecar-specific domain metrics.
+- `enable_job_container_logs` has no effect unless `enable_logs` is true.
+
+Full gap list: [OTEL.md — Known gaps](https://github.com/eval-hub/eval-hub/blob/main/OTEL.md#known-gaps-and-limitations).
