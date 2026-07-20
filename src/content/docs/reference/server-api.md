@@ -115,7 +115,7 @@ Configuration loads from `config/config.yaml`, with environment variable and fil
 | `database.url` | `DB_URL` | SQLite in-memory | Connection string |
 | `mlflow.tracking_uri` | `MLFLOW_TRACKING_URI` | - | MLflow server URL |
 | `prometheus.enabled` | - | `true` | Enable `/metrics` |
-| `otel.enabled` | - | `false` | Enable OpenTelemetry |
+| `otel.enabled` | - | `false` | Enable OpenTelemetry (see [OpenTelemetry](/guides/opentelemetry/)) |
 
 ### Provider Configuration
 

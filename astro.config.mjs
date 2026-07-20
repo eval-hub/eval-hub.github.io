@@ -101,6 +101,7 @@ export default defineConfig({
             { label: 'Local Mode', slug: 'guides/local-mode' },
             { label: 'Local Mode Tutorial', slug: 'guides/local-mode-tutorial' },
             { label: 'Evaluation-Driven Development', slug: 'guides/evaluation-driven-development' },
+            { label: 'OpenTelemetry', slug: 'guides/opentelemetry' },
           ],
         },
         {
