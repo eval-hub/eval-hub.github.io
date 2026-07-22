@@ -67,7 +67,7 @@ Job `experiment.name` (JobSpec `experiment_name`) is the preferred experiment fo
 ## Configuration Parameters
 
 | Parameter | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `data_dir` | string | Directory containing `*.json` trace files |
 | `eval_model_name` | string | LLM judge model name (e.g. `openai/gpt-4o`) |
 | `provider` | string | Inference provider (`openai`, `anthropic`, etc.) |
@@ -84,7 +84,7 @@ Job `experiment.name` (JobSpec `experiment_name`) is the preferred experiment fo
 ## Provider Details
 
 | Field | Value |
-|---|---|
+| --- | --- |
 | Provider ID | `ibm-clear` |
 | Benchmark ID | `agentic-evaluation` |
 

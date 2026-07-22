@@ -5,7 +5,7 @@ title: "System Overview"
 EvalHub consists of three components that work together to orchestrate LLM evaluations.
 
 | Component | Description | Technology |
-|-----------|-------------|------------|
+| ----------- | ------------- | ------------ |
 | **Server** | REST API, job orchestration, provider management | Go, SQLite / PostgreSQL |
 | **SDK** | Client library, adapter framework, data models | Python 3.11+ |
 | **Contrib** | Community framework adapters | Python containers (UBI9) |
@@ -217,7 +217,7 @@ Environment-based configuration loaded via `pydantic-settings`:
 
 Adapters are built as UBI9 Python containers with a standard layout:
 
-```
+```text
 adapters/<name>/
 ├── main.py           # Entrypoint with FrameworkAdapter implementation
 ├── requirements.txt  # eval-hub-sdk[adapter] + framework dependencies
