@@ -67,6 +67,8 @@ The MLflow tracking URI appears in two places with distinct purposes:
 - **Provider YAML** (`runtime.local.env`) — passed to the adapter subprocess as the `MLFLOW_TRACKING_URI` environment variable, so the adapter can log metrics and artifacts to MLflow directly.
 
 Both should point to the same MLflow instance.
+
+For full experiment schema, adapter backends, and cluster sidecar proxy behavior, see the [MLflow guide](/guides/mlflow/).
 :::
 
 For full details on `evalhub server` commands, see the [CLI guide — "I want to manage the local server"](/guides/cli/#i-want-to-manage-the-local-server).
@@ -244,5 +246,5 @@ Look for `local runtime` messages in the log:
 | Job fails immediately | Adapter command not found | Verify `runtime.local.command` path and that dependencies are installed |
 | Job stays in `running` state | Adapter is not reporting back | Check the adapter logs in `jobrun.log`; verify the callback URL is reachable |
 | `provider has no local runtime configured` | Missing `runtime.local` in provider YAML | Add a `runtime.local.command` to the provider configuration |
-| MLflow experiment not created | MLflow not configured | Set `mlflow.tracking_uri` in the server config YAML (`server_config_file`) |
+| MLflow experiment not created | MLflow not configured | Set `mlflow.tracking_uri` in the server config YAML (`server_config_file`); see [MLflow](/guides/mlflow/) |
 | OCI push fails | Registry not reachable or requires auth | Verify the registry is running; run `docker login`/`podman login` for authenticated registries or set `OCI_INSECURE=true` for local ones |

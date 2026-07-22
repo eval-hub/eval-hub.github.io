@@ -5,7 +5,7 @@ title: "System Overview"
 EvalHub consists of three components that work together to orchestrate LLM evaluations.
 
 | Component | Description | Technology |
-|-----------|-------------|------------|
+| ----------- | ------------- | ------------ |
 | **Server** | REST API, job orchestration, provider management | Go, SQLite / PostgreSQL |
 | **SDK** | Client library, adapter framework, data models | Python 3.11+ |
 | **Contrib** | Community framework adapters | Python containers (UBI9) |
@@ -172,6 +172,7 @@ class JobResults:
     duration_seconds: float
     completed_at: datetime
     oci_artifact: OCIArtifactResult | None
+    mlflow_run_id: str | None  # set after callbacks.mlflow.save()
 ```
 
 ### JobCallbacks
@@ -196,7 +197,7 @@ The SDK provides `DefaultCallbacks` which:
 
 - Sends status events to the sidecar via HTTP POST
 - Pushes OCI artifacts using `oras` and `olot`
-- Logs metrics to MLflow when `experiment_name` is set
+- Provides `callbacks.mlflow.save()` for adapters to call explicitly; `save()` records metrics only when `experiment_name` is set (see [MLflow](/guides/mlflow/))
 - Handles auth via ServiceAccount tokens or explicit tokens
 
 ### AdapterSettings
@@ -210,13 +211,13 @@ Environment-based configuration loaded via `pydantic-settings`:
 - `EVALHUB_AUTH_TOKEN_PATH`: path to ServiceAccount token file
 - `EVALHUB_CA_BUNDLE_PATH`: path to CA bundle for TLS
 - `EVALHUB_INSECURE`: skip TLS verification for EvalHub connection
-- `EVALHUB_MLFLOW_BACKEND`: `odh` (default) or `upstream`
+- `EVALHUB_MLFLOW_BACKEND`: `odh` (default; built-in REST client) or `upstream` (official `mlflow` package)
 
 ## Adapter Container Images
 
 Adapters are built as UBI9 Python containers with a standard layout:
 
-```
+```text
 adapters/<name>/
 ├── main.py           # Entrypoint with FrameworkAdapter implementation
 ├── requirements.txt  # eval-hub-sdk[adapter] + framework dependencies
