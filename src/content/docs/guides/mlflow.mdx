@@ -35,7 +35,7 @@ flowchart LR
 3. **Runs** — The SDK creates **one MLflow run per benchmark**, named `{job_id}_{benchmark_index}`. Metrics and params are logged in that run; optional file artifacts (JSON/HTML reports) can be uploaded too.
 4. **Results** — Adapters assign the returned run id to `results.mlflow_run_id` before `report_results()`, so the EvalHub API surfaces it on benchmark results.
 
-Without `experiment.name`, adapters skip MLflow logging (no error).
+Without `experiment.name`, most adapters skip MLflow logging (no error). CLEAR is an exception: if JobSpec `experiment_name` is empty, it can still upload when `parameters.mlflow_experiment_name` is set (see [CLEAR](#clear-traces-in-results-out)).
 
 :::note[Kubernetes vs local]
 In **cluster mode**, adapters set `MLFLOW_TRACKING_URI` to the **job sidecar** base URL. The sidecar proxies `/api/2.0/mlflow`, `/api/3.0/mlflow`, and `/api/2.0/mlflow-artifacts` to the real tracking server and injects auth.
@@ -240,7 +240,7 @@ The [IBM CLEAR adapter](/adapters/clear/) uses MLflow in two different ways:
 | Purpose | Configuration |
 |---------|----------------|
 | **Fetch input traces** | `parameters.mlflow_traces_experiment_name` or `parameters.mlflow_traces_experiment_id` (optional `mlflow_traces_filter`, `mlflow_traces_run_id`, `mlflow_traces_max_results`) plus `MLFLOW_TRACKING_URI` |
-| **Upload CLEAR results** | Job `experiment.name` (or JobSpec `experiment_name` / `parameters.mlflow_experiment_name`) — uploads `clear_results.json`, summaries, and HTML when present |
+| **Upload CLEAR results** | Prefer job `experiment.name` / JobSpec `experiment_name`. If that is unset, CLEAR copies `parameters.mlflow_experiment_name` onto the JobSpec before `callbacks.mlflow.save()`, so parameter-only jobs can still create a run. Uploads `clear_results.json`, summaries, and HTML when present |
 
 Those two experiments can be the same or different. See the [CLEAR adapter](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/clear) README for full details.
 

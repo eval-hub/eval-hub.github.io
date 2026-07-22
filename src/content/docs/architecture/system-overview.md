@@ -197,7 +197,7 @@ The SDK provides `DefaultCallbacks` which:
 
 - Sends status events to the sidecar via HTTP POST
 - Pushes OCI artifacts using `oras` and `olot`
-- Logs metrics to MLflow when `experiment_name` is set (see [MLflow](/guides/mlflow/))
+- Provides `callbacks.mlflow.save()` for adapters to call explicitly; `save()` records metrics only when `experiment_name` is set (see [MLflow](/guides/mlflow/))
 - Handles auth via ServiceAccount tokens or explicit tokens
 
 ### AdapterSettings

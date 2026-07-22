@@ -31,7 +31,7 @@ The adapter resolves where traces live, runs the CLEAR agentic pipeline, reads `
 1. **Input traces** — Prefers `/test_data` or `/data` when eval-hub has staged data from S3 (`test_data_ref`), or set `parameters.data_dir` to a directory of `*.json` traces. Alternatively, fetch traces from an MLflow experiment with `parameters.mlflow_traces_experiment_name` (requires `MLFLOW_TRACKING_URI`).
 2. **Configuration** — Job parameters drive CLEAR (`eval_model_name`, `provider`, `inference_backend`, frameworks, etc.); `model.url` is used as the OpenAI-compatible endpoint.
 3. **Execution** — CLEAR prepares trace data and runs the step-by-step agentic pipeline.
-4. **Output** — Metrics (interactions, issues, agent scores) are returned to eval-hub; `clear_results.json` is persisted under the run output. When the job has an MLflow experiment name, results and HTML artifacts can be uploaded via `callbacks.mlflow.save()`.
+4. **Output** — Metrics (interactions, issues, agent scores) are returned to eval-hub; `clear_results.json` is persisted under the run output. Result upload via `callbacks.mlflow.save()` uses JobSpec `experiment_name` when set; otherwise CLEAR applies `parameters.mlflow_experiment_name` before calling `save()`.
 
 ## Quick Start
 
@@ -62,7 +62,7 @@ Submit a job through the eval-hub API using provider `ibm-clear` and benchmark `
 2. Set `parameters.mlflow_traces_experiment_name` (or `mlflow_traces_experiment_id`) on the job
 3. Optionally filter with `mlflow_traces_filter`, `mlflow_traces_run_id`, or `mlflow_traces_max_results`
 
-Job `experiment.name` controls where CLEAR **results** are logged; `parameters.mlflow_traces_experiment_name` controls where **input traces** are fetched. They can differ. See the [MLflow guide](/guides/mlflow/#clear-traces-in-results-out).
+Job `experiment.name` (JobSpec `experiment_name`) is the preferred experiment for CLEAR **results**. If it is unset, CLEAR copies `parameters.mlflow_experiment_name` onto the JobSpec before `callbacks.mlflow.save()`, so a parameter-only job can still create an MLflow run. `parameters.mlflow_traces_experiment_name` is separate and controls where **input traces** are fetched. See the [MLflow guide](/guides/mlflow/#clear-traces-in-results-out).
 
 ## Configuration Parameters
 
@@ -79,7 +79,7 @@ Job `experiment.name` controls where CLEAR **results** are logged; `parameters.m
 | `mlflow_traces_filter` | string | Optional MLflow trace search filter |
 | `mlflow_traces_run_id` | string | Optional run id filter for traces |
 | `mlflow_traces_max_results` | int | Max traces to fetch (default `500`) |
-| `mlflow_experiment_name` | string | Optional override for where CLEAR results are logged (otherwise JobSpec `experiment_name`) |
+| `mlflow_experiment_name` | string | Fallback result-upload experiment when JobSpec `experiment_name` is unset (CLEAR copies it onto the JobSpec before `callbacks.mlflow.save()`) |
 
 ## Provider Details
 
