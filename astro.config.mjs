@@ -3,7 +3,7 @@ import starlight from '@astrojs/starlight';
 import starlightClientMermaid from '@pasqal-io/starlight-client-mermaid';
 import starlightBlog from 'starlight-blog';
 
-// For fork previews, set base to the repo name. Remove before merging upstream.
+// Set ASTRO_BASE for non-root publishes (fork project Pages, PR previews under /pr-preview/pr-N).
 const base = process.env.ASTRO_BASE || undefined;
 
 export default defineConfig({
