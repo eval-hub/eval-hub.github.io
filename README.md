@@ -10,7 +10,22 @@ This repository contains the source for the [EvalHub documentation](https://eval
 
 ### Automatic Deployment
 
-Documentation is automatically built and deployed to GitHub Pages when changes are pushed to the `main` branch.
+Documentation is built on pushes to `main` and published to the `gh-pages` branch (GitHub Pages source: **Deploy from a branch** → `gh-pages` / root).
+
+### Pull request previews
+
+Same-repo pull requests get a sticky preview comment with a URL like:
+
+`https://eval-hub.github.io/pr-preview/pr-<number>/`
+
+Previews are cleaned up when the PR is closed. Fork PRs are not previewed (build CI still runs).
+
+**One-time repository settings** (required for preview and production branch deploys):
+
+1. **Settings → Pages** — Source: **Deploy from a branch**, Branch: `gh-pages` / `/ (root)`
+2. **Settings → Actions → General → Workflow permissions** — **Read and write permissions** (and allow workflows to create PRs if prompted)
+
+Without write permissions, `deploy.yml` and `pr-preview.yml` cannot update `gh-pages`.
 
 ## Adding Blog Posts
 
