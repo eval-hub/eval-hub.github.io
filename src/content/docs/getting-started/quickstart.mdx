@@ -310,8 +310,14 @@ evalhub eval run \
 </TabItem>
 <TabItem label="Python SDK">
 
-```python {7-11}
-from evalhub.models.api import ExperimentConfig, ExperimentTag
+```python {7-14}
+from evalhub.models.api import (
+    BenchmarkConfig,
+    ExperimentConfig,
+    ExperimentTag,
+    JobSubmissionRequest,
+    ModelConfig,
+)
 
 job = client.jobs.submit(JobSubmissionRequest(
     name="llama3-mlflow-eval",
