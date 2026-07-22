@@ -21,13 +21,14 @@ EvalHub provides a unified way to evaluate LLMs across multiple frameworks — s
     Group benchmarks with weighted scoring for domain-specific evaluations in a single API call.
   </Card>
   <Card title="MLflow Integration" icon="open-book">
-    Track experiments, compare runs, and persist metrics to MLflow automatically.
+    Track experiments, compare runs, and persist metrics to [MLflow](/guides/mlflow/) automatically.
   </Card>
 </CardGrid>
 
 - **Versioned REST API** (v1) with OpenAPI specification
 - **Provider registry** with benchmark discovery
 - **OCI artifact persistence** for evaluation results
+- **[MLflow](/guides/mlflow/)** experiment tracking for jobs and adapters
 - **[Prometheus metrics and OpenTelemetry](/guides/opentelemetry/)** tracing, metrics, and logs
 - **[Tenancy](/architecture/tenancy/)** with multi- and single-namespace deployment modes and Kubernetes RBAC
 
@@ -79,6 +80,7 @@ evalhub eval run \
   <LinkCard title="Installation" href="/getting-started/installation/" description="Install the server and a client" />
   <LinkCard title="Quick Start" href="/getting-started/quickstart/" description="Run your first evaluation step by step" />
   <LinkCard title="CLI Reference" href="/guides/cli/" description="Full command reference for the evalhub CLI" />
+  <LinkCard title="MLflow" href="/guides/mlflow/" description="Configure experiment tracking for jobs and adapters" />
   <LinkCard title="Python SDK" href="/reference/sdk-client/" description="Programmatic access with sync and async clients" />
   <LinkCard title="MCP support" href="/mcp/index" description="Exposing EvalHub as a MCP server" />
   <LinkCard title="Agent Discoverability" href="/mcp/agent-discoverability/" description="How AI agents choose and interpret evaluations" />

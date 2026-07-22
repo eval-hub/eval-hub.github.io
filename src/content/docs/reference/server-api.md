@@ -113,7 +113,13 @@ Configuration loads from `config/config.yaml`, with environment variable and fil
 | `service.port` | `PORT` | `8080` | API listen port |
 | `database.driver` | - | `sqlite` | `sqlite` or `pgx` |
 | `database.url` | `DB_URL` | SQLite in-memory | Connection string |
-| `mlflow.tracking_uri` | `MLFLOW_TRACKING_URI` | - | MLflow server URL |
+| `mlflow.tracking_uri` | `MLFLOW_TRACKING_URI` | - | MLflow tracking server URL (required for experiment tracking; see [MLflow](/guides/mlflow/)) |
+| `mlflow.http_timeout` | - | - | MLflow HTTP client timeout |
+| `mlflow.ca_cert_path` | `MLFLOW_CA_CERT_PATH` | - | Custom CA bundle for MLflow TLS |
+| `mlflow.insecure_skip_verify` | `MLFLOW_INSECURE_SKIP_VERIFY` | `false` | Skip TLS verification for MLflow |
+| `mlflow.token` | - | - | Static MLflow bearer token |
+| `mlflow.token_path` | `MLFLOW_TOKEN_PATH` | - | Path to MLflow bearer token file |
+| `mlflow.workspace` | `MLFLOW_WORKSPACE` | - | Workspace name when the MLflow server supports workspaces |
 | `prometheus.enabled` | - | `true` | Enable `/metrics` |
 | `otel.enabled` | - | `false` | Enable OpenTelemetry (see [OpenTelemetry](/guides/opentelemetry/)) |
 

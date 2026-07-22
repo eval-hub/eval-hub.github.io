@@ -121,7 +121,7 @@ Submit a new model evaluation job.
 | Field               | Type   | Required | Description                       |
 | ------------------- | ------ | -------- | --------------------------------- |
 | `name`              | string | No       | MLflow experiment name            |
-| `tags`              | object | No       | Key-value tags for the experiment |
+| `tags`              | object | No       | Key-value tags for the experiment (MCP accepts a map; the REST API uses `{key, value}` objects — see [MLflow](/guides/mlflow/#experiment-configuration-on-jobs)) |
 | `artifact_location` | string | No       | MLflow artifacts storage path     |
 
 ### Example request

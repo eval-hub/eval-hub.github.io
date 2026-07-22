@@ -292,6 +292,8 @@ curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
 
 ### Use MLflow Tracking
 
+When MLflow is configured on the EvalHub server, pass an experiment name to track the job. See the [MLflow guide](/guides/mlflow/) for tags, artifact location, adapter backends, and cluster vs local wiring.
+
 <Tabs syncKey="interface">
 <TabItem label="CLI">
 
@@ -308,21 +310,24 @@ evalhub eval run \
 </TabItem>
 <TabItem label="Python SDK">
 
-```python {7}
-from evalhub.models.api import ExperimentConfig
+```python {7-11}
+from evalhub.models.api import ExperimentConfig, ExperimentTag
 
 job = client.jobs.submit(JobSubmissionRequest(
     name="llama3-mlflow-eval",
     model=ModelConfig(url="http://localhost:11434/v1", name="qwen2.5:1.5b"),
     benchmarks=[BenchmarkConfig(id="mmlu", provider_id="lm_evaluation_harness")],
-    experiment=ExperimentConfig(name="my-experiment")
+    experiment=ExperimentConfig(
+        name="my-experiment",
+        tags=[ExperimentTag(key="environment", value="testing")],
+    ),
 ))
 ```
 
 </TabItem>
 <TabItem label="REST API">
 
-```bash {15-17}
+```bash {15-22}
 curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
   -H "Content-Type: application/json" \
   -d '{
@@ -338,7 +343,10 @@ curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
       }
     ],
     "experiment": {
-      "name": "my-experiment"
+      "name": "my-experiment",
+      "tags": [
+        {"key": "environment", "value": "testing"}
+      ]
     }
   }'
 ```
