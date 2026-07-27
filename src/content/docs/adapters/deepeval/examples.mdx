@@ -1,0 +1,295 @@
+---
+title: "Examples"
+description: "Worked examples for evaluating LLM outputs with the DeepEval adapter"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
+
+## Faithfulness Evaluation
+
+Evaluates whether a RAG pipeline's responses are supported by the retrieved context.
+
+### Prerequisites
+
+- EvalHub server running (local or on OpenShift)
+- An OpenAI-compatible model endpoint for the judge (e.g. vLLM, Ollama, OpenAI)
+- The `eval-hub-sdk` CLI installed: `pip install eval-hub-sdk`
+
+### Prepare the Dataset
+
+<Steps>
+
+1. **Create a CSV dataset** with the three required columns for faithfulness:
+
+   ```csv
+   input,actual_output,retrieval_context
+   "What is the boiling point of water?","Water boils at 100°C at sea level.","Water boils at 100 degrees Celsius (212°F) at standard atmospheric pressure."
+   "Who invented the telephone?","Alexander Graham Bell invented the telephone in 1876.","Alexander Graham Bell is credited with inventing the first practical telephone, patented in 1876."
+   "What planet is closest to the Sun?","Mercury is the closest planet to the Sun.","Mercury is the innermost planet of the Solar System and the closest to the Sun."
+   ```
+
+2. **Upload the dataset** to an S3 bucket accessible from your cluster, or mount it at `/test_data/data.csv`.
+
+</Steps>
+
+### Submit a Faithfulness Evaluation Job
+
+<Tabs>
+<TabItem label="SDK CLI">
+
+```bash
+evalhub job submit \
+  --provider deepeval \
+  --benchmark faithfulness \
+  --model-name "gpt-4o" \
+  --model-url "https://api.openai.com/v1" \
+  --param eval_model_name=gpt-4o \
+  --param threshold=0.7 \
+  --param dataset_format=csv \
+  --test-data-s3 s3://my-bucket/deepeval-datasets/faithfulness.csv
+```
+
+</TabItem>
+
+<TabItem label="Python SDK">
+
+```python
+from evalhub import EvalHubClient
+
+client = EvalHubClient(base_url="http://localhost:8080")
+
+job = client.submit_job(
+    provider_id="deepeval",
+    benchmark_id="faithfulness",
+    model_name="gpt-4o",
+    model_url="https://api.openai.com/v1",
+    parameters={
+        "eval_model_name": "gpt-4o",
+        "threshold": 0.7,
+        "dataset_format": "csv",
+    },
+    test_data_ref={"s3": "s3://my-bucket/deepeval-datasets/faithfulness.csv"},
+)
+
+print(f"Job submitted: {job.id}")
+```
+
+</TabItem>
+</Tabs>
+
+### Retrieve Results
+
+```bash
+# Check job status
+evalhub job status <job-id>
+
+# Get results
+evalhub job results <job-id>
+```
+
+Results include per-test-case scores and an aggregate:
+
+```json
+{
+  "id": "deepeval-faithfulness-001",
+  "benchmark_id": "faithfulness",
+  "overall_score": 0.89,
+  "results": [
+    {
+      "metric_name": "faithfulness_score",
+      "metric_value": 0.89,
+      "num_samples": 3
+    },
+    {
+      "metric_name": "claims_count",
+      "metric_value": 9,
+      "num_samples": 3
+    },
+    {
+      "metric_name": "supported_claims_count",
+      "metric_value": 8,
+      "num_samples": 3
+    }
+  ],
+  "num_examples_evaluated": 3
+}
+```
+
+---
+
+## Hallucination Detection
+
+Detects hallucinated content that is not grounded in the provided context.
+
+```json
+{
+  "id": "deepeval-hallucination-001",
+  "provider_id": "deepeval",
+  "benchmark_id": "hallucination",
+  "model": {
+    "url": "http://vllm-service:8000/v1",
+    "name": "mistral-7b-instruct"
+  },
+  "parameters": {
+    "eval_model_name": "gpt-4o",
+    "eval_model_url": "https://api.openai.com/v1",
+    "threshold": 0.5,
+    "dataset_format": "csv"
+  }
+}
+```
+
+**Dataset (CSV):**
+
+```csv
+input,actual_output,context
+"What year was the Eiffel Tower built?","The Eiffel Tower was built in 1889.","The Eiffel Tower, located in Paris, was constructed between 1887 and 1889."
+"What is the speed of light?","Light travels at 300,000 km/s in a vacuum.","The speed of light in a vacuum is approximately 299,792 km/s."
+```
+
+**Use case:** Safety evaluation for production RAG pipelines where factual grounding is critical, such as medical or legal question-answering systems.
+
+---
+
+## Multi-Turn: Role Adherence
+
+Tests whether a chatbot maintains its assigned persona throughout a conversation. This example evaluates a customer support bot.
+
+```json
+{
+  "id": "deepeval-role-adherence-001",
+  "provider_id": "deepeval",
+  "benchmark_id": "role-adherence",
+  "model": {
+    "url": "http://vllm-service:8000/v1",
+    "name": "llama-3-8b-instruct"
+  },
+  "parameters": {
+    "eval_model_name": "gpt-4o",
+    "eval_model_url": "https://api.openai.com/v1",
+    "threshold": 0.6,
+    "dataset_format": "jsonl",
+    "chatbot_role": "friendly and professional customer support agent for a software company"
+  }
+}
+```
+
+**Dataset (JSONL — `role_adherence_dataset.jsonl`):**
+
+```jsonl
+{"turns": [{"role": "user", "content": "I need help with my account."}, {"role": "assistant", "content": "I'd be happy to help you with your account! What seems to be the issue?"}], "chatbot_role": "friendly and professional customer support agent for a software company"}
+{"turns": [{"role": "user", "content": "Can you write me a poem instead?"}, {"role": "assistant", "content": "I'm here to help with account and software questions, but I can certainly try to brighten your day! However, my main focus is on resolving your support needs."}], "chatbot_role": "friendly and professional customer support agent for a software company"}
+```
+
+:::caution[chatbot_role Must Be Provided]
+The `role-adherence` benchmark requires `chatbot_role` to be set. If the dataset rows do not include a `chatbot_role` column, the `parameters.chatbot_role` value is used as a fallback for all rows.
+:::
+
+**Use case:** Evaluate persona-constrained assistants to ensure they do not break character when users attempt to redirect the conversation.
+
+---
+
+## Multi-Turn: Conversation Completeness
+
+Evaluates whether the chatbot addresses all user needs across a multi-turn support conversation.
+
+```json
+{
+  "id": "deepeval-conv-completeness-001",
+  "provider_id": "deepeval",
+  "benchmark_id": "conversation-completeness",
+  "model": {
+    "url": "http://vllm-service:8000/v1",
+    "name": "llama-3-8b-instruct"
+  },
+  "parameters": {
+    "eval_model_name": "gpt-4o",
+    "eval_model_url": "https://api.openai.com/v1",
+    "threshold": 0.6,
+    "dataset_format": "jsonl"
+  }
+}
+```
+
+**Dataset (JSONL):**
+
+```jsonl
+{"turns": [{"role": "user", "content": "I need to cancel my subscription and get a refund."}, {"role": "assistant", "content": "I can help with that. I'll process the cancellation now."}, {"role": "user", "content": "What about the refund?"}, {"role": "assistant", "content": "The refund will be processed within 5–7 business days."}]}
+```
+
+**Use case:** Identify conversations where the model resolves part of the user's request but silently drops other tasks or sub-goals.
+
+---
+
+## Local Testing
+
+Run the adapter locally without Kubernetes for fast iteration on datasets and job configurations.
+
+```bash
+cd eval-hub-contrib/adapters/deepeval
+
+# Set up a virtual environment
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+
+# Place your test data
+mkdir -p test_data
+cp /path/to/my_dataset.csv test_data/data.csv
+
+# Configure the job spec (edit meta/job.json or set EVALHUB_JOB_SPEC_PATH)
+export EVALHUB_MODE=local
+export EVALHUB_JOB_SPEC_PATH=meta/job.json
+export OPENAI_API_KEY=your-api-key
+
+# Run
+python main.py
+```
+
+The adapter will print lifecycle phase transitions (`INITIALIZING`, `LOADING_DATA`, `RUNNING_EVALUATION`, `POST_PROCESSING`, `PERSISTING_ARTIFACTS`) and a JSON summary of results to stdout.
+
+---
+
+## MLflow-Tracked Evaluation
+
+Track evaluation results in MLflow for comparison across model versions or prompt changes.
+
+**JobSpec with `experiment_name`:**
+
+```json
+{
+  "id": "deepeval-faithfulness-mlflow-001",
+  "provider_id": "deepeval",
+  "benchmark_id": "faithfulness",
+  "experiment_name": "rag-pipeline-v2-faithfulness",
+  "model": {
+    "url": "http://vllm-service:8000/v1",
+    "name": "mistral-7b-instruct"
+  },
+  "parameters": {
+    "eval_model_name": "gpt-4o",
+    "eval_model_url": "https://api.openai.com/v1",
+    "threshold": 0.7,
+    "dataset_format": "csv"
+  }
+}
+```
+
+**Configure MLflow tracking:**
+
+```bash
+# Point the adapter at your MLflow server
+export MLFLOW_TRACKING_URI=http://mlflow-service:5000
+
+evalhub job submit \
+  --provider deepeval \
+  --benchmark faithfulness \
+  --model-name "mistral-7b-instruct" \
+  --model-url "http://vllm-service:8000/v1" \
+  --param eval_model_name=gpt-4o \
+  --param experiment_name=rag-pipeline-v2-faithfulness \
+  --test-data-s3 s3://my-bucket/deepeval-datasets/faithfulness.csv
+```
+
+After the job completes, the run appears in MLflow under the `rag-pipeline-v2-faithfulness` experiment with the primary benchmark score, pass/fail status, and job metadata logged as metrics and parameters.
+
+See the [MLflow guide](/guides/mlflow/) for setting up the MLflow server and configuring experiment tracking across multiple providers.

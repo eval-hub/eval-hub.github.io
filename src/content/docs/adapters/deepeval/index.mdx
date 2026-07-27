@@ -1,0 +1,185 @@
+---
+title: "DeepEval Adapter"
+description: "Evaluate LLM outputs with DeepEval's LLM-as-judge metrics through EvalHub"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Since from '../../../../components/Since.astro';
+
+The DeepEval adapter integrates [DeepEval](https://github.com/confident-ai/deepeval) with the eval-hub evaluation service using the evalhub-sdk framework adapter pattern. DeepEval is an open-source LLM evaluation framework that uses an LLM-as-judge approach, where a separate model scores outputs for faithfulness, hallucination, answer relevancy, factual correctness, summarization quality, and multi-turn conversation properties.
+
+## Overview
+
+DeepEval provides a structured suite of metrics for evaluating LLM outputs across two evaluation modes: single-turn assessments (one input → one response) and multi-turn conversation assessments (sequences of user and assistant turns). The adapter constructs the appropriate DeepEval test case type—`LLMTestCase` for single-turn or `ConversationalTestCase` for multi-turn—and maps raw scores into EvalHub's unified `JobResults` format.
+
+### Key Features
+
+- **Single-turn metrics**: Faithfulness, answer relevancy, hallucination detection, factual correctness, and summarization quality
+- **Multi-turn evaluation**: Conversation completeness, role adherence, and knowledge retention across multi-turn dialogues
+- **LLM-as-judge**: Uses an OpenAI-compatible endpoint as the judge model; works with vLLM, TGI, Ollama, and any OpenAI-compatible server
+- **Flexible data input**: CSV (single-turn) and JSONL/JSON (recommended for multi-turn) with configurable dataset paths
+- **MLflow integration**: Logs scores and pass/fail results to a configurable MLflow experiment
+- **Retry and concurrency controls**: Configurable retry logic and throttling to accommodate rate-limited or reasoning-model judge endpoints
+
+### Supported Evaluation Types
+
+**Single-Turn** (uses `LLMTestCase`):
+
+- `faithfulness` — Is the output faithful to the retrieved context?
+- `relevancy` — Does the output address the input query?
+- `hallucination` — Does the output contain hallucinated content not grounded in context?
+- `correctness` — Does the output match the expected ground-truth answer?
+- `summarization` — How well does the output summarise the source text?
+
+**Multi-Turn** (uses `ConversationalTestCase`):
+
+- `conversation-completeness` — Does the chatbot address all user needs across the conversation?
+- `role-adherence` — Does the chatbot stay in its assigned persona throughout?
+- `knowledge-retention` — Does the chatbot correctly retain information disclosed earlier in the conversation?
+
+## Architecture
+
+The adapter follows the eval-hub framework adapter pattern:
+
+**Workflow:**
+
+1. **JobSpec loading**: Job configuration auto-loaded from the mounted file at `/meta/job.json` (or `EVALHUB_JOB_SPEC_PATH` in local mode)
+2. **Data resolution**: Evaluation dataset loaded from `/test_data` (S3 init container), `/data`, or an explicit `data_dir` parameter
+3. **Test case construction**: Each dataset row is mapped to either an `LLMTestCase` (single-turn) or `ConversationalTestCase` (multi-turn) based on the benchmark
+4. **Judge model setup**: An OpenAI-compatible wrapper is configured using the resolved model credentials
+5. **DeepEval evaluation**: The metric is applied to all test cases via `deepeval.evaluate()`
+6. **Result mapping**: Raw DeepEval scores are mapped to `EvaluationResult` objects and an aggregate score is computed
+7. **Artifact persistence**: A `results_summary.json` is optionally pushed as an OCI artifact
+8. **Callback-based communication**: Progress and results are reported to the eval-hub sidecar
+
+## Quick Start
+
+Submit a faithfulness evaluation job using the EvalHub SDK:
+
+<Tabs>
+<TabItem label="SDK CLI">
+
+```bash
+evalhub job submit \
+  --provider deepeval \
+  --benchmark faithfulness \
+  --model-name "gpt-4o" \
+  --model-url "https://api.openai.com/v1" \
+  --param eval_model_name=gpt-4o \
+  --param threshold=0.7 \
+  --param dataset_format=csv \
+  --test-data-s3 s3://my-bucket/deepeval-datasets/faithfulness.csv
+```
+
+</TabItem>
+
+<TabItem label="Python SDK">
+
+```python
+from evalhub import EvalHubClient
+
+client = EvalHubClient(base_url="http://evalhub-service:8080")
+
+job = client.submit_job(
+    provider_id="deepeval",
+    benchmark_id="faithfulness",
+    model_name="gpt-4o",
+    model_url="https://api.openai.com/v1",
+    parameters={
+        "eval_model_name": "gpt-4o",
+        "threshold": 0.7,
+        "dataset_format": "csv",
+    },
+    test_data_ref={"s3": "s3://my-bucket/deepeval-datasets/faithfulness.csv"},
+)
+
+print(f"Job submitted: {job.id}")
+```
+
+</TabItem>
+
+<TabItem label="REST API">
+
+```bash
+curl -X POST http://evalhub-service:8080/api/v1/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "deepeval-faithfulness-001",
+    "provider_id": "deepeval",
+    "benchmark_id": "faithfulness",
+    "model": {
+      "url": "https://api.openai.com/v1",
+      "name": "gpt-4o"
+    },
+    "parameters": {
+      "eval_model_name": "gpt-4o",
+      "threshold": 0.7,
+      "dataset_format": "csv"
+    },
+    "test_data_ref": {
+      "s3": {
+        "bucket": "my-bucket",
+        "path": "deepeval-datasets/faithfulness.csv"
+      }
+    }
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+See [Configuration](configuration/) for the full parameter reference and [Examples](examples/) for worked scenarios covering hallucination detection, multi-turn benchmarks, and MLflow-tracked evaluations.
+
+## Provider Details
+
+| Field | Value |
+|---|---|
+| Provider ID | `deepeval` |
+| Container Image | `quay.io/evalhub/community-deepeval:latest` |
+
+## Source
+
+- **Adapter**: [eval-hub-contrib/adapters/deepeval](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/deepeval)
+- **Upstream**: [confident-ai/deepeval](https://github.com/confident-ai/deepeval)
+
+## Container Image
+
+The adapter is distributed as a pre-built container image. Pull it directly for use with EvalHub or for local testing:
+
+```bash
+podman pull quay.io/evalhub/community-deepeval:latest
+
+# Run locally with a mounted job spec and dataset
+podman run \
+  -e EVALHUB_MODE=local \
+  -e EVALHUB_JOB_SPEC_PATH=/meta/job.json \
+  -e OPENAI_API_KEY=your-key \
+  -v $(pwd)/job.json:/meta/job.json:ro \
+  -v $(pwd)/test_data:/test_data:ro \
+  quay.io/evalhub/community-deepeval:latest
+```
+
+## Building from Source
+
+To build the image from the eval-hub-contrib repository:
+
+```bash
+# From the eval-hub-contrib repo root
+make image-deepeval
+
+# Push to a registry
+make push-deepeval REGISTRY=quay.io/your-org VERSION=v1.0.0
+```
+
+To run the adapter directly without a container:
+
+```bash
+cd adapters/deepeval
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+
+export EVALHUB_MODE=local
+export EVALHUB_JOB_SPEC_PATH=meta/job.json
+export OPENAI_API_KEY=your-key-here
+
+python main.py
+```
