@@ -24,7 +24,7 @@ The DeepEval adapter uses the standard EvalHub `JobSpec` structure:
     }
   },
   "parameters": {
-    // DeepEval-specific configuration
+    "threshold": 0.5
   },
   "test_data_ref": {
     "s3": {
