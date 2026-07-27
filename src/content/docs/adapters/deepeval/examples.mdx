@@ -274,19 +274,16 @@ Track evaluation results in MLflow for comparison across model versions or promp
 }
 ```
 
-**Configure MLflow tracking:**
+**Submit the job:**
 
 ```bash
-# Point the adapter at your MLflow server
-export MLFLOW_TRACKING_URI=http://mlflow-service:5000
-
 evalhub job submit \
   --provider deepeval \
   --benchmark faithfulness \
+  --experiment-name rag-pipeline-v2-faithfulness \
   --model-name "mistral-7b-instruct" \
   --model-url "http://vllm-service:8000/v1" \
   --param eval_model_name=gpt-4o \
-  --param experiment_name=rag-pipeline-v2-faithfulness \
   --test-data-s3 s3://my-bucket/deepeval-datasets/faithfulness.csv
 ```
 
