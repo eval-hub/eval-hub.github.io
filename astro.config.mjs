@@ -167,6 +167,16 @@ export default defineConfig({
                 { label: 'Examples', slug: 'adapters/ragas/examples' },
               ],
             },
+            {
+              label: 'DeepEval',
+              collapsed: true,
+              items: [
+                { label: 'Overview', slug: 'adapters/deepeval' },
+                { label: 'Configuration', slug: 'adapters/deepeval/configuration' },
+                { label: 'Benchmarks', slug: 'adapters/deepeval/benchmarks' },
+                { label: 'Examples', slug: 'adapters/deepeval/examples' },
+              ],
+            },
           ],
         },
         {
