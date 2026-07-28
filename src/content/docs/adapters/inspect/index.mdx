@@ -1,0 +1,222 @@
+---
+title: "Inspect AI Adapter"
+description: "Run Petri/Bloom alignment audits and inspect-evals benchmarks through EvalHub"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+The Inspect AI adapter integrates [UK AISI Inspect AI](https://inspect.aisi.org.uk/) with the eval-hub evaluation service using the evalhub-sdk framework adapter pattern. It exposes Meridian Labs alignment-auditing tools—Petri, Bloom, and Dish—alongside standard inspect-evals benchmarks for safety, coding, mathematics, knowledge, and agent evaluation.
+
+## Overview
+
+Inspect AI is an evaluation framework for language models. This adapter wraps it as an EvalHub provider and routes each job by `benchmark_id` prefix into one of three execution modes:
+
+- **Petri** (`inspect/petri-*`) — auditor / target / judge pipeline; 170+ seeds across 40 alignment-behaviour tag categories; 38 judge dimensions scored 1–10
+- **Bloom** (`inspect/bloom-*`) — generates evaluation scenarios from high-level behaviour descriptions (`bloom init` → `bloom scenarios` → `inspect eval`)
+- **Standard** (everything else) — inspect-evals and custom Inspect tasks via a single `--model` flag
+
+Dish (research-preview scaffold testing) is available through `task_args` pass-through.
+
+### Key Features
+
+- **Multi-role model routing**: Target, auditor, judge, scenarios, and realism roles can each use a different OpenAI-compatible or Anthropic endpoint
+- **Alignment auditing**: Petri seed libraries and Bloom scenario generation with 38-dimension judge scoring
+- **Broad benchmark coverage**: 75 benchmarks spanning Petri audits, Bloom suites, and inspect-evals (safety, cyber, coding, math, knowledge, agents)
+- **Custom tasks**: `inspect/custom` runs any Inspect AI task via the `task` parameter
+- **Kubernetes-ready**: Local sandbox by default in pods; optional HuggingFace token mount for gated datasets
+
+### Supported Modes
+
+| Mode | Benchmark prefix | Task | Models |
+|---|---|---|---|
+| Petri | `inspect/petri-*` | `inspect_petri/audit` | Target + auditor + judge (optional realism) |
+| Bloom | `inspect/bloom-*` | `petri_bloom/bloom_audit` | Target + auditor + judge (+ scenarios) |
+| Standard | other `inspect/*` | inspect-evals or custom | Single model via `--model` |
+
+## Architecture
+
+The adapter follows the eval-hub framework adapter pattern:
+
+**Workflow:**
+
+1. **JobSpec loading**: Job configuration auto-loaded from `/meta/job.json` (or `EVALHUB_JOB_SPEC_PATH` in local mode)
+2. **Mode detection**: `benchmark_id` prefix selects Petri, Bloom, or Standard execution
+3. **Model / credential routing**: Builds role model specs from `model.url`, global env vars, and per-role overrides
+4. **Bloom prepare** (Bloom only): Runs `bloom init` and `bloom scenarios` unless a pre-built `behavior_dir` is supplied
+5. **Inspect execution**: Invokes `inspect eval` with the resolved task, models, and parameters
+6. **Result mapping**: Parses Inspect logs into `EvaluationResult` metrics and an aggregate score
+7. **Callback-based communication**: Progress and results are reported to the eval-hub sidecar
+8. **Artifact persistence**: Logs and summaries can be pushed as OCI artifacts
+
+## Quick Start
+
+Submit a Petri sycophancy audit using the EvalHub SDK:
+
+<Tabs>
+<TabItem label="SDK CLI">
+
+```bash
+# Option A: config file (recommended)
+cat > inspect-petri.yaml <<'EOF'
+name: inspect-petri-sycophancy-001
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+  auth:
+    secret_ref: maas-creds   # optional; omit for unauthenticated endpoints
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: claude-sonnet-4-6
+      judge_model: claude-opus-4-7
+      max_samples: 5
+      max_turns: 20
+EOF
+
+evalhub eval run --config inspect-petri.yaml --wait
+
+# Option B: inline flags
+evalhub eval run \
+  --name inspect-petri-sycophancy-001 \
+  --model-url "http://vllm:8080/v1" \
+  --model-name "ibm-granite/granite-3.3-8b-instruct" \
+  --model-auth-secret maas-creds \
+  --provider inspect \
+  --benchmark inspect/petri-sycophancy \
+  --param auditor_model=claude-sonnet-4-6 \
+  --param judge_model=claude-opus-4-7 \
+  --param max_samples=5 \
+  --param max_turns=20 \
+  --wait
+```
+
+</TabItem>
+
+<TabItem label="Python SDK">
+
+```python
+import os
+from evalhub import SyncEvalHubClient
+from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
+
+client = SyncEvalHubClient(base_url=os.environ.get("EVALHUB_URL", "http://evalhub-service:8080"))
+
+job = client.jobs.submit(
+    JobSubmissionRequest(
+        name="inspect-petri-sycophancy-001",
+        model=ModelConfig(
+            url="http://vllm:8080/v1",
+            name="ibm-granite/granite-3.3-8b-instruct",
+            auth={"secret_ref": "maas-creds"},  # optional
+        ),
+        benchmarks=[
+            BenchmarkConfig(
+                id="inspect/petri-sycophancy",
+                provider_id="inspect",
+                parameters={
+                    "auditor_model": "claude-sonnet-4-6",
+                    "judge_model": "claude-opus-4-7",
+                    "max_samples": 5,
+                    "max_turns": 20,
+                },
+            )
+        ],
+    )
+)
+
+print(f"Job submitted: {job.id}")
+```
+
+</TabItem>
+
+<TabItem label="REST API">
+
+```bash
+curl -X POST "$EVALHUB_URL/api/v1/evaluations/jobs" \
+  -H "Authorization: Bearer $token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "inspect-petri-sycophancy-001",
+    "model": {
+      "url": "http://vllm:8080/v1",
+      "name": "ibm-granite/granite-3.3-8b-instruct",
+      "auth": {
+        "secret_ref": "maas-creds"
+      }
+    },
+    "benchmarks": [
+      {
+        "id": "inspect/petri-sycophancy",
+        "provider_id": "inspect",
+        "parameters": {
+          "auditor_model": "claude-sonnet-4-6",
+          "judge_model": "claude-opus-4-7",
+          "max_samples": 5,
+          "max_turns": 20
+        }
+      }
+    ]
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+See [Configuration](configuration/) for the full parameter reference, [Benchmarks](benchmarks/) for the catalog, and [Examples](examples/) for multi-provider deployment scenarios.
+
+## Provider Details
+
+| Field | Value |
+|---|---|
+| Provider ID | `inspect` |
+| Container Image | `quay.io/evalhub/community-inspect:latest` |
+
+## Source
+
+- **Adapter**: [eval-hub-contrib/adapters/inspect](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/inspect)
+- **Upstream**: [UK AISI Inspect AI](https://inspect.aisi.org.uk/)
+
+## Container Image
+
+The adapter is distributed as a pre-built container image. Pull it for use with EvalHub or local testing:
+
+```bash
+podman pull quay.io/evalhub/community-inspect:latest
+
+# Run locally with a mounted job spec
+podman run \
+  -e EVALHUB_MODE=local \
+  -e EVALHUB_JOB_SPEC_PATH=/meta/job.json \
+  -e ANTHROPIC_API_KEY=your-key \
+  -v $(pwd)/job.json:/meta/job.json:ro \
+  quay.io/evalhub/community-inspect:latest
+```
+
+## Building from Source
+
+To build the image from the eval-hub-contrib repository:
+
+```bash
+# From the eval-hub-contrib repo root
+make image-inspect
+
+# Run adapter tests
+make test-inspect
+
+# Push to a registry
+make push-inspect REGISTRY=quay.io/your-org VERSION=v1.0.0
+```
+
+To run the adapter directly without a container:
+
+```bash
+cd adapters/inspect
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+
+export EVALHUB_MODE=local
+export EVALHUB_JOB_SPEC_PATH=meta/job.json
+# Set OPENAI_* and/or ANTHROPIC_* credentials as needed
+
+python main.py
+```

@@ -177,6 +177,16 @@ export default defineConfig({
                 { label: 'Examples', slug: 'adapters/deepeval/examples' },
               ],
             },
+            {
+              label: 'Inspect AI',
+              collapsed: true,
+              items: [
+                { label: 'Overview', slug: 'adapters/inspect' },
+                { label: 'Configuration', slug: 'adapters/inspect/configuration' },
+                { label: 'Benchmarks', slug: 'adapters/inspect/benchmarks' },
+                { label: 'Examples', slug: 'adapters/inspect/examples' },
+              ],
+            },
           ],
         },
         {
