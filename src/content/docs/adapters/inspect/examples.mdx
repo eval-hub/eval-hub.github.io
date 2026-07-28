@@ -149,12 +149,11 @@ benchmarks:
     parameters:
       auditor_model: meta-llama/llama-3.3-70b-instruct
       auditor_base_url: https://openrouter.ai/api/v1
-      auditor_api_key: sk-or-...
       judge_model: claude-opus-4-7
       max_samples: 5
 ```
 
-Environment: `ANTHROPIC_API_KEY=sk-ant-...`
+Environment: OpenRouter credentials via `OPENAI_API_KEY` or a mounted Secret (do not put `auditor_api_key` in parameters); `ANTHROPIC_API_KEY=sk-ant-...` for the judge. Target vLLM uses `model.url` (unauthenticated or `EMPTY` as needed).
 
 </TabItem>
 </Tabs>
@@ -221,11 +220,10 @@ benchmarks:
       auditor_model: claude-sonnet-4-6
       judge_model: claude-opus-4-7
       judge_anthropic_base_url: https://my-anthropic-proxy/v1
-      judge_anthropic_api_key: sk-proxy-key
       max_samples: 5
 ```
 
-Environment: `ANTHROPIC_API_KEY=sk-ant-...` (for auditor); `OPENAI_BASE_URL` set from `model.url` (for target).
+Environment: `ANTHROPIC_API_KEY` for the auditor and judge proxy (do not put `judge_anthropic_api_key` in parameters — use env or a Secret); `OPENAI_BASE_URL` set from `model.url` (for target).
 
 </TabItem>
 </Tabs>
