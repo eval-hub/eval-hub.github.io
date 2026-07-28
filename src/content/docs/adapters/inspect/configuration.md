@@ -112,7 +112,7 @@ Each role (target, auditor, judge, scenarios, realism) accepts its own endpoint 
 | `{role}_anthropic_api_key` | Anthropic API key for this role |
 
 :::note[Bloom scenarios step]
-The `bloom scenarios` CLI only accepts bare `client/model` strings (for example `openai/gpt-oss-20b`). JSON model specs with `model_args` are not supported at that step. The scenarios model uses global `OPENAI_BASE_URL` / `OPENAI_API_KEY`; per-role endpoint overrides do not apply to the scenarios step.
+The `bloom scenarios` CLI only accepts bare `client/model` strings (for example `openai/gpt-oss-20b`). JSON model specs with `model_args` are not supported at that step. Before the subprocess runs, the adapter maps `scenarios_base_url` / `scenarios_api_key` onto `OPENAI_BASE_URL` / `OPENAI_API_KEY` in a copy of the job environment (or `OLLAMA_BASE_URL` for Ollama endpoints). If those parameters are unset, the scenarios step uses the existing global credentials.
 :::
 
 ## Parameters Reference
@@ -158,8 +158,8 @@ All configuration below is specified in the `parameters` object of each benchmar
 | Parameter | Type | Description | Default |
 |---|---|---|---|
 | `scenarios_model` | string | Model for the `bloom scenarios` generation step | `auditor_model` |
-| `scenarios_base_url` | string | OpenAI-compatible endpoint for the scenarios model | `null` |
-| `scenarios_api_key` | string | API key for the scenarios endpoint | `null` |
+| `scenarios_base_url` | string | OpenAI-compatible endpoint for the scenarios model. Mapped to `OPENAI_BASE_URL` (or `OLLAMA_BASE_URL`) in the bloom scenarios subprocess env before that step runs. | `null` |
+| `scenarios_api_key` | string | API key for the scenarios endpoint. Mapped to `OPENAI_API_KEY` in the bloom scenarios subprocess env before that step runs. | `null` |
 
 ### Realism model (Petri optional)
 
