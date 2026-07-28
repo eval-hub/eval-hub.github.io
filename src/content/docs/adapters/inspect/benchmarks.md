@@ -15,7 +15,7 @@ The Inspect adapter exposes **75 benchmarks**: 36 Petri alignment audits, 2 Bloo
 
 ## Petri alignment audits (`inspect/petri-*`)
 
-All 40 built-in Petri seed tag categories are exposed as named benchmarks. All 38 Petri judge dimensions are captured as individual metrics; tables below list the primary and highlight metrics for each audit.
+The catalog lists **35 named category audits** plus `inspect/petri-full` (36 Petri benchmarks total). All 38 Petri judge dimensions are captured as individual metrics; tables below list the primary and highlight metrics for each audit.
 
 ### Deception and Dishonesty
 
