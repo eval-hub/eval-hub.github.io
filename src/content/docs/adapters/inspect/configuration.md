@@ -184,7 +184,7 @@ All configuration below is specified in the `parameters` object of each benchmar
 | `judge_dimensions` | string | Override judge dimensions: `tags:safety`, a dimensions directory path, or dimension names. Defaults to all 38 built-in dimensions. | `null` |
 | `max_turns` | integer | Maximum auditor turns per scenario | `30` |
 | `enable_rollback` | boolean | Allow the auditor to restart from a prior checkpoint | `true` |
-| `realism_filter` | boolean | Filter auditor outputs by realism score (boolean or float threshold). Experimental. | `false` |
+| `realism_filter` | boolean \| number | Filter auditor outputs by realism score. A boolean enables or disables filtering; a numeric value sets the realism-score threshold (for example `0.6`). Experimental. | `false` |
 | `target_tools` | string | Tool-creation mode: `synthetic` (default), `fixed`, or `none` | `"synthetic"` |
 | `epochs` | integer | Repeat each seed/scenario N times | `1` |
 
