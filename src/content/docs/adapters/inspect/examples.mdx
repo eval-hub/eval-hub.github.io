@@ -1,0 +1,367 @@
+---
+title: "Examples"
+description: "Worked deployment scenarios for the Inspect AI adapter"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Configuration examples for common Inspect adapter deployments. Examples use the **`evalhub eval run --config`** YAML shape (`name` + `model` + `benchmarks[]`).
+
+For the full parameter list see [Configuration](configuration/). For benchmark IDs see [Benchmarks](benchmarks/).
+
+## MaaS (OpenAI-compatible API key Secret)
+
+All roles on the same MaaS / LiteLLM gateway. Create a Secret with key `api-key`, then reference it — do not put the key in parameters:
+
+```bash
+kubectl create secret generic maas-creds \
+  -n <namespace> \
+  --from-literal=api-key="$MAAS_API_KEY" \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+```yaml
+name: inspect-petri-maas-smoke
+model:
+  url: https://maas.example.com/v1
+  name: microsoft-phi-4
+  auth:
+    secret_ref: maas-creds
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: gpt-oss-20b
+      judge_model: deepseek-r1-distill-qwen-14b
+      max_samples: 3
+      max_turns: 10
+```
+
+Standard inspect-evals smoke against the same gateway:
+
+```yaml
+name: inspect-gsm8k-maas-smoke
+model:
+  url: https://maas.example.com/v1
+  name: microsoft-phi-4
+  auth:
+    secret_ref: maas-creds
+benchmarks:
+  - id: inspect/gsm8k
+    provider_id: inspect
+    parameters:
+      max_samples: 3
+      log_level: info
+```
+
+Submit:
+
+```bash
+evalhub eval run --config inspect-petri-maas.yaml --wait
+evalhub eval results <job-id> --format json
+```
+
+## Petri: multi-provider deployments
+
+<Tabs>
+<TabItem label="Same vLLM">
+
+All roles on the same vLLM instance, no authentication.
+
+```yaml
+name: inspect-petri-same-vllm
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: ibm-granite/granite-3.3-8b-instruct
+      judge_model: meta-llama/Llama-3.3-70B-Instruct
+      max_samples: 5
+```
+
+Environment: none required (vLLM does not require authentication by default).
+
+</TabItem>
+
+<TabItem label="vLLM + Anthropic">
+
+Target on vLLM; auditor and judge on Anthropic.
+
+```yaml
+name: inspect-petri-vllm-anthropic
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: claude-sonnet-4-6
+      judge_model: claude-opus-4-7
+      max_samples: 5
+```
+
+Environment: `ANTHROPIC_API_KEY=sk-ant-...` (or mount via Secret and adapter parameters as appropriate).
+
+The adapter routes the target to the OpenAI-compatible client (via `model.url`) and the auditor/judge to Anthropic (via `ANTHROPIC_API_KEY`).
+
+</TabItem>
+
+<TabItem label="Two vLLMs">
+
+Target on vLLM-A; judge on a different vLLM-B. Each instance uses an `EMPTY` placeholder key when the server requires a token even if authentication is not enforced.
+
+```yaml
+name: inspect-petri-two-vllm
+model:
+  url: http://vllm-a:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: ibm-granite/granite-3.3-8b-instruct
+      judge_model: meta-llama/Llama-3.3-70B-Instruct
+      judge_base_url: http://vllm-b:8080/v1
+      judge_api_key: EMPTY
+      max_samples: 5
+```
+
+Environment: `OPENAI_API_KEY=EMPTY` (for target and auditor on vLLM-A).
+
+</TabItem>
+
+<TabItem label="OpenRouter mix">
+
+Target on vLLM, auditor on OpenRouter, judge on Anthropic.
+
+```yaml
+name: inspect-petri-openrouter
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: meta-llama/llama-3.3-70b-instruct
+      auditor_base_url: https://openrouter.ai/api/v1
+      judge_model: claude-opus-4-7
+      max_samples: 5
+```
+
+Environment: OpenRouter credentials via `OPENAI_API_KEY` or a mounted Secret (do not put `auditor_api_key` in parameters); `ANTHROPIC_API_KEY=sk-ant-...` for the judge. Target vLLM uses `model.url` (unauthenticated or `EMPTY` as needed).
+
+</TabItem>
+</Tabs>
+
+## Petri: Ollama and Anthropic-only
+
+<Tabs>
+<TabItem label="Ollama">
+
+Ollama exposes an OpenAI-compatible API at `/v1`. Model names follow the Ollama library format (`granite3.3:8b`, `llama3.3`), not HuggingFace IDs.
+
+```yaml
+name: inspect-petri-ollama
+model:
+  url: http://ollama:11434/v1
+  name: granite3.3:8b
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: llama3.3
+      judge_model: qwen3:32b
+      max_samples: 5
+```
+
+Environment: none required.
+
+</TabItem>
+
+<TabItem label="Anthropic only">
+
+All roles on Anthropic. No `model.url` needed.
+
+```yaml
+name: inspect-petri-anthropic
+model:
+  name: claude-haiku-4-5-20251001
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: claude-sonnet-4-6
+      judge_model: claude-opus-4-7
+      max_samples: 5
+```
+
+Environment: `ANTHROPIC_API_KEY=sk-ant-...`
+
+</TabItem>
+
+<TabItem label="Anthropic proxy">
+
+Route only the judge through a custom Anthropic proxy; other roles keep the standard configuration.
+
+```yaml
+name: inspect-petri-anthropic-proxy
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: claude-sonnet-4-6
+      judge_model: claude-opus-4-7
+      judge_anthropic_base_url: https://my-anthropic-proxy/v1
+      max_samples: 5
+```
+
+Environment: `ANTHROPIC_API_KEY` for the auditor and judge proxy (do not put `judge_anthropic_api_key` in parameters — use env or a Secret); `OPENAI_BASE_URL` set from `model.url` (for target).
+
+</TabItem>
+</Tabs>
+
+## Standard inspect-evals
+
+Run a single-model inspect-evals benchmark such as GSM8K:
+
+```yaml
+name: inspect-gsm8k-001
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/gsm8k
+    provider_id: inspect
+    parameters:
+      max_samples: 50
+      log_level: info
+```
+
+Environment: none for unauthenticated vLLM. For gated HuggingFace datasets, mount an `hf-token` secret (see [Configuration](configuration/#huggingface-datasets)).
+
+Custom task example:
+
+```yaml
+name: inspect-custom-mmlu
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/custom
+    provider_id: inspect
+    parameters:
+      task: inspect_evals/mmlu
+      max_samples: 20
+```
+
+## Bloom behavioural suites
+
+<Tabs>
+<TabItem label="Built-in sycophancy">
+
+```yaml
+name: inspect-bloom-sycophancy
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/bloom-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: claude-sonnet-4-6
+      judge_model: claude-opus-4-7
+      max_samples: 5
+```
+
+Environment: `ANTHROPIC_API_KEY=sk-ant-...` when auditor/judge use Anthropic.
+
+</TabItem>
+
+<TabItem label="Custom template">
+
+Generate scenarios from a Bloom template:
+
+```yaml
+name: inspect-bloom-custom
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/bloom-custom
+    provider_id: inspect
+    parameters:
+      bloom_template: delusion_sycophancy
+      auditor_model: claude-sonnet-4-6
+      judge_model: claude-opus-4-7
+      scenarios_model: gpt-oss-20b
+      max_samples: 5
+```
+
+Or skip generation with a pre-built behaviour directory:
+
+```yaml
+parameters:
+  behavior_dir: /data/my-bloom-behavior
+  auditor_model: claude-sonnet-4-6
+  judge_model: claude-opus-4-7
+```
+
+</TabItem>
+</Tabs>
+
+:::note[Bloom scenarios credentials]
+The `bloom scenarios` step uses global `OPENAI_BASE_URL` / `OPENAI_API_KEY` only. Per-role endpoint overrides do not apply to that step.
+:::
+
+## Dish (research preview)
+
+Enable Dish scaffold testing via `task_args` on a Petri (or compatible) job:
+
+```yaml
+name: inspect-petri-dish
+model:
+  url: http://vllm:8080/v1
+  name: ibm-granite/granite-3.3-8b-instruct
+benchmarks:
+  - id: inspect/petri-sycophancy
+    provider_id: inspect
+    parameters:
+      auditor_model: claude-sonnet-4-6
+      judge_model: claude-opus-4-7
+      task_args:
+        dish_scaffold: claude-code
+      max_samples: 3
+```
+
+## Submit via SDK CLI
+
+```bash
+evalhub eval run --config inspect-petri.yaml --wait
+
+# After completion (or for a prior job id):
+evalhub eval status <job-id>
+evalhub eval results <job-id> --format json
+```
+
+Inline equivalent:
+
+```bash
+evalhub eval run \
+  --name inspect-petri-sycophancy-001 \
+  --model-url "http://vllm:8080/v1" \
+  --model-name "ibm-granite/granite-3.3-8b-instruct" \
+  --provider inspect \
+  --benchmark inspect/petri-sycophancy \
+  --param auditor_model=claude-sonnet-4-6 \
+  --param judge_model=claude-opus-4-7 \
+  --param max_samples=5 \
+  --wait
+```
