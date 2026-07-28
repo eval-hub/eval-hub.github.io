@@ -64,7 +64,7 @@ Model names are passed as-is — bare (`claude-opus-4-7`, `granite3.3`) or org/m
 
 ### Kubernetes Secret (recommended for MaaS)
 
-Create a Secret with an `api-key` key and reference it from the job. Do not put the API key in `parameters`:
+Create a Secret with an `api-key` key and reference it from the job via `model.auth.secret_ref`. Plaintext API-key parameters (`api_key`, `target_api_key`, and other `*_api_key` fields) are for local or development use only — do not include them in persisted Kubernetes/API job submissions. Prefer `model.auth.secret_ref` or environment-based credentials (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) for submitted jobs:
 
 ```bash
 kubectl create secret generic maas-creds \
@@ -123,9 +123,9 @@ All configuration below is specified in the `parameters` object of each benchmar
 
 | Parameter | Type | Description | Default |
 |---|---|---|---|
-| `api_key` | string | Global API key for OpenAI-compatible endpoints (`OPENAI_API_KEY`). Prefer `model.auth.secret_ref` in Kubernetes. Not required for unauthenticated vLLM. | `null` |
+| `api_key` | string | Global API key for OpenAI-compatible endpoints (`OPENAI_API_KEY`). Local/development only — do not include in persisted Kubernetes/API job submissions; use `model.auth.secret_ref` or env-based credentials instead. Not required for unauthenticated vLLM. | `null` |
 | `target_base_url` | string | Override endpoint URL for the target when it differs from `model.url` | `null` |
-| `target_api_key` | string | API key for the target endpoint when different from `api_key` | `null` |
+| `target_api_key` | string | API key for the target endpoint when different from `api_key`. Local/development only — do not include in persisted job submissions; prefer `model.auth.secret_ref` or env-based credentials. | `null` |
 
 ### Auditor model (Petri / Bloom)
 
