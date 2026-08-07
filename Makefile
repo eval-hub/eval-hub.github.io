@@ -19,7 +19,7 @@ install:
 # Serve documentation locally
 serve:
 	@echo "Starting documentation server..."
-	npm run dev
+	npm run dev -- --host 0.0.0.0
 
 # Build documentation
 build:

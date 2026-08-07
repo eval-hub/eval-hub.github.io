@@ -1,0 +1,79 @@
+---
+interface Props {
+  src: string;
+  autoPlay?: boolean;
+  loop?: boolean;
+  idleTimeLimit?: number;
+  speed?: number;
+  theme?: string;
+  rows?: number;
+  cols?: number;
+  fontSize?: string;
+}
+
+const {
+  src,
+  autoPlay = false,
+  loop = true,
+  idleTimeLimit = 2,
+  speed = 1,
+  theme = 'dracula',
+  rows = 24,
+  cols = 90,
+  fontSize = 'large',
+} = Astro.props;
+
+const id = `ap-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<div
+  id={id}
+  class="asciinema-wrap"
+  data-src={src}
+  data-auto-play={String(autoPlay)}
+  data-loop={String(loop)}
+  data-idle-time-limit={String(idleTimeLimit)}
+  data-speed={String(speed)}
+  data-theme={theme}
+  data-rows={String(rows)}
+  data-cols={String(cols)}
+  data-font-size={fontSize}
+></div>
+
+<script>
+  import * as AsciinemaPlayer from 'asciinema-player';
+  import 'asciinema-player/dist/bundle/asciinema-player.css';
+
+  function initPlayers() {
+    document
+      .querySelectorAll<HTMLElement>('.asciinema-wrap:not([data-ap-init])')
+      .forEach((el) => {
+        el.setAttribute('data-ap-init', '1');
+        AsciinemaPlayer.create(el.dataset.src!, el, {
+          autoPlay:      el.dataset.autoPlay === 'true',
+          loop:          el.dataset.loop === 'true',
+          idleTimeLimit: Number(el.dataset.idleTimeLimit),
+          speed:         Number(el.dataset.speed),
+          theme:         el.dataset.theme,
+          rows:          Number(el.dataset.rows),
+          cols:          Number(el.dataset.cols),
+          terminalFontSize: el.dataset.fontSize,
+          fit:           'width',
+        });
+      });
+  }
+
+  // Run on initial load (module evaluated once per page by Astro).
+  initPlayers();
+  // Also re-run on client-side navigations when View Transitions are active.
+  // data-ap-init guard prevents double-init if both paths fire.
+  document.addEventListener('astro:page-load', initPlayers);
+</script>
+
+<style>
+  .asciinema-wrap {
+    margin: 1.5rem 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+</style>
