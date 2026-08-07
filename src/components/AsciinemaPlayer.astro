@@ -63,8 +63,10 @@ const id = `ap-${Math.random().toString(36).slice(2, 9)}`;
       });
   }
 
-  // astro:page-load fires on initial load and after each client-side navigation.
-  // data-ap-init guard prevents double-init on repeated events.
+  // Run on initial load (module evaluated once per page by Astro).
+  initPlayers();
+  // Also re-run on client-side navigations when View Transitions are active.
+  // data-ap-init guard prevents double-init if both paths fire.
   document.addEventListener('astro:page-load', initPlayers);
 </script>
 
