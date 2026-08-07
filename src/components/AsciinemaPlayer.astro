@@ -44,25 +44,28 @@ const id = `ap-${Math.random().toString(36).slice(2, 9)}`;
   import * as AsciinemaPlayer from 'asciinema-player';
   import 'asciinema-player/dist/bundle/asciinema-player.css';
 
-  // Astro deduplicates this module script (runs once per page).
-  // All config is carried via data-* attributes so no per-instance
-  // script or global queue is needed.
-  document
-    .querySelectorAll<HTMLElement>('.asciinema-wrap:not([data-ap-init])')
-    .forEach((el) => {
-      el.setAttribute('data-ap-init', '1');
-      AsciinemaPlayer.create(el.dataset.src!, el, {
-        autoPlay:      el.dataset.autoPlay === 'true',
-        loop:          el.dataset.loop === 'true',
-        idleTimeLimit: Number(el.dataset.idleTimeLimit),
-        speed:         Number(el.dataset.speed),
-        theme:         el.dataset.theme,
-        rows:          Number(el.dataset.rows),
-        cols:          Number(el.dataset.cols),
-        fontSize:      el.dataset.fontSize,
-        fit:           'width',
+  function initPlayers() {
+    document
+      .querySelectorAll<HTMLElement>('.asciinema-wrap:not([data-ap-init])')
+      .forEach((el) => {
+        el.setAttribute('data-ap-init', '1');
+        AsciinemaPlayer.create(el.dataset.src!, el, {
+          autoPlay:      el.dataset.autoPlay === 'true',
+          loop:          el.dataset.loop === 'true',
+          idleTimeLimit: Number(el.dataset.idleTimeLimit),
+          speed:         Number(el.dataset.speed),
+          theme:         el.dataset.theme,
+          rows:          Number(el.dataset.rows),
+          cols:          Number(el.dataset.cols),
+          fontSize:      el.dataset.fontSize,
+          fit:           'width',
+        });
       });
-    });
+  }
+
+  // astro:page-load fires on initial load and after each client-side navigation.
+  // data-ap-init guard prevents double-init on repeated events.
+  document.addEventListener('astro:page-load', initPlayers);
 </script>
 
 <style>
