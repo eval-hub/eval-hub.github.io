@@ -127,6 +127,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Kubernetes',
+          items: [
+            { label: 'Evaluation Lifecycle Signals', slug: 'kubernetes/lifecycle-signals' },
+          ],
+        },
+        {
           label: 'Adapters',
           items: [
             {

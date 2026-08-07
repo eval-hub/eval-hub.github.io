@@ -1,0 +1,133 @@
+---
+title: "Evaluation Lifecycle Signals"
+description: "React to evaluation state using Kubernetes-native labels, events, and annotations — no API polling required"
+---
+
+import AsciinemaPlayer from '../../../components/AsciinemaPlayer.astro';
+
+EvalHub propagates evaluation lifecycle through three Kubernetes-native primitives on every backing `Job`. Cluster operators, GitOps pipelines, Kyverno policies, and event-driven automation can react to evaluation state without polling the EvalHub API.
+
+<AsciinemaPlayer src="/casts/demo-k8s-signals.cast" autoPlay />
+
+## The three signals
+
+| Signal | Kubernetes kind | Key / reason |
+|--------|-----------------|--------------|
+| Phase label | `Job` label | `trustyai.opendatahub.io/evaluation-phase` |
+| Lifecycle events | `Event` | `EvaluationRunning` · `EvaluationCompleted` · `EvaluationFailed` |
+| Status annotation | `Job` annotation | `trustyai.opendatahub.io/evaluation-status` |
+
+## evaluation-phase label
+
+The label `trustyai.opendatahub.io/evaluation-phase` is set on the backing `Job` and reflects the current lifecycle state.
+
+| Value | When set |
+|-------|----------|
+| `Pending` | At `Job` creation |
+| `Running` | When the adapter container starts processing |
+| `Completed` | When the benchmark finishes successfully |
+| `Failed` | When the adapter exits non-zero or an infrastructure failure is detected |
+
+:::note[Pending is set at creation]
+`Pending` is written once when EvalHub creates the `Job`. All other transitions are patched as the evaluation progresses — they are never set retroactively.
+:::
+
+### Query by phase
+
+Use `-L` to add the phase as a column in standard `kubectl` output:
+
+```bash
+kubectl get jobs -n <tenant-namespace> \
+  -l app=evalhub \
+  -L trustyai.opendatahub.io/evaluation-phase
+```
+
+```
+NAME                   STATUS     COMPLETIONS   DURATION   AGE   EVALUATION-PHASE
+eval-abc123-...        Complete   1/1           3m42s      5m    Completed
+eval-def456-...        Running    0/1           12s        12s   Running
+```
+
+Filter to a specific phase using a label selector:
+
+```bash
+# All completed evaluations
+kubectl get jobs -n <tenant-namespace> \
+  -l trustyai.opendatahub.io/evaluation-phase=Completed
+
+# All failed evaluations
+kubectl get jobs -n <tenant-namespace> \
+  -l trustyai.opendatahub.io/evaluation-phase=Failed
+```
+
+## Kubernetes Events
+
+EvalHub emits a `Event` against the backing `Job` on each lifecycle transition.
+
+| Reason | Type | When emitted |
+|--------|------|--------------|
+| `EvaluationRunning` | `Normal` | Adapter starts processing |
+| `EvaluationCompleted` | `Normal` | Benchmark finishes successfully |
+| `EvaluationFailed` | `Warning` | Adapter exits non-zero |
+
+```bash
+# All events for a specific job
+kubectl get events -n <tenant-namespace> \
+  --field-selector involvedObject.name=<job-name>,involvedObject.kind=Job \
+  --sort-by=.lastTimestamp
+
+# Only failure events
+kubectl get events -n <tenant-namespace> \
+  --field-selector involvedObject.name=<job-name>,involvedObject.kind=Job,reason=EvaluationFailed \
+  --sort-by=.lastTimestamp
+```
+
+:::note[Infrastructure failure events]
+The TrustyAI operator emits additional `EvaluationFailed` Warning events for infrastructure-level failures such as OOM kills, `ImagePullBackOff`, and Kueue evictions. These use the same `EvaluationFailed` reason but originate from the `trustyai-operator` source component rather than `evalhub-server`. Both sources can be correlated via the `involvedObject.name` field selector.
+:::
+
+## evaluation-status annotation
+
+The annotation `trustyai.opendatahub.io/evaluation-status` is patched on the backing `Job` at each lifecycle transition and carries a structured JSON payload.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `phase` | string | Current phase value (matches the label) |
+| `timestamp` | string | RFC 3339 UTC timestamp of the transition |
+| `evaluation_id` | string | EvalHub evaluation job ID |
+| `benchmark_index` | integer | Index of the benchmark within the job |
+
+```bash
+kubectl get job <job-name> -n <tenant-namespace> \
+  -o jsonpath='{.metadata.annotations.trustyai\.opendatahub\.io/evaluation-status}' \
+  | jq .
+```
+
+```json
+{
+  "benchmark_index": 0,
+  "evaluation_id": "4f112656-6815-41cc-add4-ab2708197ddd",
+  "phase": "Completed",
+  "timestamp": "2026-08-06T22:53:16Z"
+}
+```
+
+:::tip
+The annotation reflects the **last** transition. For a full audit trail, use the event stream — each transition produces a separate `Event` object with its own timestamp.
+:::
+
+## Use cases
+
+**Label selector queries** — filter or count evaluations by phase using any standard Kubernetes tooling, without an EvalHub API token:
+
+```bash
+kubectl get jobs -n <tenant-namespace> \
+  -l trustyai.opendatahub.io/evaluation-phase=Completed \
+  -L trustyai.opendatahub.io/evaluation-phase
+```
+
+**Policy enforcement** — Kyverno or OPA/Gatekeeper policies can gate on the phase label before admitting downstream resources that depend on a completed evaluation.
+
+**Alerting** — route `EvaluationFailed` Warning events to Alertmanager or a webhook via the Kubernetes events API to receive immediate notification of failed evaluations.
+
+**Audit trail** — combine the `evaluation-status` annotation timestamp with `kubectl get events` to reconstruct the full lifecycle timeline for a given benchmark.
