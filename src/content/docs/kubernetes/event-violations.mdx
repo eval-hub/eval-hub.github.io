@@ -31,7 +31,7 @@ benchmarks:
 
 When the measured score is below `threshold`, EvalHub calls `NotifyThresholdViolation`, which:
 
-1. Patches the `evaluation-phase` label on the backing `Job` to `ThresholdViolated`
+1. Sets the `evaluation-phase` label on the backing `Job` to `ThresholdViolated`
 2. Emits a `Warning` Kubernetes Event with reason `EvaluationThresholdViolated`
 
 Both operations are best-effort and do not affect the overall job completion state.
@@ -45,7 +45,7 @@ Both operations are best-effort and do not affect the overall job completion sta
 
 ## evaluation-phase label
 
-The label `trustyai.opendatahub.io/evaluation-phase` is patched to `ThresholdViolated` when the score check fails. This value sits alongside the standard lifecycle phases:
+The label `trustyai.opendatahub.io/evaluation-phase` is set to `ThresholdViolated` when the score check fails. This value sits alongside the standard lifecycle phases:
 
 | Value | When set |
 |-------|----------|
