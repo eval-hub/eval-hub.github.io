@@ -107,7 +107,7 @@ Combine threshold violation events with the lifecycle event stream to get a full
 
 ## Use cases
 
-**Quality gates** — block downstream pipeline steps from consuming an evaluation result until the phase label confirms the benchmark passed. A label selector on `evaluation-phase != ThresholdViolated` is sufficient; no EvalHub API token is required:
+**Quality gates** — block downstream pipeline steps from consuming an evaluation result until the phase label confirms the benchmark passed. Use the exact label selector `trustyai.opendatahub.io/evaluation-phase=Completed`; only the `Completed` phase permits downstream consumption, and no EvalHub API token is required:
 
 ```bash
 kubectl wait jobs -n <tenant-namespace> \
