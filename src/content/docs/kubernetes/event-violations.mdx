@@ -119,4 +119,4 @@ kubectl wait jobs -n <tenant-namespace> \
 
 **Alerting** — route `EvaluationThresholdViolated` Warning events to Alertmanager or a webhook via the Kubernetes events API to receive immediate notification when a model scores below your quality bar. The event message includes the actual score and threshold, so alert annotations can surface the values directly.
 
-**Audit trail** — use `kubectl get events` filtered by `reason=EvaluationThresholdViolated` across a namespace to produce a historical record of all quality gate failures, including metric name, actual score, and timestamp, without querying the EvalHub API.
+**Audit trail** — use `kubectl get events` filtered by `reason=EvaluationThresholdViolated` to investigate recent quality gate failures; events include the metric name, actual score, and timestamp. Note that Kubernetes event retention is configurable and events expire, so this is suitable only for short-term investigation. For a durable audit record, export events to persistent storage (e.g. Loki, Elasticsearch, or a custom sink) as they are emitted.
