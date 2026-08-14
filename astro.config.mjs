@@ -103,6 +103,7 @@ export default defineConfig({
             { label: 'Evaluation-Driven Development', slug: 'guides/evaluation-driven-development' },
             { label: 'MLflow', slug: 'guides/mlflow' },
             { label: 'Bring Your Own Framework', slug: 'guides/bring-your-own-framework' },
+            { label: 'Hardware Profiles', slug: 'guides/hardware-profiles' },
             { label: 'OpenTelemetry', slug: 'guides/opentelemetry' },
           ],
         },
