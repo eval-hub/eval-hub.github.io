@@ -3,7 +3,7 @@ title: "Bring Your Own Framework"
 description: "Integrate a custom evaluation framework with EvalHub by writing an adapter, containerizing it, and registering it as a provider"
 ---
 
-import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 EvalHub follows a **Bring Your Own Framework (BYOF)** model. Any evaluation
 framework can be plugged in by writing a thin adapter and packaging it as a
@@ -23,7 +23,7 @@ flowchart LR
 - `oc` or `kubectl` configured to access the cluster.
 - A container registry accessible from the cluster
   (e.g. `quay.io`, an internal OpenShift registry, or any OCI-compatible registry).
-- Python 3.9+ for adapter development.
+- Python 3.11+ for adapter development (the example Dockerfile uses the UBI9 Python 3.12 image).
 
 ## How it works
 
@@ -117,7 +117,7 @@ class MyAdapter(FrameworkAdapter):
             JobStatusUpdate(status=JobStatus.RUNNING, phase=JobPhase.POST_PROCESSING)
         )
 
-        return JobResults(
+        results = JobResults(
             id=config.id,
             benchmark_id=config.benchmark_id,
             benchmark_index=config.benchmark_index,
@@ -132,6 +132,8 @@ class MyAdapter(FrameworkAdapter):
             num_examples_evaluated=output["count"],
             duration_seconds=output["duration"],
         )
+
+        return results
 ```
 
 ### Entrypoint script
@@ -155,15 +157,16 @@ print(f"Job {results.id} completed — score: {results.overall_score}")
 
 ### JobPhase lifecycle
 
-Every adapter must report phases in order. The server validates the sequence:
+Phases must be emitted in the order shown below. Skipping a phase is fine — the
+server only rejects out-of-order emissions.
 
 | Phase | When to emit |
 |-------|-------------|
-| `INITIALIZING` | Start of `run_benchmark_job` |
-| `LOADING_DATA` | Before any data I/O |
-| `RUNNING_EVALUATION` | Before the main workload |
-| `POST_PROCESSING` | After the framework finishes |
-| `PERSISTING_ARTIFACTS` | Only when OCI exports are configured |
+| `INITIALIZING` | Start of `run_benchmark_job` (required) |
+| `LOADING_DATA` | Before any data I/O (optional) |
+| `RUNNING_EVALUATION` | Before the main workload (required) |
+| `POST_PROCESSING` | After the framework finishes (optional) |
+| `PERSISTING_ARTIFACTS` | When OCI exports are configured (optional) |
 | `COMPLETED` | Sent automatically by `report_results()` — do not emit manually |
 
 ### Optional: MLflow experiment tracking
@@ -234,6 +237,8 @@ if oci_exports is not None:
             coordinates=oci_exports.coordinates,
         )
     )
+
+results = JobResults(..., oci_artifact=oci_artifact)
 ```
 
 ### Optional: EvalCard and Environment Card
@@ -317,7 +322,9 @@ fields:
 | `runtime.k8s.entrypoint` | Yes | Container command |
 | `benchmarks` | Yes | Benchmarks your adapter supports |
 | `runtime.k8s.cpu_request` | No | CPU request (default: `250m`) |
+| `runtime.k8s.cpu_limit` | No | CPU limit (default: unset) |
 | `runtime.k8s.memory_request` | No | Memory request (default: `512Mi`) |
+| `runtime.k8s.memory_limit` | No | Memory limit (default: unset) |
 | `runtime.k8s.gpu` | No | GPU resource, count, and node selector |
 | `runtime.k8s.env` | No | Environment variables for the adapter |
 | `runtime.k8s.image_pull_policy` | No | `if_not_present` (default) or `always` |
@@ -443,20 +450,7 @@ If your adapter needs GPU resources, add a `gpu` block:
 
 ### Environment variables
 
-Pass configuration to your adapter via `env`:
-
-Create a Kubernetes Secret with your Hugging Face token:
-
-```bash
-kubectl create secret generic hf-credentials \
-  --from-literal=hf-token="hf_..." \
-  -n <your-namespace>
-```
-
-Then reference the secret via `model.auth.secret_ref` when submitting an
-evaluation. EvalHub projects the `hf-token` key and injects it as `HF_TOKEN`
-into the adapter container automatically. Non-secret configuration such as
-timeouts can remain in `runtime.k8s.env`:
+Pass non-secret configuration to your adapter via `runtime.k8s.env`:
 
 ```json
 "runtime": {
@@ -470,7 +464,18 @@ timeouts can remain in `runtime.k8s.env`:
 }
 ```
 
-When submitting the evaluation, reference the secret:
+For sensitive values such as Hugging Face tokens, use a Kubernetes Secret
+instead of placing them in `env`. Create the secret:
+
+```bash
+kubectl create secret generic hf-credentials \
+  --from-literal=hf-token="hf_..." \
+  -n <your-namespace>
+```
+
+Then reference it via `model.auth.secret_ref` when submitting an evaluation.
+EvalHub projects the `hf-token` key and injects it as `HF_TOKEN` into the
+adapter container automatically:
 
 ```json
 "model": {
