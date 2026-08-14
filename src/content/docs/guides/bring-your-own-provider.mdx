@@ -148,6 +148,12 @@ adapter = MyAdapter()
 callbacks = DefaultCallbacks.from_adapter(adapter)
 
 results = adapter.run_benchmark_job(adapter.job_spec, callbacks)
+
+# Save to MLflow — no-op when the job was submitted without an experiment name
+run_id = callbacks.mlflow.save(results, adapter.job_spec)
+if run_id:
+    results.mlflow_run_id = run_id
+
 callbacks.report_results(results)
 
 print(f"Job {results.id} completed — score: {results.overall_score}")
@@ -165,6 +171,41 @@ Every adapter must report phases in order. The server validates the sequence:
 | `POST_PROCESSING` | After the framework finishes |
 | `PERSISTING_ARTIFACTS` | Only when OCI exports are configured |
 | `COMPLETED` | Sent automatically by `report_results()` — do not emit manually |
+
+### Optional: MLflow experiment tracking
+
+MLflow tracking is **opt-in** and requires two conditions:
+
+1. The EvalHub **server** was configured with an MLflow tracking URI
+   (`mlflow.tracking_uri` / `MLFLOW_TRACKING_URI`).
+2. The **user submitting the job** includes an `experiment.name` in the request.
+
+When both conditions are met, the SDK's `callbacks.mlflow.save()` logs metrics,
+parameters, and optional file artifacts into an MLflow run. When either condition
+is absent the call is a safe no-op — your adapter does not need to guard against
+it.
+
+```python
+from evalhub.adapter.mlflow import MlflowArtifact
+
+# Inside run_benchmark_job(), after building results:
+run_id = callbacks.mlflow.save(
+    results,
+    config,
+    artifacts=[
+        MlflowArtifact("results.json", json_bytes, "application/json"),
+    ],
+)
+if run_id:
+    results.mlflow_run_id = run_id
+```
+
+`save()` creates one MLflow run per benchmark and logs every `EvaluationResult`
+metric plus job parameters. If you have additional artifacts (JSON reports, HTML
+dashboards) pass them via the `artifacts` argument.
+
+For full configuration details — server setup, experiment tags, what gets logged,
+and troubleshooting — see the [MLflow guide](/guides/mlflow/).
 
 ### Optional: OCI artifact persistence
 
@@ -439,7 +480,8 @@ When submitting the evaluation, reference the secret:
 
 ## Step 4 — Run an evaluation
 
-Submit an evaluation referencing your provider and benchmark:
+Submit an evaluation referencing your provider and benchmark. Include an
+`experiment` block to enable MLflow tracking (omit it to skip tracking):
 
 <Tabs>
 <TabItem label="curl">
@@ -460,13 +502,17 @@ curl -s -X POST "${EVALHUB_URL}/api/v1/evaluations/jobs" \
         "num_few_shot": 5
       }
     }
-  ]
+  ],
+  "experiment": {
+    "name": "my-accuracy-experiment"
+  }
 }'
 ```
 </TabItem>
 <TabItem label="Python SDK">
 ```python
 from evalhub import SyncEvalHubClient, JobSubmissionRequest, BenchmarkConfig, ModelConfig
+from evalhub.models.api import ExperimentConfig
 
 with SyncEvalHubClient() as client:
     job = client.jobs.submit(JobSubmissionRequest(
@@ -481,6 +527,7 @@ with SyncEvalHubClient() as client:
                 parameters={"num_few_shot": 5},
             )
         ],
+        experiment=ExperimentConfig(name="my-accuracy-experiment"),
     ))
     print(f"Job submitted: {job.resource.id}")
 ```
@@ -552,5 +599,6 @@ cluster. The local runtime runs the same adapter code in-process, using the same
 - [eval-hub-contrib](https://github.com/eval-hub/eval-hub-contrib) — community adapters
 - [Server API Reference](/reference/server-api/) — full OpenAPI documentation
 - [Provider Catalog](/providers/catalog/) — all available providers
+- [MLflow](/guides/mlflow/) — experiment tracking configuration and troubleshooting
 - [Using Custom Data](/guides/custom-data/) — load external datasets into evaluations
 - [Local Mode](/guides/local-mode/) — develop adapters without a cluster
