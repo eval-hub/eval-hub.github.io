@@ -10,8 +10,9 @@ can be plugged in by writing a thin adapter, packaging it as a container image, 
 registering it as a **provider** through the REST API. This guide walks through the
 end-to-end process on an OpenShift cluster.
 
-```
-EvalHub Service → (JobSpec via ConfigMap) → Your Adapter Container → Your Evaluation Framework
+```mermaid
+flowchart LR
+    A[EvalHub Service] -->|JobSpec via ConfigMap| B[Your Adapter Container] --> C[Your Evaluation Framework]
 ```
 
 ## Prerequisites
@@ -47,7 +48,7 @@ sequenceDiagram
     participant Adapter as Your Adapter
     participant Sidecar as Sidecar
 
-    User->>EvalHub: POST /evaluations (provider_id, benchmark, model)
+    User->>EvalHub: POST /api/v1/evaluations/jobs (provider_id, benchmark, model)
     EvalHub->>K8s: Create Job (adapter image from provider)
     K8s->>Adapter: Start pod, mount /meta/job.json
     Adapter->>Sidecar: Report status (INITIALIZING)
@@ -63,7 +64,7 @@ sequenceDiagram
 Install the SDK:
 
 ```bash
-pip install eval-hub-sdk
+pip install "eval-hub-sdk[adapter,client]>=0.4.3"
 ```
 
 Create a Python class that extends `FrameworkAdapter`. The only method you need
@@ -173,6 +174,9 @@ artifact:
 ```python
 from evalhub.adapter import OCIArtifactSpec
 
+# Inside run_benchmark_job(), after the framework finishes:
+results_dir = output["output_dir"]  # directory produced by your evaluation framework
+
 oci_artifact = None
 oci_exports = config.exports.oci if config.exports else None
 if oci_exports is not None:
@@ -231,7 +235,7 @@ CMD ["python", "entrypoint.py"]
 Where `requirements.txt` includes at minimum:
 
 ```text
-eval-hub-sdk
+eval-hub-sdk[adapter,client]>=0.4.3
 # your framework dependencies
 ```
 
@@ -358,7 +362,7 @@ with SyncEvalHubClient() as client:
             },
         ],
     })
-    print(f"Provider created: {provider['resource']['id']}")
+    print(f"Provider created: {provider.resource.id}")
 ```
 </TabItem>
 </Tabs>
@@ -396,15 +400,39 @@ If your adapter needs GPU resources, add a `gpu` block:
 
 Pass configuration to your adapter via `env`:
 
+Create a Kubernetes Secret with your Hugging Face token:
+
+```bash
+kubectl create secret generic hf-credentials \
+  --from-literal=hf-token="hf_..." \
+  -n <your-namespace>
+```
+
+Then reference the secret via `model.auth.secret_ref` when submitting an
+evaluation. EvalHub projects the `hf-token` key and injects it as `HF_TOKEN`
+into the adapter container automatically. Non-secret configuration such as
+timeouts can remain in `runtime.k8s.env`:
+
 ```json
 "runtime": {
   "k8s": {
     "image": "quay.io/myorg/my-adapter:v1.0",
     "entrypoint": ["python", "entrypoint.py"],
     "env": [
-      {"name": "HF_TOKEN", "value": "hf_..."},
       {"name": "CUSTOM_TIMEOUT", "value": "300"}
     ]
+  }
+}
+```
+
+When submitting the evaluation, reference the secret:
+
+```json
+"model": {
+  "url": "https://my-model-endpoint.example.com/v1",
+  "name": "llama-3-8b",
+  "auth": {
+    "secret_ref": "hf-credentials"
   }
 }
 ```
@@ -416,7 +444,7 @@ Submit an evaluation referencing your provider and benchmark:
 <Tabs>
 <TabItem label="curl">
 ```bash
-curl -s -X POST "${EVALHUB_URL}/api/v1/evaluations" \
+curl -s -X POST "${EVALHUB_URL}/api/v1/evaluations/jobs" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${TOKEN}" \
   -d '{
