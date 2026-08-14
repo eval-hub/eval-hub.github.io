@@ -125,7 +125,7 @@ Configuration loads from `config/config.yaml`, with environment variable and fil
 
 ### Provider Configuration
 
-Providers are loaded from YAML files in `config/providers/`. Built-in providers: `lm_evaluation_harness` (167 benchmarks), `garak` (8), `guidellm` (7), `lighteval` (24).
+Providers are loaded from YAML files in `config/providers/`. Built-in providers: `lm_evaluation_harness` (188 benchmarks), `garak` (9), `guidellm` (7), `lighteval` (28).
 
 Custom providers can be added via YAML files or the `POST /api/v1/evaluations/providers` endpoint.
 
