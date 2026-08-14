@@ -1,0 +1,323 @@
+---
+title: "Hardware Profiles"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+When you [submit an evaluation job](https://eval-hub.github.io/eval-hub/#tag/Evaluations/operation/post_evaluations_jobs) (`POST /api/v1/evaluations/jobs`) to run benchmarks on Kubernetes, each benchmark runs as a Kubernetes Job (pod). The request body contains a top-level `benchmarks` array that lists the benchmarks to run. By default, each pod uses resource limits defined by the provider, but you can override them by adding a `hardware_config` object to:
+
+- an individual entry in the `benchmarks` array — applies to that benchmark only, or
+- the top-level request body alongside `benchmarks` — acts as a fallback for any benchmark without its own `hardware_config` (see [Evaluation-level fallback](#evaluation-level-fallback)).
+
+:::note
+Hardware configuration is currently supported via the REST API only. Python SDK and CLI support is planned for a future release.
+:::
+
+Hardware configuration supports two mutually exclusive modes:
+
+- **[Profile mode](#profile-mode)** — reference a named [`HardwareProfile`](https://github.com/opendatahub-io/opendatahub-operator/tree/main/api/infrastructure/v1) custom resource (CR) by name. A HardwareProfile is a Kubernetes CR (`infrastructure.opendatahub.io/v1`) that bundles CPU, memory, GPU resource quantities and scheduling constraints (node selectors, tolerations, or Kueue queue) into a reusable profile. It is managed by the OpenDataHub / RHOAI platform (see [Working with hardware profiles](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/3.0/html/working_with_accelerators/working-with-hardware-profiles_accelerators)). EvalHub fetches the CR at job creation time and applies its settings automatically.
+- **[Direct mode](#direct-mode)** — specify `cpu`, `memory`, `gpu`, and `queue` fields directly inside the `hardware_config` object of the evaluation job request above. Omitted fields fall back to provider defaults.
+
+## Resource precedence
+
+EvalHub resolves hardware resources in this order (highest priority first):
+
+1. **HardwareProfile CR** (Profile mode) — CPU/memory from `spec.identifiers`, scheduling from `spec.scheduling`.
+2. **Direct fields** in `hardware_config` (Direct mode) — skipped when `hardware_profile_name` is set.
+3. **Provider defaults** — `runtime.k8s.cpu_request`, `memory_request`, etc. from the provider configuration.
+4. **Built-in defaults** — `cpu_request=250m`, `memory_request=512Mi`, `cpu_limit=1`, `memory_limit=2Gi`.
+
+## Profile mode
+
+Set `hardware_config.hardware_profile_name` to the name of a `HardwareProfile` CR deployed in your platform namespace. The CR is typically created by a cluster administrator through the OpenDataHub or RHOAI dashboard. EvalHub fetches the CR at job creation time and applies its resource identifiers and scheduling configuration.
+
+:::caution
+When using Profile mode, `cpu`, `memory`, `gpu`, and `queue` must **not** be set. The request is rejected if both a profile name and direct fields are present.
+:::
+
+### Prerequisites
+
+- An OpenDataHub or RHOAI `HardwareProfile` CR exists in the platform namespace (e.g. `odh-platform`, `redhat-ods-applications`).
+- The EvalHub server has the `EVALHUB_HARDWARE_PROFILES_NAMESPACE` environment variable set to that platform namespace. This tells EvalHub where to look up HardwareProfile CRs. Set it in the server Deployment or config:
+  ```bash
+  export EVALHUB_HARDWARE_PROFILES_NAMESPACE=redhat-ods-applications
+  ```
+- The profile is not disabled (no `opendatahub.io/disabled: "true"` annotation).
+
+### Example HardwareProfile CR
+
+```yaml
+apiVersion: infrastructure.opendatahub.io/v1
+kind: HardwareProfile
+metadata:
+  name: gpu-large
+  namespace: odh-platform
+spec:
+  identifiers:
+    - identifier: cpu
+      resourceType: CPU
+      defaultCount: "4"
+      maxCount: "8"
+    - identifier: memory
+      resourceType: Memory
+      defaultCount: 16Gi
+      maxCount: 32Gi
+    - identifier: nvidia.com/gpu
+      resourceType: Accelerator
+      defaultCount: "1"
+      maxCount: "2"
+  scheduling:
+    type: Node
+    node:
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+```
+
+The `defaultCount` maps to Kubernetes resource **requests** and `maxCount` maps to resource **limits**. For accelerators the `identifier` value (e.g. `nvidia.com/gpu`) is used as the extended resource name.
+
+### Submitting a job with Profile mode
+
+<Tabs>
+<TabItem label="REST API">
+
+```json {8-10}
+{
+  "model": {
+    "url": "http://my-model:8000/v1",
+    "name": "my-model"
+  },
+  "benchmarks": [
+    {
+      "id": "mmlu",
+      "provider_id": "lm_evaluation_harness",
+      "hardware_config": {
+        "hardware_profile_name": "gpu-large"
+      }
+    }
+  ]
+}
+```
+
+</TabItem>
+<TabItem label="curl">
+
+```bash
+curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": {
+      "url": "http://my-model:8000/v1",
+      "name": "my-model"
+    },
+    "benchmarks": [
+      {
+        "id": "mmlu",
+        "provider_id": "lm_evaluation_harness",
+        "hardware_config": {
+          "hardware_profile_name": "gpu-large"
+        }
+      }
+    ]
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+### Scheduling via HardwareProfile
+
+Scheduling controls **where** and **when** the evaluation Job pod runs on your cluster. For example, GPU workloads need to land on nodes that have GPUs, and in multi-tenant clusters you may want to route jobs through a queue to enforce fair resource sharing.
+
+A HardwareProfile can include a `spec.scheduling` section to configure this automatically. Two scheduling types are supported:
+
+| Scheduling type | When to use | Effect |
+|-----------------|-------------|--------|
+| `Node` | You need the pod to run on specific nodes (e.g. GPU-equipped nodes). | Applies `nodeSelector` and `tolerations` to the Job pod so the Kubernetes scheduler places it on matching nodes. |
+| `Queue` | Your cluster uses [Kueue](https://kueue.sigs.k8s.io/) for job queuing and fair sharing. | Configures a Kueue `LocalQueue` name and optional `priorityClass`. When a queue is set, node selectors and tolerations from the provider are cleared — Kueue ResourceFlavors govern placement instead. |
+
+## Direct mode
+
+Omit `hardware_profile_name` and set resource fields directly in the `hardware_config` object. Any field you omit falls back to the provider's `runtime.k8s` defaults.
+
+### CPU and memory
+
+```json
+"hardware_config": {
+  "cpu": {
+    "request": "2",
+    "limit": "4"
+  },
+  "memory": {
+    "request": "8Gi",
+    "limit": "16Gi"
+  }
+}
+```
+
+Values use standard [Kubernetes resource quantity](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-units-in-kubernetes) syntax (e.g. `500m`, `2`, `4Gi`).
+
+### GPU
+
+```json
+"hardware_config": {
+  "gpu": {
+    "name": "nvidia.com/gpu",
+    "count": 1
+  }
+}
+```
+
+`name` is the Kubernetes extended resource (e.g. `nvidia.com/gpu`, `amd.com/gpu`). `count` sets both requests and limits to the same value.
+
+### Queue (Kueue)
+
+```json
+"hardware_config": {
+  "queue": {
+    "kind": "kueue",
+    "name": "my-local-queue"
+  }
+}
+```
+
+When `kind` is omitted, it defaults to `kueue`.
+
+:::note
+The evaluation job request also has a top-level `queue` field, but it is **deprecated**. Always use `hardware_config.queue` instead. The top-level `queue` only acts as the lowest-priority fallback.
+:::
+
+### Full Direct mode example
+
+<Tabs>
+<TabItem label="REST API">
+
+```json {8-22}
+{
+  "model": {
+    "url": "http://my-model:8000/v1",
+    "name": "my-model"
+  },
+  "benchmarks": [
+    {
+      "id": "mmlu",
+      "provider_id": "lm_evaluation_harness",
+      "hardware_config": {
+        "cpu": {
+          "request": "2",
+          "limit": "4"
+        },
+        "memory": {
+          "request": "8Gi",
+          "limit": "16Gi"
+        },
+        "gpu": {
+          "name": "nvidia.com/gpu",
+          "count": 1
+        }
+      }
+    }
+  ]
+}
+```
+
+</TabItem>
+<TabItem label="curl">
+
+```bash
+curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": {
+      "url": "http://my-model:8000/v1",
+      "name": "my-model"
+    },
+    "benchmarks": [
+      {
+        "id": "mmlu",
+        "provider_id": "lm_evaluation_harness",
+        "hardware_config": {
+          "cpu": { "request": "2", "limit": "4" },
+          "memory": { "request": "8Gi", "limit": "16Gi" },
+          "gpu": { "name": "nvidia.com/gpu", "count": 1 }
+        }
+      }
+    ]
+  }'
+```
+
+</TabItem>
+</Tabs>
+
+## Evaluation-level fallback
+
+Set `hardware_config` at the top level of the job request to apply defaults to all benchmarks that don't specify their own `hardware_config`:
+
+```json {7-13,18}
+{
+  "model": {
+    "url": "http://my-model:8000/v1",
+    "name": "my-model"
+  },
+  "hardware_config": {
+    "cpu": {
+      "request": "1",
+      "limit": "2"
+    },
+    "memory": {
+      "request": "4Gi",
+      "limit": "8Gi"
+    }
+  },
+  "benchmarks": [
+    {
+      "id": "mmlu",
+      "provider_id": "lm_evaluation_harness"
+    },
+    {
+      "id": "arc_challenge",
+      "provider_id": "lm_evaluation_harness",
+      "hardware_config": {
+        "hardware_profile_name": "gpu-large"
+      }
+    }
+  ]
+}
+```
+
+In this example, `mmlu` inherits the evaluation-level CPU/memory config while `arc_challenge` uses a HardwareProfile.
+
+## Provider defaults
+
+Each provider ships with default resource values in its `runtime.k8s` section. These apply when no `hardware_config` is specified. You can view a provider's defaults via `GET /api/v1/evaluations/providers/{id}`.
+
+| Provider | CPU request | Memory request | CPU limit | Memory limit |
+|----------|-------------|----------------|-----------|--------------|
+| `lm_evaluation_harness` | 100m | 128Mi | 500m | 4Gi |
+| `inspect` | 500m | 512Mi | 2000m | 4Gi |
+| `lighteval` | 500m | 1Gi | 4000m | 8Gi |
+| `ragas` | 100m | 128Mi | 1000m | 2Gi |
+| `guidellm` | 100m | 128Mi | 1000m | 2Gi |
+| `garak` | 500m | 512Mi | 2000m | 4Gi |
+| `deepeval` | 100m | 256Mi | 500m | 1Gi |
+| `ibm-clear` | 100m | 128Mi | 500m | 1Gi |
+
+## Queue precedence
+
+When multiple queue sources are present, the first match wins:
+
+1. HardwareProfile `spec.scheduling.kueue.localQueueName` (Profile mode)
+2. `hardware_config.queue` (Direct mode, per-benchmark or evaluation-level)
+3. `evaluation.queue` (deprecated — use `hardware_config.queue` instead)
+
+## Validation
+
+EvalHub validates hardware configuration at job creation time:
+
+- **Mutual exclusivity** — `hardware_profile_name` cannot be combined with `cpu`, `memory`, `gpu`, or `queue`. The request is rejected with a validation error.
+- **Profile existence** — the named HardwareProfile CR must exist in the namespace set by `EVALHUB_HARDWARE_PROFILES_NAMESPACE`.
+- **Profile not disabled** — profiles annotated with `opendatahub.io/disabled: "true"` are rejected.
+- **Field format** — `hardware_profile_name` must be a valid RFC 1123 DNS label. Resource quantities must follow Kubernetes syntax.
