@@ -2,7 +2,7 @@
 title: "EvalHub"
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
 Open source evaluation orchestration platform for Large Language Models.
 
@@ -62,17 +62,43 @@ Community providers with a `provider.yaml` are listed in the [Provider Catalog](
 
 ## Quick Taste
 
-```bash
-pip install "eval-hub-sdk[cli]"
+<Steps>
 
-evalhub eval run \
-  --name my-first-eval \
-  --model-url http://localhost:11434/v1 \
-  --model-name qwen2.5:1.5b \
-  --provider lm_evaluation_harness \
-  --benchmark mmlu \
-  --wait
-```
+1. **Install the SDK** (includes the server and CLI):
+
+   ```bash
+   pip install "eval-hub-sdk[server,cli]"
+   ```
+
+2. **Start a model server** (e.g. [Ollama](https://ollama.com)):
+
+   ```bash
+   ollama run qwen2.5:1.5b
+   ```
+
+3. **Start EvalHub locally**:
+
+   ```bash
+   evalhub server start
+   ```
+
+4. **Run an evaluation**:
+
+   ```bash
+   evalhub eval run \
+     --name my-first-eval \
+     --model-url http://localhost:11434/v1 \
+     --model-name qwen2.5:1.5b \
+     --provider lm_evaluation_harness \
+     --benchmark mmlu \
+     --wait
+   ```
+
+</Steps>
+
+See the [Quick Start](/getting-started/quickstart/) for a full walkthrough or
+[Local Mode](/guides/local-mode/) for advanced local configuration (MLflow,
+custom server config, provider registration).
 
 ## Get Started
 

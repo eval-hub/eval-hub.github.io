@@ -78,7 +78,20 @@ Run your first evaluation with EvalHub.
    </TabItem>
    </Tabs>
 
-3. **Submit an Evaluation**
+3. **Connect to EvalHub**
+
+   The commands below assume an EvalHub service is reachable. On a cluster, use
+   the route or service URL. For local development, start the server first:
+
+   ```bash
+   pip install "eval-hub-sdk[server,cli]"
+   evalhub server start
+   ```
+
+   See [Local Mode](/guides/local-mode/) for full local setup including
+   configuration, MLflow, and provider registration.
+
+4. **Submit an Evaluation**
 
    <Tabs syncKey="interface">
    <TabItem label="CLI">
@@ -156,7 +169,7 @@ Run your first evaluation with EvalHub.
    </TabItem>
    </Tabs>
 
-4. **Wait for Results**
+5. **Wait for Results**
 
    <Tabs syncKey="interface">
    <TabItem label="CLI">
