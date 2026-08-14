@@ -1,14 +1,15 @@
 ---
-title: "Bring Your Own Provider"
-description: "Build a custom evaluation adapter and register it as a provider on an OpenShift cluster"
+title: "Bring Your Own Framework"
+description: "Integrate a custom evaluation framework with EvalHub by writing an adapter, containerizing it, and registering it as a provider"
 ---
 
 import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-EvalHub follows a **Bring Your Own Framework (BYOF)** model. Any evaluation framework
-can be plugged in by writing a thin adapter, packaging it as a container image, and
-registering it as a **provider** through the REST API. This guide walks through the
-end-to-end process on an OpenShift cluster.
+EvalHub follows a **Bring Your Own Framework (BYOF)** model. Any evaluation
+framework can be plugged in by writing a thin adapter and packaging it as a
+container image. You then register it as a **provider** — the API resource that
+publishes your framework to the platform. This guide walks through the end-to-end
+process on an OpenShift cluster.
 
 ```mermaid
 flowchart LR
@@ -49,7 +50,7 @@ sequenceDiagram
     participant Sidecar as Sidecar
 
     User->>EvalHub: POST /api/v1/evaluations/jobs (provider_id, benchmark, model)
-    EvalHub->>K8s: Create Job (adapter image from provider)
+    EvalHub->>K8s: Create Job (adapter image from provider config)
     K8s->>Adapter: Start pod, mount /meta/job.json
     Adapter->>Sidecar: Report status (INITIALIZING)
     Adapter->>Adapter: Run evaluation framework
@@ -147,12 +148,6 @@ adapter = MyAdapter()
 callbacks = DefaultCallbacks.from_adapter(adapter)
 
 results = adapter.run_benchmark_job(adapter.job_spec, callbacks)
-
-# Save to MLflow — no-op when the job was submitted without an experiment name
-run_id = callbacks.mlflow.save(results, adapter.job_spec)
-if run_id:
-    results.mlflow_run_id = run_id
-
 callbacks.report_results(results)
 
 print(f"Job {results.id} completed — score: {results.overall_score}")
@@ -184,10 +179,16 @@ parameters, and optional file artifacts into an MLflow run. When either conditio
 is absent the call is a safe no-op — your adapter does not need to guard against
 it.
 
+Add the save call inside `run_benchmark_job()`, after building the `JobResults`
+and before returning them:
+
 ```python
+import json
 from evalhub.adapter.mlflow import MlflowArtifact
 
 # Inside run_benchmark_job(), after building results:
+json_bytes = json.dumps(output, default=str).encode()
+
 run_id = callbacks.mlflow.save(
     results,
     config,
@@ -197,6 +198,8 @@ run_id = callbacks.mlflow.save(
 )
 if run_id:
     results.mlflow_run_id = run_id
+
+return results
 ```
 
 `save()` creates one MLflow run per benchmark and logs every `EvaluationResult`
@@ -301,10 +304,11 @@ If your cluster uses an internal registry, push the image there and reference it
 by its internal URL in the provider config.
 :::
 
-## Step 3 — Register the provider
+## Step 3 — Register a provider
 
-Call `POST /api/v1/evaluations/providers` with your provider configuration. The
-key fields:
+A **provider** is the API resource that publishes your framework to EvalHub.
+Call `POST /api/v1/evaluations/providers` with your configuration. The key
+fields:
 
 | Field | Required | Description |
 |-------|----------|-------------|
@@ -408,7 +412,8 @@ with SyncEvalHubClient() as client:
 </Tabs>
 
 The response contains the full `ProviderResource` including a generated `id`.
-Save this ID — you will reference it when submitting evaluations.
+Save this — you reference the provider ID when submitting evaluations to tell
+EvalHub which framework to use.
 
 ### GPU configuration
 
@@ -533,8 +538,9 @@ with SyncEvalHubClient() as client:
 </TabItem>
 </Tabs>
 
-EvalHub creates a Kubernetes Job using your provider's adapter image, mounts the
-JobSpec as a ConfigMap, and starts the sidecar alongside your container.
+EvalHub creates a Kubernetes Job using the adapter image from your provider
+config, mounts the JobSpec as a ConfigMap, and starts the sidecar alongside your
+container.
 
 ### Watching job progress
 
@@ -553,7 +559,7 @@ with SyncEvalHubClient() as client:
             print(update.logs, end="")
 ```
 
-## Managing your provider
+## Managing providers
 
 API-created providers are tenant-scoped and fully mutable. You can update, patch,
 or delete them.
@@ -568,7 +574,7 @@ or delete them.
 
 System providers (shipped with EvalHub) are read-only.
 
-## Reference adapter implementations
+## Reference framework adapters
 
 The [eval-hub-contrib](https://github.com/eval-hub/eval-hub-contrib) repository
 contains production adapters you can use as templates:
