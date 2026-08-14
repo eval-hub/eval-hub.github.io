@@ -80,16 +80,31 @@ Run your first evaluation with EvalHub.
 
 3. **Connect to EvalHub**
 
-   The commands below assume an EvalHub service is reachable. On a cluster, use
-   the route or service URL. For local development, start the server first:
+   <Tabs>
+   <TabItem label="Cluster">
+
+   Point the CLI at your EvalHub route or service URL:
 
    ```bash
-   pip install "eval-hub-sdk[server,cli]"
+   evalhub config set base_url https://evalhub.apps.my-cluster.example.com
+   ```
+
+   </TabItem>
+   <TabItem label="Local">
+
+   Start the server with a config file, then point the CLI at it:
+
+   ```bash
+   evalhub config set server_config_file server-config.yaml
    evalhub server start
+   evalhub config set base_url http://localhost:8080
    ```
 
    See [Local Mode](/guides/local-mode/) for full local setup including
    configuration, MLflow, and provider registration.
+
+   </TabItem>
+   </Tabs>
 
 4. **Submit an Evaluation**
 
