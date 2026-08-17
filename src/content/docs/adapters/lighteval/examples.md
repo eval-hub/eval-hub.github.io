@@ -25,4 +25,4 @@ Detailed examples are in progress.
 }
 ```
 
-For more examples, see the [LightEval README](https://github.com/eval-hub/contrib/tree/main/adapters/lighteval).
+For more examples, see the [LightEval README](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/lighteval).

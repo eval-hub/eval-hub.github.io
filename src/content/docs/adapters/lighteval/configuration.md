@@ -31,4 +31,4 @@ Detailed configuration documentation is in progress.
 }
 ```
 
-For complete documentation, see the [LightEval README](https://github.com/eval-hub/contrib/tree/main/adapters/lighteval).
+For complete documentation, see the [LightEval README](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/lighteval).

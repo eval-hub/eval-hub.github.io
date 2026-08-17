@@ -18,4 +18,4 @@ Detailed benchmark documentation is in progress.
 - **Knowledge**: MMLU, TriviaQA
 - **Language Understanding**: GLUE benchmarks
 
-For complete documentation, see the [LightEval README](https://github.com/eval-hub/contrib/tree/main/adapters/lighteval).
+For complete documentation, see the [LightEval README](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/lighteval).
