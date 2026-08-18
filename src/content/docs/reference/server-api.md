@@ -10,8 +10,8 @@ All endpoints are under `/api/v1`. Request and response bodies use JSON. The Ope
 
 See below for the full specification:
 
-- Swagger UI: <https://petstore.swagger.io/?url=https://raw.githubusercontent.com/eval-hub/eval-hub/refs/heads/main/docs/openapi.yaml>
-- Redoc UI: <https://eval-hub.github.io/eval-hub/>
+- [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/eval-hub/eval-hub/refs/heads/main/docs/openapi.yaml)
+- [Redoc UI](https://eval-hub.github.io/eval-hub/)
 
 ### Evaluation Jobs
 
