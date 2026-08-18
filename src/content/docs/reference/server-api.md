@@ -8,11 +8,14 @@ Go REST API service for managing LLM evaluation workflows.
 
 All endpoints are under `/api/v1`. Request and response bodies use JSON. The OpenAPI 3.1.0 specification is served at `/openapi.yaml`.
 
-See <https://eval-hub.github.io/eval-hub/> for the full specification.
+See below for the full specification:
+
+- Swagger UI: <https://petstore.swagger.io/?url=https://raw.githubusercontent.com/eval-hub/eval-hub/refs/heads/main/docs/openapi.yaml>
+- Redoc UI: <https://eval-hub.github.io/eval-hub/>
 
 ### Evaluation Jobs
 
-```
+```text
 POST   /api/v1/evaluations/jobs             # Submit evaluation
 GET    /api/v1/evaluations/jobs             # List jobs
 GET    /api/v1/evaluations/jobs/{id}        # Get job status and results
@@ -22,7 +25,7 @@ POST   /api/v1/evaluations/jobs/{id}/events # Status/result callback (adapter â†
 
 ### Providers
 
-```
+```text
 GET    /api/v1/evaluations/providers             # List providers
 POST   /api/v1/evaluations/providers             # Register provider
 GET    /api/v1/evaluations/providers/{id}        # Get provider
@@ -71,7 +74,7 @@ See [Agent Discoverability](/mcp/agent-discoverability/) for the full metadata m
 
 ### Collections
 
-```
+```text
 GET    /api/v1/evaluations/collections             # List collections
 POST   /api/v1/evaluations/collections             # Create collection
 GET    /api/v1/evaluations/collections/{id}        # Get collection
@@ -95,7 +98,7 @@ Collection responses may include an optional `agent` object with the same fields
 
 ### Health and Metrics
 
-```
+```text
 GET /api/v1/health    # Health check
 GET /metrics          # Prometheus metrics
 GET /openapi.yaml     # OpenAPI specification
@@ -109,7 +112,7 @@ Configuration loads from `config/config.yaml`, with environment variable and fil
 ### Key Settings
 
 | Setting | Env Var | Default | Description |
-|---------|---------|---------|-------------|
+| ------- | ------- | ------- | ----------- |
 | `service.port` | `PORT` | `8080` | API listen port |
 | `database.driver` | - | `sqlite` | `sqlite` or `pgx` |
 | `database.url` | `DB_URL` | SQLite in-memory | Connection string |
