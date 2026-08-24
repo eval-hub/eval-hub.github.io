@@ -104,6 +104,7 @@ export default defineConfig({
             { label: 'MLflow', slug: 'guides/mlflow' },
             { label: 'Bring Your Own Framework', slug: 'guides/bring-your-own-framework' },
             { label: 'Job Lifecycle & States', slug: 'guides/job-lifecycle' },
+            { label: 'Collections', slug: 'guides/collections' },
             { label: 'Hardware Profiles', slug: 'guides/hardware-profiles' },
             { label: 'OpenTelemetry', slug: 'guides/opentelemetry' },
           ],
