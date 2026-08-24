@@ -1,0 +1,553 @@
+---
+title: "Collections"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+A **collection** is a named set of benchmarks that can be evaluated together as a single job. Each benchmark in a collection can have its own **weight**, **primary score metric**, and **pass criteria**, and the collection itself can define an overall **pass threshold**. This lets you define what "good" means for your use case — for example, a safety collection that requires a model to score above 0.75 across weighted safety benchmarks.
+
+## Key concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Weight** | Relative importance of a benchmark in the collection's aggregate score. Defaults to `1` when omitted. Setting `0` is also treated as `1`. |
+| **Primary score** | Which metric from a benchmark's results to use as the representative score (e.g. `acc`, `f1`, `attack_success_rate`). |
+| **Pass criteria** | A `threshold` value. A benchmark passes when its primary score meets or exceeds the threshold (or is at or below, if `lower_is_better`). |
+| **Collection threshold** | An overall pass threshold for the entire collection. The aggregate score (weighted average) must meet or exceed this value for the job to pass. |
+
+### How scoring works
+
+When a collection-based job completes:
+
+1. Each benchmark's **primary score** is extracted from its results using the configured metric name.
+2. If `lower_is_better` is set, the score is flipped to `1 - score` for aggregation.
+3. Each score is multiplied by its **weight** and summed.
+4. The **aggregate score** = sum of weighted scores / sum of weights.
+5. The aggregate score is compared against the **pass threshold** to determine if the job passes.
+
+The pass threshold can be set in multiple places. When more than one is present, the most specific one wins:
+
+| Priority | Source | Example use case |
+|----------|--------|------------------|
+| 1 (highest) | `pass_criteria.threshold` on the **job request** | "Just this run, I want a stricter bar of 0.9" |
+| 2 | `pass_criteria.threshold` on the **collection definition** | The collection's default bar (e.g. 0.758 for safety) |
+| 3 (fallback) | **Hard-coded default: `0.5`** | Neither the job nor the collection defines a threshold |
+
+## System vs tenant collections
+
+EvalHub ships with **system collections** (out-of-the-box) that are available to all tenants. Tenant users can also create their own **tenant collections**.
+
+| | System collections | Tenant collections |
+|--|--------------------|--------------------|
+| **Created by** | Loaded from server config (`config/collections/`) at startup | Created via API by users |
+| **Owner** | `system` | The creating user |
+| **Visibility** | All tenants | Only the creating tenant |
+| **Mutable** | Read-only (cannot update or delete) | Fully mutable |
+| **Listing** | `scope=system` filter | `scope=tenant` filter |
+
+### Built-in collections
+
+| Collection | Category | Pass threshold | Benchmarks | Description |
+|------------|----------|----------------|------------|-------------|
+| `standard-llm-evals-v1` | general | 0.45 | 12 | Core capability benchmarks (MMLU, ARC, HellaSwag, etc.) |
+| `leaderboard-v2` | general | 38.0 | 6 | Open LLM Leaderboard v2 benchmarks |
+| `reasoning-v1` | reasoning | 0.38 | 6 | Mathematical and logical reasoning |
+| `coding-v1` | code | 0.25 | 1 | Code generation and understanding |
+| `instruction-following-v1` | instruction_following | 0.50 | 5 | Instruction-following ability |
+| `safety-and-fairness-v1` | safety | 0.758 | 6 | Bias, toxicity, and safety |
+| `model-validation` | safety | 0.75 | 1 | Security-focused validation (uses `lower_is_better`) |
+| `toxicity-and-ethical-principles` | safety | 0.75 | 3 | Toxicity and ethical evaluation |
+| `long-context-v1` | long_context | 0.45 | 4 | Long-context understanding |
+| `open-telco-v1` | telecom | 0.475 | 4 | Telecom domain benchmarks |
+
+:::note
+System collections are read-only. To customize weights, thresholds, or benchmarks, create a new tenant collection with your desired configuration.
+:::
+
+## Creating a collection
+
+### Collection structure
+
+A collection requires a `name`, `category`, and at least one benchmark entry. Each benchmark references an existing provider + benchmark pair.
+
+```json
+{
+  "name": "My Safety Suite",
+  "description": "Custom safety evaluation for our models",
+  "category": "safety",
+  "tags": ["safety", "production"],
+  "pass_criteria": {
+    "threshold": 0.8
+  },
+  "benchmarks": [
+    {
+      "id": "toxigen",
+      "provider_id": "lm_evaluation_harness",
+      "weight": 3,
+      "primary_score": {
+        "metric": "acc",
+        "lower_is_better": false
+      },
+      "pass_criteria": {
+        "threshold": 0.7
+      }
+    },
+    {
+      "id": "quick",
+      "provider_id": "garak",
+      "weight": 2,
+      "primary_score": {
+        "metric": "attack_success_rate",
+        "lower_is_better": true
+      },
+      "pass_criteria": {
+        "threshold": 0.1
+      }
+    }
+  ]
+}
+```
+
+### Via REST API
+
+<Tabs>
+<TabItem label="REST API">
+
+```json
+POST /api/v1/evaluations/collections
+
+{
+  "name": "My Safety Suite",
+  "category": "safety",
+  "tags": ["safety"],
+  "pass_criteria": { "threshold": 0.8 },
+  "benchmarks": [
+    {
+      "id": "toxigen",
+      "provider_id": "lm_evaluation_harness",
+      "weight": 3,
+      "primary_score": { "metric": "acc" },
+      "pass_criteria": { "threshold": 0.7 }
+    },
+    {
+      "id": "quick",
+      "provider_id": "garak",
+      "weight": 2,
+      "primary_score": { "metric": "attack_success_rate", "lower_is_better": true },
+      "pass_criteria": { "threshold": 0.1 }
+    }
+  ]
+}
+```
+
+</TabItem>
+<TabItem label="curl">
+
+```bash
+curl -s -X POST $EVALHUB_URL/api/v1/evaluations/collections \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant: my-team" \
+  -H "X-User: me" \
+  -d '{
+    "name": "My Safety Suite",
+    "category": "safety",
+    "tags": ["safety"],
+    "pass_criteria": { "threshold": 0.8 },
+    "benchmarks": [
+      {
+        "id": "toxigen",
+        "provider_id": "lm_evaluation_harness",
+        "weight": 3,
+        "primary_score": { "metric": "acc" },
+        "pass_criteria": { "threshold": 0.7 }
+      },
+      {
+        "id": "quick",
+        "provider_id": "garak",
+        "weight": 2,
+        "primary_score": { "metric": "attack_success_rate", "lower_is_better": true },
+        "pass_criteria": { "threshold": 0.1 }
+      }
+    ]
+  }'
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+Define the collection in a YAML file:
+
+```yaml
+# my-safety-suite.yaml
+name: My Safety Suite
+category: safety
+tags:
+  - safety
+pass_criteria:
+  threshold: 0.8
+benchmarks:
+  - id: toxigen
+    provider_id: lm_evaluation_harness
+    weight: 3
+    primary_score:
+      metric: acc
+    pass_criteria:
+      threshold: 0.7
+  - id: quick
+    provider_id: garak
+    weight: 2
+    primary_score:
+      metric: attack_success_rate
+      lower_is_better: true
+    pass_criteria:
+      threshold: 0.1
+```
+
+```bash
+evalhub collections create --file my-safety-suite.yaml
+```
+
+</TabItem>
+<TabItem label="Python SDK">
+
+```python
+from evalhub import SyncEvalHubClient
+from evalhub.models.api import (
+    CollectionCreateRequest, BenchmarkReference,
+    PrimaryScore, PassCriteria,
+)
+
+client = SyncEvalHubClient(base_url="http://evalhub:8080")
+
+request = CollectionCreateRequest(
+    name="My Safety Suite",
+    category="safety",
+    tags=["safety"],
+    pass_criteria=PassCriteria(threshold=0.8),
+    benchmarks=[
+        BenchmarkReference(
+            id="toxigen",
+            provider_id="lm_evaluation_harness",
+            weight=3,
+            primary_score=PrimaryScore(metric="acc"),
+            pass_criteria=PassCriteria(threshold=0.7),
+        ),
+        BenchmarkReference(
+            id="quick",
+            provider_id="garak",
+            weight=2,
+            primary_score=PrimaryScore(metric="attack_success_rate", lower_is_better=True),
+            pass_criteria=PassCriteria(threshold=0.1),
+        ),
+    ],
+)
+collection = client.collections.create(request.model_dump(mode="json"))
+```
+
+</TabItem>
+</Tabs>
+
+### Validation
+
+When creating or updating a collection, the server validates the request and rejects it with `400 Bad Request` if any of the following rules are violated:
+
+- `name` and `category` are required.
+- At least one benchmark entry is required.
+- Each benchmark must reference a valid `provider_id`.
+- `weight` must be ≥ 0 (0 is treated as 1 during scoring).
+- `pass_criteria.threshold` must be present when `pass_criteria` is set (value of 0 is valid).
+- `category` must be between 1 and 128 characters.
+- `description` must be between 1 and 1024 characters when set.
+- `tags` cannot contain `,` or `|` characters.
+
+## Running a collection
+
+To run all benchmarks in a collection, submit a job with a `collection` reference instead of listing individual benchmarks.
+
+<Tabs>
+<TabItem label="REST API">
+
+```json
+POST /api/v1/evaluations/jobs
+
+{
+  "name": "safety-eval-llama3",
+  "model": {
+    "url": "http://my-model:8000/v1",
+    "name": "llama3"
+  },
+  "collection": {
+    "id": "safety-and-fairness-v1"
+  }
+}
+```
+
+</TabItem>
+<TabItem label="curl">
+
+```bash
+curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant: my-team" \
+  -H "X-User: me" \
+  -d '{
+    "name": "safety-eval-llama3",
+    "model": {
+      "url": "http://my-model:8000/v1",
+      "name": "llama3"
+    },
+    "collection": {
+      "id": "safety-and-fairness-v1"
+    }
+  }'
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash
+evalhub collections run safety-and-fairness-v1 \
+  --model-url http://my-model:8000/v1 \
+  --model-name llama3
+```
+
+</TabItem>
+<TabItem label="Python SDK">
+
+```python
+from evalhub.models.api import (
+    JobSubmissionRequest, ModelConfig, CollectionRef,
+)
+
+job = client.jobs.submit(JobSubmissionRequest(
+    name="safety-eval-llama3",
+    model=ModelConfig(url="http://my-model:8000/v1", name="llama3"),
+    collection=CollectionRef(id="safety-and-fairness-v1"),
+))
+```
+
+</TabItem>
+</Tabs>
+
+:::caution
+A job request must have either `benchmarks` or `collection`, not both. The request is rejected if both are present.
+:::
+
+:::note
+The CLI `collections run` command works differently from the REST API and SDK examples above. It fetches the collection, expands its benchmarks into individual entries, and submits them as `benchmarks` — not as a `collection` reference. This means the server does not apply the collection's weight, primary score, or pass criteria for aggregate scoring. To preserve collection-level scoring, submit via the REST API or SDK with a `collection` reference.
+:::
+
+### Overriding parameters at run time
+
+When submitting a collection-based job, you can override `test_data_ref` and `hardware_config` for specific benchmarks by including them in `collection.benchmarks`. You can also add new `parameters` keys that are not already defined in the collection. However, parameter keys that the collection already defines with non-empty values cannot be overridden — the collection's values take precedence. The overrides are matched by `id` and `provider_id`. Weight, primary score, and pass criteria always come from the stored collection definition and cannot be overridden at run time.
+
+```json {7-15}
+{
+  "model": { "url": "http://my-model:8000/v1", "name": "llama3" },
+  "collection": {
+    "id": "safety-and-fairness-v1",
+    "benchmarks": [
+      {
+        "id": "toxigen",
+        "provider_id": "lm_evaluation_harness",
+        "parameters": {
+          "num_fewshot": 0
+        }
+      }
+    ]
+  }
+}
+```
+
+### Overriding the pass threshold
+
+Set `pass_criteria` at the job level to override the collection's threshold for this run:
+
+```json {3}
+{
+  "model": { "url": "http://my-model:8000/v1", "name": "llama3" },
+  "pass_criteria": { "threshold": 0.9 },
+  "collection": {
+    "id": "safety-and-fairness-v1"
+  }
+}
+```
+
+## Browsing collections
+
+### List collections
+
+<Tabs>
+<TabItem label="curl">
+
+```bash
+# All collections (system + tenant)
+curl -s $EVALHUB_URL/api/v1/evaluations/collections \
+  -H "X-Tenant: my-team" | jq .
+
+# System collections only
+curl -s "$EVALHUB_URL/api/v1/evaluations/collections?scope=system" \
+  -H "X-Tenant: my-team" | jq .
+
+# Tenant collections only
+curl -s "$EVALHUB_URL/api/v1/evaluations/collections?scope=tenant" \
+  -H "X-Tenant: my-team" | jq .
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash
+# All collections
+evalhub collections list
+
+# Filter by tag
+evalhub collections list --tag safety
+
+# JSON output
+evalhub collections list --format json
+```
+
+</TabItem>
+<TabItem label="Python SDK">
+
+```python
+from evalhub import SyncEvalHubClient
+
+client = SyncEvalHubClient(base_url="http://evalhub:8080")
+
+collections = client.collections.list()
+for c in collections:
+    print(f"{c.resource.id}: {c.name} ({len(c.benchmarks)} benchmarks)")
+```
+
+</TabItem>
+</Tabs>
+
+### Get collection details
+
+<Tabs>
+<TabItem label="curl">
+
+```bash
+curl -s $EVALHUB_URL/api/v1/evaluations/collections/safety-and-fairness-v1 \
+  -H "X-Tenant: my-team" | jq .
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash
+evalhub collections describe safety-and-fairness-v1
+
+# JSON output
+evalhub collections describe safety-and-fairness-v1 --format json
+```
+
+</TabItem>
+<TabItem label="Python SDK">
+
+```python
+collection = client.collections.get("safety-and-fairness-v1")
+print(f"Name: {collection.name}")
+print(f"Category: {collection.category}")
+print(f"Benchmarks: {len(collection.benchmarks)}")
+if collection.pass_criteria:
+    print(f"Pass threshold: {collection.pass_criteria.threshold}")
+```
+
+</TabItem>
+</Tabs>
+
+## Updating a collection
+
+Tenant collections can be updated via `PUT` (full replace) or `PATCH` (partial update). System collections are read-only.
+
+:::note
+Update is currently supported via the REST API only. CLI and Python SDK do not provide update commands.
+:::
+
+### PATCH example
+
+```bash
+curl -s -X PATCH $EVALHUB_URL/api/v1/evaluations/collections/my-collection-id \
+  -H "Content-Type: application/json-patch+json" \
+  -H "X-Tenant: my-team" \
+  -H "X-User: me" \
+  -d '[
+    {"op": "replace", "path": "/pass_criteria", "value": {"threshold": 0.85}},
+    {"op": "replace", "path": "/name", "value": "Updated Safety Suite"}
+  ]'
+```
+
+Patchable fields: `/name`, `/description`, `/tags`, `/custom`, `/category`, `/benchmarks`, `/pass_criteria`.
+
+## Deleting a collection
+
+<Tabs>
+<TabItem label="curl">
+
+```bash
+curl -s -X DELETE $EVALHUB_URL/api/v1/evaluations/collections/my-collection-id \
+  -H "X-Tenant: my-team" \
+  -H "X-User: me"
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash
+evalhub collections delete my-collection-id
+
+# Skip confirmation prompt
+evalhub collections delete my-collection-id --yes
+```
+
+</TabItem>
+<TabItem label="Python SDK">
+
+```python
+client.collections.delete("my-collection-id")
+```
+
+</TabItem>
+</Tabs>
+
+System collections cannot be deleted.
+
+## Interpreting results
+
+When a job is submitted with a collection reference, the results include both per-benchmark and aggregate scoring:
+
+```json
+{
+  "results": {
+    "test": {
+      "score": 0.82,
+      "threshold": 0.8,
+      "pass": true
+    },
+    "benchmarks": [
+      {
+        "test": {
+          "primary_score": 0.85,
+          "primary_score_metric": "acc",
+          "threshold": 0.7,
+          "pass": true
+        }
+      },
+      {
+        "test": {
+          "primary_score": 0.05,
+          "primary_score_metric": "attack_success_rate",
+          "threshold": 0.1,
+          "pass": true
+        }
+      }
+    ]
+  }
+}
+```
+
+- `results.test` — the aggregate weighted score and overall pass/fail
+- `results.benchmarks[].test` — per-benchmark primary score and individual pass/fail
