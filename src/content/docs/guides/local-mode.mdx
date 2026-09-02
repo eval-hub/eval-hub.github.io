@@ -22,10 +22,18 @@ For a hands-on walkthrough, see the [Local Mode Tutorial](/guides/local-mode-tut
 Install the SDK with the `server` and `cli` extras:
 
 ```bash
-pip install "eval-hub-sdk[server,cli]>=0.4.3"
+pip install "eval-hub-sdk[server,cli]>=1.0.3"
 ```
 
-Create a server configuration file (e.g. `my-config.yaml`):
+For a basic evaluation, start the server with its built-in local defaults (available since eval-hub-sdk 1.0.3):
+
+```bash
+evalhub server start
+```
+
+If you need to customize server settings, create a configuration file (for
+example, `my-config.yaml`). Settings you might customize include
+`service.port` or `mlflow.tracking_uri`, among others:
 
 ```yaml
 service:
@@ -58,7 +66,7 @@ Stop the server when you're done:
 evalhub server stop
 ```
 
-The server runs evaluation jobs as subprocesses in local mode. Authentication is disabled and CORS is enabled automatically.
+Starting with eval-hub-sdk 1.0.3, Local mode starts a sidecar automatically. The server runs evaluation jobs as subprocesses in local mode. Authentication is disabled and CORS is enabled automatically.
 
 :::note[MLflow tracking URI]
 The MLflow tracking URI appears in two places with distinct purposes:
@@ -81,7 +89,7 @@ For full details on `evalhub server` commands, see the [CLI guide — "I want to
 | **Authentication** | Enabled (configurable) | Disabled automatically |
 | **Multi-tenancy** | Single-tenant or multi-tenant (`X-Tenant` header) | Single-tenant only |
 | **CORS** | Disabled by default | Enabled |
-| **Sidecar proxy** | Injected into job pods | Not used; adapters call services directly |
+| **Sidecar proxy** | Injected into job pods | Started automatically |
 | **Init container** | Downloads test data to `/test_data` | Not used |
 | **Job scheduling (Kueue)** | Supported via `queue` config | Ignored |
 | **Process isolation** | Container sandbox per job | Shared host environment |
@@ -201,6 +209,32 @@ evalhub eval run --config job.yaml --wait
 ```
 
 See the [CLI guide](/guides/cli/#i-want-to-run-an-evaluation) for the full set of `eval run` options, including inline flags and output formats.
+
+### Using a remote model
+
+<Since version="1.0.3 eval-hub-sdk" />
+
+Local mode also supports remote OpenAI-compatible model endpoints, including HTTPS endpoints that require authentication or a custom CA certificate. Use the `auth.secret_ref` field in the evaluation job:
+
+```yaml
+model:
+  url: "https://model-serving.example.com/v1"
+  name: ibm-granite/granite-3.3-2b-instruct
+  auth:
+    secret_ref: file:///home/user1/model-auth
+```
+
+In Local mode, `file:///...` identifies a directory on the local filesystem. Add only the files required by the model endpoint:
+
+| File | Purpose |
+|---|---|
+| `api-key` | Authenticates requests to the model server |
+| `ca_cert` | Provides a custom CA certificate for the HTTPS endpoint |
+| `hf-token` | Provides a Hugging Face access token |
+
+The `auth` section and each file are optional. Protect the directory and its contents with appropriate filesystem permissions, and do not commit credentials to source control.
+
+For model authentication patterns, see [Writing an adapter](/guides/model-authentication/#writing-an-adapter) in the Model Authentication guide. The adapter can use the same authentication approach in both modes: in Local mode, `model.auth.secret_ref` points to a local `file:///...` directory containing the required files; in cluster mode, it refers to the Kubernetes secret name.
 
 ## Writing Adapters for Both Modes
 
