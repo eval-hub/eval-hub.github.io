@@ -49,7 +49,7 @@ Install the following tools before starting:
 
    ```bash
    uv pip install -r requirements.txt
-   uv pip install "eval-hub-sdk[server,cli]>=0.4.3"
+   uv pip install "eval-hub-sdk[server,cli]>=1.0.3"
    ```
 
 4. **Start MLflow (optional)**
@@ -120,7 +120,19 @@ Install the following tools before starting:
 
 7. **Start the EvalHub server**
 
-   Create a server configuration file `my-config.yaml`:
+   Starting with eval-hub-sdk 1.0.3, Local mode starts a sidecar automatically.
+
+   For a basic evaluation, start the server with its built-in local defaults (available since eval-hub-sdk 1.0.3):
+
+   ```bash
+   evalhub server start
+   ```
+
+   You do not need to create or set `my-config.yaml` for the basic tutorial.
+
+   If you enabled MLflow or need to customize other server settings, use a
+   configuration file instead of the command above. For example, when using
+   MLflow, configure `mlflow.tracking_uri`:
 
    ```yaml
    service:
@@ -134,9 +146,7 @@ Install the following tools before starting:
      tracking_uri: http://localhost:5000
    ```
 
-   If you skipped the MLflow step, omit the `mlflow` section.
-
-   Set the configuration and start the server:
+   Set the configuration before starting the server:
 
    ```bash
    evalhub config set server_config_file my-config.yaml
@@ -372,11 +382,12 @@ The included [`evalhub-client.ipynb`](https://github.com/eval-hub/eval-hub/blob/
 
 ## What's running
 
-After completing setup, you have four services on localhost:
+After completing setup, you have the EvalHub server, its automatically managed sidecar, and the model server running. MLflow and the OCI registry are also running if you enabled those optional setup steps:
 
 | Service | URL | Purpose |
 |---|---|---|
 | **EvalHub server** (`evalhub server`) | `http://localhost:8080` | Evaluation orchestration |
+| **Sidecar** | Managed automatically by Local mode | Supports Local mode evaluation traffic |
 | **MLflow** | `http://localhost:5000` | Experiment tracking dashboard |
 | **OCI registry** | `http://localhost:5001` | Artifact storage |
 | **Ollama** | `http://localhost:11434` | LLM inference |
