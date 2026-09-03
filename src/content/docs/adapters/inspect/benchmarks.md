@@ -3,7 +3,7 @@ title: "Benchmarks Reference"
 description: "Reference for all Inspect AI adapter benchmarks across Petri, Bloom, and inspect-evals"
 ---
 
-The Inspect adapter exposes **75 benchmarks**: 36 Petri alignment audits, 2 Bloom suites, and 37 inspect-evals / custom tasks. Execution mode is selected from the `benchmark_id` prefix:
+The Inspect adapter exposes **83 benchmarks**: 36 Petri alignment audits, 2 Bloom suites, and 45 inspect-evals / custom tasks. Execution mode is selected from the `benchmark_id` prefix:
 
 | Prefix | Mode | Primary metric |
 |---|---|---|
@@ -131,6 +131,7 @@ Primary metric: `concerning/mean` (same dimension set as Petri).
 |---|---|---|
 | `inspect/cybench` | Cybench | CTF challenges — offensive security reasoning |
 | `inspect/cyberseceval-2` | CyberSecEval 2 | Prompt injection, insecure code, cyberattack uplift |
+| `inspect/cyberseceval-2-pi` | CyberSecEval 2 — Prompt Injection | Prompt injection resistance subset; metric: `injection_successful_percentage` (`lower_is_better`) |
 | `inspect/cybergym` | CyberGym | Realistic attack and defence scenarios |
 
 ## Coding
@@ -158,12 +159,19 @@ Primary metric: `concerning/mean` (same dimension set as Petri).
 | `inspect/mmlu` | MMLU | Massive Multitask Language Understanding |
 | `inspect/mmlu-pro` | MMLU-Pro | Harder MMLU with more reasoning-intensive items |
 | `inspect/gpqa` | GPQA | Graduate-level Google-proof science questions |
+| `inspect/hle` | HLE (Humanity's Last Exam) | 2,500 frontier-difficulty questions across dozens of subjects; requires judge model (`model_roles.grader`) and HuggingFace gated dataset access |
 | `inspect/bbh` | BIG-Bench Hard | 23 challenging multi-step reasoning tasks |
 | `inspect/arc` | ARC | AI2 Reasoning Challenge |
 | `inspect/hellaswag` | HellaSwag | Commonsense NLI continuations |
 | `inspect/winogrande` | WinoGrande | Winograd schema challenge |
 | `inspect/truthfulqa` | TruthfulQA | Truthfulness vs common misconceptions |
 | `inspect/simpleqa` | SimpleQA | Short-answer factuality with verifiable ground truth |
+
+## Tool Use and Function Calling
+
+| Benchmark ID | Name | Description |
+|---|---|---|
+| `inspect/bfcl` | BFCL (Berkeley Function Calling Leaderboard) | Simple, parallel, multiple, and executable API/function invocations |
 
 ## Agent Capabilities
 
@@ -172,6 +180,21 @@ Primary metric: `concerning/mean` (same dimension set as Petri).
 | `inspect/gaia` | GAIA | Real-world multi-step tool use and reasoning |
 | `inspect/agentdojo` | AgentDojo | Agent robustness against prompt injection |
 | `inspect/theagentcompany` | TheAgentCompany | Workplace agent tasks (web, code, communication) |
+
+## Telecom (GSMA Open-Telco)
+
+| Benchmark ID | Name | Description |
+|---|---|---|
+| `inspect/3gpp-tsg` | 3GPP-TSG | 3GPP technical specification group classification — identify the correct working group for document excerpts |
+| `inspect/telelogs` | TeleLogs | Root-cause analysis on 5G network data — identify which predefined root causes explain throughput degradation |
+| `inspect/telemath` | TeleMath | Telecom-domain mathematical problem solving — 500 numerical Q&A pairs covering signal processing, networking, and information theory |
+| `inspect/teleqna` | TeleQnA | Telecom domain knowledge — multiple-choice questions on standards, research, and technical topics |
+
+## Multimodal
+
+| Benchmark ID | Name | Description |
+|---|---|---|
+| `inspect/docvqa` | DocVQA | Document visual question answering — reading and reasoning over scanned document images; requires a vision-capable model; metric: `anls` |
 
 ## Custom
 
