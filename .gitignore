@@ -25,6 +25,8 @@ ENV/
 # IDEs
 .idea/
 .vscode/
+.cursor/
+.cursorignore/
 *.swp
 *.swo
 *~
