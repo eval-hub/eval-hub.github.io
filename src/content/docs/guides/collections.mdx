@@ -333,6 +333,10 @@ job = client.jobs.submit(JobSubmissionRequest(
 A job request must have either `benchmarks` or `collection`, not both. The request is rejected if both are present.
 :::
 
+:::note
+The server applies the collection's weight, primary score, or pass criteria for aggregate scoring.
+:::
+
 ### Overriding parameters at run time
 
 When submitting a collection-based job, you can override `test_data_ref` and `hardware_config` for specific benchmarks by including them in `collection.benchmarks`. You can also add new `parameters` keys that are not already defined in the collection. However, parameter keys that the collection already defines with non-empty values cannot be overridden — the collection's values take precedence. The overrides are matched by `id` and `provider_id`. Weight, primary score, and pass criteria always come from the stored collection definition and cannot be overridden at run time.
