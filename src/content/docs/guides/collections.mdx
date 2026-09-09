@@ -334,7 +334,7 @@ A job request must have either `benchmarks` or `collection`, not both. The reque
 :::
 
 :::note
-The CLI `collections run` command works differently from the REST API and SDK examples above. It fetches the collection, expands its benchmarks into individual entries, and submits them as `benchmarks` — not as a `collection` reference. This means the server does not apply the collection's weight, primary score, or pass criteria for aggregate scoring. To preserve collection-level scoring, submit via the REST API or SDK with a `collection` reference.
+The server applies the collection's weight, primary score, or pass criteria for aggregate scoring.
 :::
 
 ### Overriding parameters at run time
