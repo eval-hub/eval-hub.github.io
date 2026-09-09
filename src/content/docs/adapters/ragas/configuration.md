@@ -88,6 +88,33 @@ See the [Metrics reference](metrics/) for details on each metric.
 |-----------|------|-------------|---------|
 | `max_tokens` | integer | Maximum tokens for LLM completions | `null` (server default) |
 | `temperature` | number | Sampling temperature for LLM completions | `null` (adapter default) |
+| `judge_model` | string | Model used for LLM-based RAGAS metrics | Evaluated model |
+| `judge_url` | string | OpenAI-compatible judge endpoint | Evaluated model URL |
+| `judge_api_key` | string | API key for an external judge endpoint | `OPENAI_API_KEY` |
+
+### Separate Judge Model
+
+The evaluated model is used as the judge by default. For smaller models that
+struggle to return the structured JSON required by metrics such as
+`answer_relevancy`, configure a stronger OpenAI-compatible judge model:
+
+```json
+{
+  "parameters": {
+    "judge_model": "gpt-4o-mini",
+    "judge_url": "https://api.openai.com/v1"
+  }
+}
+```
+
+For an external judge endpoint, provide the credential through
+`OPENAI_API_KEY` from a Kubernetes Secret or runtime environment. A
+`judge_api_key` parameter is also supported, but a real key should never be
+committed to a benchmark, JobSpec, or provider file. The adapter tries
+`judge_api_key` first, then `OPENAI_API_KEY`. The evaluated model's mounted
+credential is used only when the judge uses the evaluated model endpoint. If
+no credential is available for an external judge, the request will fail with
+an authentication error.
 
 ### Embedding Configuration
 
