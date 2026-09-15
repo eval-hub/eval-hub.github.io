@@ -162,6 +162,15 @@ export default defineConfig({
               ],
             },
             {
+              label: 'LM Evaluation Harness',
+              collapsed: true,
+              items: [
+                { label: 'Overview', slug: 'adapters/lm-evaluation-harness' },
+                { label: 'Configuration', slug: 'adapters/lm-evaluation-harness/configuration' },
+                { label: 'Benchmarks', slug: 'adapters/lm-evaluation-harness/benchmarks' },
+              ],
+            },
+            {
               label: 'IBM CLEAR',
               collapsed: true,
               items: [

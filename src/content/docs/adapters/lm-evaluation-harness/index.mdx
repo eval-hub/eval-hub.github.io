@@ -1,0 +1,67 @@
+---
+title: "LM Evaluation Harness Adapter"
+description: "Run LM Evaluation Harness benchmarks through EvalHub"
+---
+
+The LM Evaluation Harness adapter exposes benchmark tasks from
+[lm-evaluation-harness](https://github.com/opendatahub-io/lm-evaluation-harness)
+through the EvalHub provider `lm_evaluation_harness`.
+
+## Overview
+
+LM Evaluation Harness is one EvalHub provider with many benchmark tasks. Each
+benchmark is selected by its task ID; a separate provider is not created for
+each benchmark.
+
+```yaml
+benchmarks:
+  - id: arc_easy
+    provider_id: lm_evaluation_harness
+```
+
+The adapter runs in the `ta-lmes-job` container. In a cluster deployment, the
+container image must contain both the task definition and every optional
+dependency required by that task.
+
+## Execution flow
+
+1. EvalHub resolves the benchmark from the `lm_evaluation_harness` provider.
+2. The `ta-lmes-job` image loads the corresponding task from
+   `lm_eval/tasks/`.
+3. The adapter downloads or reads the task dataset and runs LM Evaluation
+   Harness.
+4. The adapter reports benchmark metrics and, when configured, artifacts to
+   EvalHub.
+
+See [Configuration](configuration/) for task-specific settings and
+[Benchmarks](benchmarks/) for catalog and integration guidance.
+
+## Adding a benchmark
+
+For RHOAI deployments, benchmark integration is more than adding a provider
+YAML entry. First confirm that the task exists in `lm_eval/tasks/`. If it
+exists only on the upstream `main` branch, create a targeted PR against
+`incubation`; do not synchronize all of `main` into `incubation`, because the
+branches intentionally diverge.
+
+The task, runner image, and TrustyAI Operator image reference must then be
+updated and validated together. Follow the [integration checklist and local
+validation guidance](benchmarks/) before registering the benchmark in an
+EvalHub provider or collection.
+
+## Container image
+
+The `ta-lmes-job` image is built from `Dockerfile.lmes-job` in the
+`incubation` branch of lm-evaluation-harness. A push to `incubation` triggers
+the repository's Tekton release pipeline, which builds and publishes the image
+to the OpenDataHub registry.
+
+After the image is published, the TrustyAI Operator must be updated to use the
+released tag or digest. The image reference is controlled by the Operator, not
+by the benchmark collection YAML alone.
+
+## Source repositories
+
+- [eval-hub provider configuration](https://github.com/eval-hub/eval-hub/blob/main/config/providers/lm_evaluation_harness.yaml)
+- [lm-evaluation-harness incubation branch](https://github.com/opendatahub-io/lm-evaluation-harness/tree/incubation)
+- [TrustyAI Operator](https://github.com/trustyai-explainability/trustyai-service-operator)
