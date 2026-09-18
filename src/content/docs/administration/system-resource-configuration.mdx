@@ -30,11 +30,13 @@ curation_order: 1
 
 1. Update the collection YAML in the [EvalHub configuration repository](https://github.com/eval-hub/eval-hub), under `config/collections/`.
 2. Make the equivalent update to the embedded collection ConfigMap in the [TrustyAI Service Operator repository](https://github.com/trustyai-explainability/trustyai-service-operator), under `config/configmaps/evalhub/`. Add the ConfigMap to that repository's `kustomization.yaml` when creating a new collection.
-3. In the EvalHub repository, run the ConfigMap synchronization check:
+3. From the root of the EvalHub source repository, run the ConfigMap synchronization check:
 
    ```bash
    python scripts/check_configmap_sync.py
    ```
+
+   This compares the local collection and provider YAML files with ConfigMaps published on the TrustyAI Service Operator repository's `main` branch. It does not validate unmerged Operator changes.
 
 4. Commit the coordinated changes and deploy them through the normal Operator or GitOps workflow for the cluster.
 5. After Kubernetes updates the mounted ConfigMap, EvalHub's configuration watcher reloads the collection and provider definitions and synchronizes the system resources to its database. The Curated Collections UI reflects the new order after that synchronization completes.
