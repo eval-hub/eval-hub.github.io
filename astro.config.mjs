@@ -105,6 +105,7 @@ export default defineConfig({
             { label: 'Bring Your Own Framework', slug: 'guides/bring-your-own-framework' },
             { label: 'Job Lifecycle & States', slug: 'guides/job-lifecycle' },
             { label: 'Collections', slug: 'guides/collections' },
+            { label: 'Administration', slug: 'guides/administration' },
             { label: 'Hardware Profiles', slug: 'guides/hardware-profiles' },
             { label: 'OpenTelemetry', slug: 'guides/opentelemetry' },
           ],
