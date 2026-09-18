@@ -106,8 +106,9 @@
 <p>Make the equivalent update to the embedded collection ConfigMap in the <a href="https://github.com/trustyai-explainability/trustyai-service-operator">TrustyAI Service Operator repository</a>, under <code dir="auto">config/configmaps/evalhub/</code>. Add the ConfigMap to that repository’s <code dir="auto">kustomization.yaml</code> when creating a new collection.</p>
 </li>
 <li>
-<p>In the EvalHub repository, run the ConfigMap synchronization check:</p>
+<p>From the root of the EvalHub source repository, run the ConfigMap synchronization check:</p>
 <div class="expressive-code"><figure class="frame is-terminal not-content"><figcaption class="header"><span class="title"></span><span class="sr-only">Terminal window</span></figcaption><pre data-language="bash"><code><div class="ec-line"><div class="code"><span style="--0:#82AAFF;--1:#3B61B0">python</span><span style="--0:#D6DEEB;--1:#403F53"> </span><span style="--0:#ECC48D;--1:#3B61B0">scripts/check_configmap_sync.py</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="python scripts/check_configmap_sync.py"><div></div></button></div></figure></div>
+<p>This compares the local collection and provider YAML files with ConfigMaps published on the TrustyAI Service Operator repository’s <code dir="auto">main</code> branch. It does not validate unmerged Operator changes.</p>
 </li>
 <li>
 <p>Commit the coordinated changes and deploy them through the normal Operator or GitOps workflow for the cluster.</p>
