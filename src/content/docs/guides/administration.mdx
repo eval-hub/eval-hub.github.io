@@ -1,0 +1,68 @@
+---
+title: Administration
+description: Manage system collections and providers through Git-managed YAML definitions and Operator ConfigMaps.
+---
+
+System collections and providers are platform-managed resources. Administrators maintain their YAML source definitions in the EvalHub repository and matching ConfigMaps in the TrustyAI Service Operator repository. Do not edit files in a running EvalHub pod or use the tenant-facing API to change these resources.
+
+Tenant users can create and update their own resources through the API. System resources are shared across tenants and are read-only to those users.
+
+## Updating system resources
+
+1. Update the relevant YAML source definition in the [EvalHub repository](https://github.com/eval-hub/eval-hub):
+
+   - Collections: `config/collections/`
+   - Providers: `config/providers/`
+
+2. Make the equivalent update to the matching embedded ConfigMap in the [TrustyAI Service Operator repository](https://github.com/trustyai-explainability/trustyai-service-operator), under `config/configmaps/evalhub/`:
+
+   - Collections: `collection-*.yaml`
+   - Providers: `provider-*.yaml`
+
+   Add the ConfigMap to that repository's `kustomization.yaml` when creating a new system resource.
+
+3. From the root of the EvalHub source repository, run the ConfigMap synchronization check:
+
+   ```bash
+   python scripts/check_configmap_sync.py
+   ```
+
+   This compares local collection and provider YAML files with ConfigMaps published on the TrustyAI Service Operator repository's `main` branch. It does not validate unmerged Operator changes.
+
+4. Commit the coordinated changes and deploy them through the cluster's normal Operator or GitOps workflow.
+5. After Kubernetes updates the mounted ConfigMap, EvalHub's configuration watcher reloads and validates both collection and provider definitions, then synchronizes the system resources to its database.
+
+Keep dependent provider and collection updates in the same deployment so every referenced provider is available when the configuration is validated.
+
+## Verifying a configuration update
+
+Confirm that the expected ConfigMap revision is deployed, then check the EvalHub logs for a successful configuration reload. Finally, retrieve the affected system resource through the deployment's normal API and authentication flow.
+
+For example, administrators can inspect recent service logs with:
+
+```bash
+oc logs deployment/<evalhub-deployment> -n <namespace> --since=5m
+```
+
+If a change is not reflected after the ConfigMap volume update and watcher cycle, check the logs for validation errors. EvalHub retains the previously loaded system resources when a changed configuration is invalid, rather than applying a partial update.
+
+## System collection settings
+
+### Curation priority (`curation_order`)
+
+Use `curation_order` on a system collection to mark it as curated and set its relative curation priority.
+
+| Value | Result |
+| --- | --- |
+| Omitted or `0` | The collection is not curated. |
+| Positive integer | The collection is curated. Lower values have higher priority; `1` is the highest priority. |
+
+For example:
+
+```yaml
+# config/collections/rag-evaluation-v1.yaml
+id: rag-evaluation-v1
+curation_order: 1
+```
+
+`curation_order` is an administrator-controlled system setting. Tenant-facing collection API requests cannot set it.

@@ -105,6 +105,7 @@ export default defineConfig({
             { label: 'Bring Your Own Framework', slug: 'guides/bring-your-own-framework' },
             { label: 'Job Lifecycle & States', slug: 'guides/job-lifecycle' },
             { label: 'Collections', slug: 'guides/collections' },
+            { label: 'Administration', slug: 'guides/administration' },
             { label: 'Hardware Profiles', slug: 'guides/hardware-profiles' },
             { label: 'OpenTelemetry', slug: 'guides/opentelemetry' },
           ],
@@ -128,12 +129,6 @@ export default defineConfig({
           label: 'Deployment',
           items: [
             { label: 'OpenShift Setup', slug: 'deployment/openshift-setup' },
-          ],
-        },
-        {
-          label: 'Administration',
-          items: [
-            { label: 'System resource configuration', slug: 'administration/system-resource-configuration' },
           ],
         },
         {
