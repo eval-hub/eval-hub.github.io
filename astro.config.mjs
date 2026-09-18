@@ -131,6 +131,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Administration',
+          items: [
+            { label: 'System resource configuration', slug: 'administration/system-resource-configuration' },
+          ],
+        },
+        {
           label: 'Kubernetes',
           items: [
             { label: 'Evaluation Lifecycle Signals', slug: 'kubernetes/lifecycle-signals' },
