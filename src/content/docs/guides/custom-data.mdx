@@ -25,6 +25,52 @@ The init container expects credentials from a **Kubernetes Secret** mounted at `
 | `AWS_DEFAULT_REGION` | Region (e.g. `us-east-1`; required even for MinIO) |
 | `AWS_S3_ENDPOINT` | Full endpoint URL (e.g. `http://minio:9000`) |
 
+## Test data reference types
+
+`test_data_ref.type` tells EvalHub how to interpret the staged data. It defaults to `data_set` when omitted.
+
+| Type | Description |
+|------|-------------|
+| `data_set` | *(default)* Input dataset for a benchmark. EvalHub calls the model at `model.url` to generate responses, then scores them. |
+| `pre_recorded_data` | Previously captured model/agent responses. EvalHub does **not** call a live model — the adapter reads the recorded responses and scores them directly. |
+
+### Pre-recorded data
+
+Pre-recorded data lets you evaluate responses that were **already generated**, instead of producing fresh responses at evaluation time. Rather than EvalHub calling `model.url` to run inference, the adapter reads recorded responses (for example, captured agent interaction traces) from your test data reference and scores them.
+
+This is useful for:
+
+- Evaluating captured production or agent traces after the fact.
+- Reproducing results deterministically from a fixed set of responses.
+- Running offline / air-gapped, where a live model endpoint is unavailable.
+
+Because the responses are already recorded, **`model.url` is not required** when *every* benchmark in the job uses `pre_recorded_data`. The `model` section is still required — `model.name` identifies the source of the recorded responses. If any benchmark in the job uses `data_set`, `model.url` remains required.
+
+:::note[Provider support]
+`pre_recorded_data` is currently supported and tested only with the **`ibm-clear`** provider (benchmark `agentic-evaluation`) for agentic evaluation. Other adapters do not support `pre_recorded_data` yet.
+:::
+
+Set `type` on the benchmark's `test_data_ref` alongside the storage reference (S3, PVC, or Git). Because the responses are pre-recorded, `model.url` can be left empty:
+
+```json
+"model": {
+  "name": "my-agent-traces",
+  "url": ""
+},
+"benchmarks": [
+  {
+    "test_data_ref": {
+      "type": "pre_recorded_data",
+      "s3": {
+        "bucket": "my-eval-data",
+        "key": "eval-hub/agentic_response_sample.jsonl",
+        "secret_ref": "my-s3-secret"
+      }
+    }
+  }
+]
+```
+
 ## Prerequisites
 
 - Kubernetes cluster with EvalHub installed (see [Installation](/getting-started/installation/)).
