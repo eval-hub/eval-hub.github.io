@@ -52,6 +52,8 @@ Because the responses are already recorded, **`model.url` is not required** when
 
 Set `type` on the benchmark's `test_data_ref` alongside the storage reference (S3, PVC, or Git). Because the responses are pre-recorded, `model.url` can be left empty:
 
+Upload a CLEAR-compatible trace as a `.json` file, such as [this sample trace](https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/clear/examples/input-traces/tr-236907d3019ea2a5f8e81baeb258753b.json), at the S3 key below.
+
 ```json
 "model": {
   "name": "my-agent-traces",
@@ -63,7 +65,7 @@ Set `type` on the benchmark's `test_data_ref` alongside the storage reference (S
       "type": "pre_recorded_data",
       "s3": {
         "bucket": "my-eval-data",
-        "key": "eval-hub/agentic_response_sample.jsonl",
+        "key": "eval-hub/tr-236907d3019ea2a5f8e81baeb258753b.json",
         "secret_ref": "my-s3-secret"
       }
     }
