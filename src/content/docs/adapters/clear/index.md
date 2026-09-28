@@ -64,6 +64,10 @@ Submit a job through the eval-hub API using provider `ibm-clear` and benchmark `
 
 Job `experiment.name` (JobSpec `experiment_name`) is the preferred experiment for CLEAR **results**. If it is unset, CLEAR copies `parameters.mlflow_experiment_name` onto the JobSpec before `callbacks.mlflow.save()`, so a parameter-only job can still create an MLflow run. `parameters.mlflow_traces_experiment_name` is separate and controls where **input traces** are fetched. See the [MLflow guide](/guides/mlflow/#clear-traces-in-results-out).
 
+## Pre-recorded data
+
+CLEAR can evaluate agent responses that were **already generated** rather than calling a live model at evaluation time. Set `test_data_ref.type` to `pre_recorded_data` and point it at your recorded responses; `model.url` can then be left empty. See [Using Custom Data → Pre-recorded data](/guides/custom-data/#pre-recorded-data) for details.
+
 ## Configuration Parameters
 
 | Parameter | Type | Description |
