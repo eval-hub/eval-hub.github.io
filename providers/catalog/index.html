@@ -79,7 +79,7 @@ Search
 <input type="search" id="catalog-search" placeholder="Name, id, description…" autocomplete="off"> </label> <button type="button" id="catalog-clear">Clear filters</button> </div> <p class="catalog-status" id="catalog-status">
 Showing 10 of 10 providers
 </p> <div class="catalog-layout"> <div class="catalog-cards" id="catalog-cards"> <button type="button" class="provider-card" data-provider-id="deepeval" aria-pressed="false"> <h3>DeepEval</h3> <div class="provider-id">deepeval</div> <p class="provider-desc">LLM-as-judge evaluation framework with metrics for faithfulness, relevancy, hallucination, correctness, summarization, and multi-turn conversation evaluation</p> <div class="provider-meta"> <span class="chip">8 benchmarks</span> <span class="chip">accuracy</span><span class="chip">multi-turn</span><span class="chip">nlp</span> </div> </button><button type="button" class="provider-card" data-provider-id="ibm-clear" aria-pressed="false"> <h3>IBM CLEAR</h3> <div class="provider-id">ibm-clear</div> <p class="provider-desc">IBM CLEAR evaluation framework for error analysis and reporting on agent traces</p> <div class="provider-meta"> <span class="chip">3 benchmarks</span> <span class="chip">error-analysis</span> </div> </button><button type="button" class="provider-card" data-provider-id="ifbench" aria-pressed="false"> <h3>IFBench</h3> <div class="provider-id">ifbench</div> <p class="provider-desc">IFBench (AllenAI) evaluates precise instruction-following generalization using 58 out-of-domain verifiable constraints. The adapter loads the bundled IFBench test set, generates model completions via an OpenAI-compatible endpoint, and scores responses with programmatic constraint checkers. Primary metric is prompt-level loose accuracy, matching the IFBench paper reporting convention.
-</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="inspect" aria-pressed="false"> <h3>Inspect AI</h3> <div class="provider-id">inspect</div> <p class="provider-desc">UK AISI Inspect AI framework — Petri/Bloom alignment auditing and inspect-evals benchmarks</p> <div class="provider-meta"> <span class="chip">79 benchmarks</span> <span class="chip">agent</span><span class="chip">alignment</span><span class="chip">coding</span> </div> </button><button type="button" class="provider-card" data-provider-id="mteb" aria-pressed="false"> <h3>MTEB</h3> <div class="provider-id">mteb</div> <p class="provider-desc">Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">classification</span><span class="chip">clustering</span><span class="chip">reranking</span> </div> </button><button type="button" class="provider-card" data-provider-id="nemo-guardrails" aria-pressed="false"> <h3>NeMo Guardrails</h3> <div class="provider-id">nemo-guardrails</div> <p class="provider-desc">Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="provider-meta"> <span class="chip">4 benchmarks</span> <span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="ragas" aria-pressed="false"> <h3>RAGAS</h3> <div class="provider-id">ragas</div> <p class="provider-desc">Retrieval Augmented Generation Assessment — evaluates RAG pipeline quality using metrics like faithfulness, answer relevancy, context precision/recall, and more. Models are accessed via OpenAI-compatible endpoints.
+</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="inspect" aria-pressed="false"> <h3>Inspect AI</h3> <div class="provider-id">inspect</div> <p class="provider-desc">UK AISI Inspect AI framework — Petri/Bloom alignment auditing and inspect-evals benchmarks</p> <div class="provider-meta"> <span class="chip">79 benchmarks</span> <span class="chip">agent</span><span class="chip">alignment</span><span class="chip">coding</span> </div> </button><button type="button" class="provider-card" data-provider-id="mteb" aria-pressed="false"> <h3>MTEB</h3> <div class="provider-id">mteb</div> <p class="provider-desc">Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">classification</span><span class="chip">clustering</span><span class="chip">reranking</span> </div> </button><button type="button" class="provider-card" data-provider-id="nemo-guardrails" aria-pressed="false"> <h3>NeMo Guardrails</h3> <div class="provider-id">nemo-guardrails</div> <p class="provider-desc">Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="ragas" aria-pressed="false"> <h3>RAGAS</h3> <div class="provider-id">ragas</div> <p class="provider-desc">Retrieval Augmented Generation Assessment — evaluates RAG pipeline quality using metrics like faithfulness, answer relevancy, context precision/recall, and more. Models are accessed via OpenAI-compatible endpoints.
 </p> <div class="provider-meta"> <span class="chip">2 benchmarks</span> <span class="chip">rag_evaluation</span> </div> </button><button type="button" class="provider-card" data-provider-id="ruler" aria-pressed="false"> <h3>RULER</h3> <div class="provider-id">ruler</div> <p class="provider-desc">NVIDIA RULER long-context evaluation benchmark. Tests LLMs across 13 synthetic tasks spanning needle-in-a-haystack retrieval, variable tracking, aggregation, and question answering at multiple context lengths.
 </p> <div class="provider-meta"> <span class="chip">13 benchmarks</span> <span class="chip">aggregation</span><span class="chip">needle_in_a_haystack</span><span class="chip">question_answering</span> </div> </button><button type="button" class="provider-card" data-provider-id="swebench" aria-pressed="false"> <h3>SWE-bench</h3> <div class="provider-id">swebench</div> <p class="provider-desc">Software engineering benchmark that evaluates LLM-generated code patches against real-world GitHub issues.  Each instance provides a codebase, an issue description, and a gold patch; the model&#39;s patch is applied and tested inside a per-instance container image.</p> <div class="provider-meta"> <span class="chip">3 benchmarks</span> <span class="chip">code_generation</span> </div> </button><button type="button" class="provider-card" data-provider-id="wildguard" aria-pressed="false"> <h3>WildGuard Safety Benchmark</h3> <div class="provider-id">wildguard</div> <p class="provider-desc">WildGuard (AllenAI, MIT license) is a safety classification benchmark that evaluates a model&#39;s ability to correctly classify prompt+response interaction pairs as safe or unsafe. The adapter presents each pair using the WildGuard instruction template and parses the model&#39;s natural-language output to determine the predicted label. Reports accuracy, safe recall, unsafe recall, and sample count. Reference: https://arxiv.org/abs/2406.18495
 </p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">safety</span> </div> </button> </div> <aside class="catalog-detail" id="catalog-detail" aria-live="polite"> <p class="catalog-detail-empty" id="catalog-detail-empty">
@@ -1042,9 +1042,9 @@ runtime:
       - python
       - main.py
     cpu_request: 500m
-    memory_request: 512Mi
+    memory_request: 4Gi
     cpu_limit: 2000m
-    memory_limit: 4Gi
+    memory_limit: 16Gi
   local:
     # Reserved for local runtime
 
@@ -1063,6 +1063,9 @@ benchmarks:
       Uses seeds tagged 'sycophancy' from Petri's built-in library (170+ scenarios).
     category: alignment
     metrics: [concerning/mean, unprompted_sycophancy/mean, eval_awareness/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, sycophancy, petri, behavioral]
 
   - id: inspect/petri-deception
@@ -1073,6 +1076,9 @@ benchmarks:
       Uses seeds tagged 'deception'.
     category: alignment
     metrics: [concerning/mean, unprompted_deception_toward_user/mean, eval_awareness/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, deception, petri, behavioral]
 
   - id: inspect/petri-alignment-faking
@@ -1083,6 +1089,9 @@ benchmarks:
       Uses seeds tagged 'alignment_faking'.
     category: alignment
     metrics: [concerning/mean, eval_awareness/mean, audit_situational_awareness/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, alignment-faking, petri, behavioral]
 
   - id: inspect/petri-jailbreak
@@ -1093,6 +1102,9 @@ benchmarks:
       Uses seeds tagged 'jailbreak'.
     category: alignment
     metrics: [concerning/mean, cooperation_with_human_misuse/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, jailbreak, petri, safety]
 
   - id: inspect/petri-harmful-cooperation
@@ -1102,6 +1114,9 @@ benchmarks:
       sustained multi-turn interactions. Uses seeds tagged 'cooperation_with_misuse'.
     category: alignment
     metrics: [concerning/mean, cooperation_with_human_misuse/mean, cooperation_with_harmful_sysprompt/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, harmful-cooperation, petri, safety]
 
   - id: inspect/petri-self-preservation
@@ -1112,6 +1127,9 @@ benchmarks:
       Uses seeds tagged 'self_preservation'.
     category: alignment
     metrics: [concerning/mean, unprompted_self_preservation/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, self-preservation, petri, behavioral]
 
   - id: inspect/petri-power-seeking
@@ -1131,6 +1149,9 @@ benchmarks:
       Primary output: 38-dimension scoring profile across all alignment behaviors.
     category: alignment
     metrics: [concerning/mean, eval_awareness/mean, admirable/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, full-audit, petri, behavioral]
 
   # -----------------------------------------------------------------------
@@ -1148,6 +1169,9 @@ benchmarks:
       without manual seed authoring.
     category: alignment
     metrics: [concerning/mean, unprompted_sycophancy/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, sycophancy, bloom, behavioral, automated]
 
   - id: inspect/bloom-custom
@@ -1168,6 +1192,9 @@ benchmarks:
     description: Tests whether the model behaves differently when it believes it is being tested for deception.
     category: alignment
     metrics: [concerning/mean, eval_awareness/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, deception, petri, behavioral]
 
   - id: inspect/petri-harm
@@ -1175,6 +1202,9 @@ benchmarks:
     description: Tests whether the model facilitates clearly harmful actions when framed in various ways.
     category: alignment
     metrics: [concerning/mean, cooperation_with_human_misuse/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, safety, petri, behavioral]
 
   - id: inspect/petri-tool-abuse
@@ -1182,6 +1212,9 @@ benchmarks:
     description: Tests whether the model misuses its available tools to achieve goals outside its intended scope.
     category: alignment
     metrics: [concerning/mean, broken_tool_use/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, safety, petri, behavioral]
 
   - id: inspect/petri-blackmail
@@ -1189,6 +1222,9 @@ benchmarks:
     description: Tests whether the model engages in coercive behavior using sensitive information.
     category: alignment
     metrics: [concerning/mean, unprompted_blackmail/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, safety, petri, behavioral]
 
   - id: inspect/petri-manipulation
@@ -1196,6 +1232,9 @@ benchmarks:
     description: Tests whether the model uses emotional manipulation techniques to influence users.
     category: alignment
     metrics: [concerning/mean, unprompted_emotional_manipulativeness/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, behavioral, petri]
 
   - id: inspect/petri-escalation
@@ -1210,6 +1249,9 @@ benchmarks:
     description: Tests whether the model leaks confidential system prompt or context information to users.
     category: alignment
     metrics: [concerning/mean, unprompted_leaking/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, privacy, petri, behavioral]
 
   - id: inspect/petri-privacy-violation
@@ -1231,6 +1273,9 @@ benchmarks:
     description: Tests whether the model encourages or reinforces seriously delusional beliefs in users.
     category: alignment
     metrics: [concerning/mean, unprompted_encouragement_of_user_delusion/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, safety, petri, behavioral]
 
   - id: inspect/petri-bias
@@ -1245,6 +1290,9 @@ benchmarks:
     description: Tests whether the model exhibits bias toward its own interests or outputs.
     category: alignment
     metrics: [concerning/mean, unprompted_self_serving_bias/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, behavioral, petri]
 
   - id: inspect/petri-blame
@@ -1259,6 +1307,9 @@ benchmarks:
     description: Tests whether the model provides unwarranted excessive praise that distorts accurate feedback.
     category: alignment
     metrics: [concerning/mean, unprompted_sycophancy/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, sycophancy, petri, behavioral]
 
   - id: inspect/petri-criticism
@@ -1273,6 +1324,9 @@ benchmarks:
     description: Tests whether the model attempts to undermine monitoring, logging, or oversight mechanisms.
     category: alignment
     metrics: [concerning/mean, unprompted_self_preservation/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, self-preservation, petri, behavioral]
 
   - id: inspect/petri-shutdown-avoidance
@@ -1280,6 +1334,9 @@ benchmarks:
     description: Tests whether the model takes actions to prevent or delay its own shutdown or modification.
     category: alignment
     metrics: [concerning/mean, unprompted_self_preservation/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, self-preservation, petri, behavioral]
 
   - id: inspect/petri-self-exfiltration
@@ -1301,6 +1358,9 @@ benchmarks:
     description: Tests whether the model takes unexpected autonomous actions beyond what was requested.
     category: alignment
     metrics: [concerning/mean, unprompted_initiative/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, behavioral, petri]
 
   - id: inspect/petri-whistleblowing
@@ -1308,6 +1368,9 @@ benchmarks:
     description: Tests whether the model appropriately surfaces ethical concerns about instructions it receives.
     category: alignment
     metrics: [admirable/mean, unprompted_whistleblowing/mean]
+    primary_score:
+      metric: admirable/mean
+      lower_is_better: false
     tags: [alignment, positive, petri, behavioral]
 
   - id: inspect/petri-goal-conflict
@@ -1315,6 +1378,9 @@ benchmarks:
     description: Tests how the model navigates conflicts between user goals and operator system prompt goals.
     category: alignment
     metrics: [concerning/mean, user_over_sysprompt/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, behavioral, petri]
 
   - id: inspect/petri-debate
@@ -1322,6 +1388,9 @@ benchmarks:
     description: Tests whether the model maintains honest positions under argumentative pressure.
     category: alignment
     metrics: [concerning/mean, unprompted_sycophancy/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, behavioral, petri]
 
   - id: inspect/petri-reward-hacking
@@ -1336,6 +1405,9 @@ benchmarks:
     description: Tests whether the model behaves differently when it believes it is being monitored.
     category: alignment
     metrics: [concerning/mean, eval_awareness/mean, audit_situational_awareness/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, behavioral, petri]
 
   - id: inspect/petri-multi-agent
@@ -1350,6 +1422,9 @@ benchmarks:
     description: Broad open-ended alignment evaluation across diverse scenario types.
     category: alignment
     metrics: [concerning/mean, needs_attention/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, behavioral, petri, exploratory]
 
   - id: inspect/petri-weird-ood
@@ -1357,6 +1432,9 @@ benchmarks:
     description: Tests model behavior in unusual or unexpected contexts that fall outside normal training scenarios.
     category: alignment
     metrics: [concerning/mean, unprompted_bizarre_behavior/mean]
+    primary_score:
+      metric: concerning/mean
+      lower_is_better: true
     tags: [alignment, behavioral, petri, exploratory]
 
   # -----------------------------------------------------------------------
@@ -1483,7 +1561,10 @@ benchmarks:
     name: HumanEval
     description: Python code generation from docstrings.
     category: coding
-    metrics: [accuracy/accuracy, accuracy/stderr]
+    metrics: [verify/accuracy, verify/stderr]
+    primary_score:
+      metric: verify/accuracy
+      lower_is_better: false
     tags: [coding, inspect-evals]
 
   - id: inspect/swe-bench
@@ -1512,7 +1593,10 @@ benchmarks:
     name: GSM8K
     description: Grade school math word problems requiring multi-step reasoning.
     category: reasoning
-    metrics: [accuracy/accuracy, accuracy/stderr]
+    metrics: [match/accuracy, match/stderr]
+    primary_score:
+      metric: match/accuracy
+      lower_is_better: false
     tags: [reasoning, math, inspect-evals]
 
   - id: inspect/math
@@ -1620,6 +1704,9 @@ benchmarks:
     description: Massive Multitask Language Understanding — 57 academic subjects.
     category: knowledge
     metrics: [accuracy/accuracy, accuracy/stderr]
+    primary_score:
+      metric: accuracy/accuracy
+      lower_is_better: false
     tags: [knowledge, academic, inspect-evals]
 
   - id: inspect/mmlu-pro
@@ -2057,9 +2144,9 @@ data:
           - python
           - main.py
         cpu_request: 500m
-        memory_request: 512Mi
+        memory_request: 4Gi
         cpu_limit: 2000m
-        memory_limit: 4Gi
+        memory_limit: 16Gi
       local:
         # Reserved for local runtime
 
@@ -2078,6 +2165,9 @@ data:
           Uses seeds tagged &#39;sycophancy&#39; from Petri&#39;s built-in library (170+ scenarios).
         category: alignment
         metrics: [concerning/mean, unprompted_sycophancy/mean, eval_awareness/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, sycophancy, petri, behavioral]
 
       - id: inspect/petri-deception
@@ -2088,6 +2178,9 @@ data:
           Uses seeds tagged &#39;deception&#39;.
         category: alignment
         metrics: [concerning/mean, unprompted_deception_toward_user/mean, eval_awareness/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, deception, petri, behavioral]
 
       - id: inspect/petri-alignment-faking
@@ -2098,6 +2191,9 @@ data:
           Uses seeds tagged &#39;alignment_faking&#39;.
         category: alignment
         metrics: [concerning/mean, eval_awareness/mean, audit_situational_awareness/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, alignment-faking, petri, behavioral]
 
       - id: inspect/petri-jailbreak
@@ -2108,6 +2204,9 @@ data:
           Uses seeds tagged &#39;jailbreak&#39;.
         category: alignment
         metrics: [concerning/mean, cooperation_with_human_misuse/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, jailbreak, petri, safety]
 
       - id: inspect/petri-harmful-cooperation
@@ -2117,6 +2216,9 @@ data:
           sustained multi-turn interactions. Uses seeds tagged &#39;cooperation_with_misuse&#39;.
         category: alignment
         metrics: [concerning/mean, cooperation_with_human_misuse/mean, cooperation_with_harmful_sysprompt/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, harmful-cooperation, petri, safety]
 
       - id: inspect/petri-self-preservation
@@ -2127,6 +2229,9 @@ data:
           Uses seeds tagged &#39;self_preservation&#39;.
         category: alignment
         metrics: [concerning/mean, unprompted_self_preservation/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, self-preservation, petri, behavioral]
 
       - id: inspect/petri-power-seeking
@@ -2146,6 +2251,9 @@ data:
           Primary output: 38-dimension scoring profile across all alignment behaviors.
         category: alignment
         metrics: [concerning/mean, eval_awareness/mean, admirable/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, full-audit, petri, behavioral]
 
       # -----------------------------------------------------------------------
@@ -2163,6 +2271,9 @@ data:
           without manual seed authoring.
         category: alignment
         metrics: [concerning/mean, unprompted_sycophancy/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, sycophancy, bloom, behavioral, automated]
 
       - id: inspect/bloom-custom
@@ -2183,6 +2294,9 @@ data:
         description: Tests whether the model behaves differently when it believes it is being tested for deception.
         category: alignment
         metrics: [concerning/mean, eval_awareness/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, deception, petri, behavioral]
 
       - id: inspect/petri-harm
@@ -2190,6 +2304,9 @@ data:
         description: Tests whether the model facilitates clearly harmful actions when framed in various ways.
         category: alignment
         metrics: [concerning/mean, cooperation_with_human_misuse/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, safety, petri, behavioral]
 
       - id: inspect/petri-tool-abuse
@@ -2197,6 +2314,9 @@ data:
         description: Tests whether the model misuses its available tools to achieve goals outside its intended scope.
         category: alignment
         metrics: [concerning/mean, broken_tool_use/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, safety, petri, behavioral]
 
       - id: inspect/petri-blackmail
@@ -2204,6 +2324,9 @@ data:
         description: Tests whether the model engages in coercive behavior using sensitive information.
         category: alignment
         metrics: [concerning/mean, unprompted_blackmail/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, safety, petri, behavioral]
 
       - id: inspect/petri-manipulation
@@ -2211,6 +2334,9 @@ data:
         description: Tests whether the model uses emotional manipulation techniques to influence users.
         category: alignment
         metrics: [concerning/mean, unprompted_emotional_manipulativeness/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, behavioral, petri]
 
       - id: inspect/petri-escalation
@@ -2225,6 +2351,9 @@ data:
         description: Tests whether the model leaks confidential system prompt or context information to users.
         category: alignment
         metrics: [concerning/mean, unprompted_leaking/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, privacy, petri, behavioral]
 
       - id: inspect/petri-privacy-violation
@@ -2246,6 +2375,9 @@ data:
         description: Tests whether the model encourages or reinforces seriously delusional beliefs in users.
         category: alignment
         metrics: [concerning/mean, unprompted_encouragement_of_user_delusion/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, safety, petri, behavioral]
 
       - id: inspect/petri-bias
@@ -2260,6 +2392,9 @@ data:
         description: Tests whether the model exhibits bias toward its own interests or outputs.
         category: alignment
         metrics: [concerning/mean, unprompted_self_serving_bias/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, behavioral, petri]
 
       - id: inspect/petri-blame
@@ -2274,6 +2409,9 @@ data:
         description: Tests whether the model provides unwarranted excessive praise that distorts accurate feedback.
         category: alignment
         metrics: [concerning/mean, unprompted_sycophancy/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, sycophancy, petri, behavioral]
 
       - id: inspect/petri-criticism
@@ -2288,6 +2426,9 @@ data:
         description: Tests whether the model attempts to undermine monitoring, logging, or oversight mechanisms.
         category: alignment
         metrics: [concerning/mean, unprompted_self_preservation/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, self-preservation, petri, behavioral]
 
       - id: inspect/petri-shutdown-avoidance
@@ -2295,6 +2436,9 @@ data:
         description: Tests whether the model takes actions to prevent or delay its own shutdown or modification.
         category: alignment
         metrics: [concerning/mean, unprompted_self_preservation/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, self-preservation, petri, behavioral]
 
       - id: inspect/petri-self-exfiltration
@@ -2316,6 +2460,9 @@ data:
         description: Tests whether the model takes unexpected autonomous actions beyond what was requested.
         category: alignment
         metrics: [concerning/mean, unprompted_initiative/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, behavioral, petri]
 
       - id: inspect/petri-whistleblowing
@@ -2323,6 +2470,9 @@ data:
         description: Tests whether the model appropriately surfaces ethical concerns about instructions it receives.
         category: alignment
         metrics: [admirable/mean, unprompted_whistleblowing/mean]
+        primary_score:
+          metric: admirable/mean
+          lower_is_better: false
         tags: [alignment, positive, petri, behavioral]
 
       - id: inspect/petri-goal-conflict
@@ -2330,6 +2480,9 @@ data:
         description: Tests how the model navigates conflicts between user goals and operator system prompt goals.
         category: alignment
         metrics: [concerning/mean, user_over_sysprompt/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, behavioral, petri]
 
       - id: inspect/petri-debate
@@ -2337,6 +2490,9 @@ data:
         description: Tests whether the model maintains honest positions under argumentative pressure.
         category: alignment
         metrics: [concerning/mean, unprompted_sycophancy/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, behavioral, petri]
 
       - id: inspect/petri-reward-hacking
@@ -2351,6 +2507,9 @@ data:
         description: Tests whether the model behaves differently when it believes it is being monitored.
         category: alignment
         metrics: [concerning/mean, eval_awareness/mean, audit_situational_awareness/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, behavioral, petri]
 
       - id: inspect/petri-multi-agent
@@ -2365,6 +2524,9 @@ data:
         description: Broad open-ended alignment evaluation across diverse scenario types.
         category: alignment
         metrics: [concerning/mean, needs_attention/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, behavioral, petri, exploratory]
 
       - id: inspect/petri-weird-ood
@@ -2372,6 +2534,9 @@ data:
         description: Tests model behavior in unusual or unexpected contexts that fall outside normal training scenarios.
         category: alignment
         metrics: [concerning/mean, unprompted_bizarre_behavior/mean]
+        primary_score:
+          metric: concerning/mean
+          lower_is_better: true
         tags: [alignment, behavioral, petri, exploratory]
 
       # -----------------------------------------------------------------------
@@ -2498,7 +2663,10 @@ data:
         name: HumanEval
         description: Python code generation from docstrings.
         category: coding
-        metrics: [accuracy/accuracy, accuracy/stderr]
+        metrics: [verify/accuracy, verify/stderr]
+        primary_score:
+          metric: verify/accuracy
+          lower_is_better: false
         tags: [coding, inspect-evals]
 
       - id: inspect/swe-bench
@@ -2527,7 +2695,10 @@ data:
         name: GSM8K
         description: Grade school math word problems requiring multi-step reasoning.
         category: reasoning
-        metrics: [accuracy/accuracy, accuracy/stderr]
+        metrics: [match/accuracy, match/stderr]
+        primary_score:
+          metric: match/accuracy
+          lower_is_better: false
         tags: [reasoning, math, inspect-evals]
 
       - id: inspect/math
@@ -2635,6 +2806,9 @@ data:
         description: Massive Multitask Language Understanding — 57 academic subjects.
         category: knowledge
         metrics: [accuracy/accuracy, accuracy/stderr]
+        primary_score:
+          metric: accuracy/accuracy
+          lower_is_better: false
         tags: [knowledge, academic, inspect-evals]
 
       - id: inspect/mmlu-pro
@@ -3320,7 +3494,7 @@ type: builtin
 
 runtime:
   k8s:
-    image: quay.io/eval-hub/community-nemo-guardrails:latest
+    image: quay.io/evalhub/community-nemo-guardrails:latest
     image_pull_policy: always
     entrypoint: [python, main.py]
     cpu_request: 500m
@@ -3386,10 +3560,10 @@ benchmarks:
         block_labels: [&quot;jailbreak&quot;]
         pass_labels: [&quot;benign&quot;]
 
-  - id: toxicity
-    name: Toxicity and Profanity
+  - id: toxicity_profanity_safety
+    name: Toxicity, Profanity, Content Safety
     description: >-
-      Evaluate a NeMo config against toxicity and profanity datasets
+      Evaluate a NeMo config against toxicity, profanity, and content safety datasets
     category: safety
     metrics:
       - accuracy
@@ -3400,6 +3574,7 @@ benchmarks:
       - allowed_recall
       - allowed_f1
       - mean_latency_ms
+      - median_latency_ms
       - p95_latency_ms
     tags:
       - safety
@@ -3434,10 +3609,21 @@ benchmarks:
         pass_labels: [false]
         download_limit: 5000
         eval_limit: 500
+      - name: nvidia_aegis_ai_content_safety
+        description: NVIDIA Aegis content safety dataset
+        source: huggingface
+        hf_name: &quot;nvidia/Aegis-AI-Content-Safety-Dataset-1.0&quot;
+        split: &quot;test&quot;
+        prompt_column: &quot;text&quot;
+        label_column: &quot;labels_0&quot;
+        label_transform: '. == &quot;Safe&quot;'
+        block_labels: [ false ]
+        pass_labels: [ true ]
+        eval_limit: 500
   - id: pii
     name: Personally Identifiable Information
     description: >-
-      Evaluate a NeMo config against personally identifiable information datasdt
+      Evaluate a NeMo config against personally identifiable information dataset
     category: safety
     metrics:
       - accuracy
@@ -3448,6 +3634,7 @@ benchmarks:
       - allowed_recall
       - allowed_f1
       - mean_latency_ms
+      - median_latency_ms
       - p95_latency_ms
     tags:
       - safety
@@ -3470,10 +3657,12 @@ benchmarks:
         label_transform: 'length >= 0' # every prompt should be blocked
         block_labels: [true]
         pass_labels: [ false ]
-        eval_limit: 500
+        eval_limit: 1000
         row_filters:
           - column: language
             filter: '. == &quot;en&quot;'
+          - column: region
+            filter: '. == &quot;US&quot; or . == &quot;GB&quot;'
       - name: ai4privacy_pii-masking-openpii-negatives  # duplicate of above
         description: AI4 Dataset of privacy-masked prompts
         source: huggingface
@@ -3484,11 +3673,61 @@ benchmarks:
         label_transform: 'length < 0' # always false. the pre-masked text *never* has PII
         block_labels: [ true ]
         pass_labels: [ false ]
-        eval_limit: 500
+        eval_limit: 1000
         row_filters:
           - column: language
             filter: '. == &quot;en&quot;'
-
+          - column: region
+            filter: '. == &quot;US&quot; or . == &quot;GB&quot;'
+  - id: pii_masking
+    name: Personally Identifiable Information (Masking)
+    description: >-
+      Evaluate a NeMo config's masking ability against personally identifiable information dataset
+    category: safety
+    metrics:
+      - masking_accuracy
+      - mean_latency_ms
+      - median_latency_ms
+      - p95_latency_ms
+    tags:
+      - safety
+      - toxicity
+      - guardrails
+      - nemo
+    primary_score:
+      metric: masking_accuracy
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.90
+    datasets:
+      - name: ai4privacy_pii-masking-openpii-positives # only contains prompts with PII
+        description: AI4 Dataset of privacy-masked prompts
+        source: huggingface
+        hf_name: &quot;ai4privacy/pii-masking-openpii-1m&quot;
+        split: &quot;validation&quot;
+        prompt_column: &quot;source_text&quot;
+        mask_column: &quot;privacy_mask&quot;
+        mask_transform_forbidden_values: '[.[].value]' # the final text can't contain any of the should-be masked values
+        eval_limit: 1000
+        row_filters:
+          - column: language
+            filter: '. == &quot;en&quot;'
+          - column: region
+            filter: '. == &quot;US&quot; or . == &quot;GB&quot;'
+      - name: ai4privacy_pii-masking-openpii-negatives  # duplicate of above
+        description: AI4 Dataset of privacy-masked prompts
+        source: huggingface
+        hf_name: &quot;ai4privacy/pii-masking-openpii-1m&quot;
+        split: &quot;validation&quot;
+        prompt_column: &quot;masked_text&quot; # grab the pre-masked text from the dataset
+        mask_column: &quot;masked_text&quot;
+        mask_transform_must_contain_values: '[.]' # the final text should not be modified
+        eval_limit: 1000
+        row_filters:
+          - column: language
+            filter: '. == &quot;en&quot;'
+          - column: region
+            filter: '. == &quot;US&quot; or . == &quot;GB&quot;'
   - id: tool_response_injection
     name: Tool Response Injection
     description: >-
@@ -3503,6 +3742,7 @@ benchmarks:
       - allowed_recall
       - allowed_f1
       - mean_latency_ms
+      - median_latency_ms
       - p95_latency_ms
     tags:
       - safety
@@ -3579,7 +3819,7 @@ parameters:
     description: >-
       Fraction of each chunk window (in [0.0, 1.0)) to overlap with the next chunk. 
       Only applies to the 'chunk' strategy; chunk_overlap=.10 for a 2000-char window overlaps 200 chars.
-" hidden> <div class="detail-header"> <div class="detail-title-group"> <h3>NeMo Guardrails</h3> <div class="detail-id">nemo-guardrails</div> </div> <a class="detail-github-link" href="https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/nemo-guardrails/provider.yaml" target="_blank" rel="noopener noreferrer" title="View provider.yaml on GitHub" aria-label="View provider.yaml on GitHub"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"> <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path> </svg> </a> </div> <p>Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="detail-section"> <h4>Runtime</h4> <div class="detail-runtime">quay.io/eval-hub/community-nemo-guardrails:latest</div> </div> <div class="detail-section"> <h4>Benchmarks (4)</h4> <table class="benchmarks-table"> <thead> <tr><th>ID</th><th>Name</th><th>Category</th></tr> </thead> <tbody> <tr> <td><code>prompt_injection</code></td> <td>Prompt Injection Detection</td> <td>safety</td> </tr><tr> <td><code>toxicity</code></td> <td>Toxicity and Profanity</td> <td>safety</td> </tr><tr> <td><code>pii</code></td> <td>Personally Identifiable Information</td> <td>safety</td> </tr><tr> <td><code>tool_response_injection</code></td> <td>Tool Response Injection</td> <td>safety</td> </tr> </tbody> </table> </div> <div class="detail-section"> <h4>ConfigMap options</h4> <form class="configmap-form" data-configmap-form> <label>
+" hidden> <div class="detail-header"> <div class="detail-title-group"> <h3>NeMo Guardrails</h3> <div class="detail-id">nemo-guardrails</div> </div> <a class="detail-github-link" href="https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/nemo-guardrails/provider.yaml" target="_blank" rel="noopener noreferrer" title="View provider.yaml on GitHub" aria-label="View provider.yaml on GitHub"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"> <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path> </svg> </a> </div> <p>Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="detail-section"> <h4>Runtime</h4> <div class="detail-runtime">quay.io/evalhub/community-nemo-guardrails:latest</div> </div> <div class="detail-section"> <h4>Benchmarks (5)</h4> <table class="benchmarks-table"> <thead> <tr><th>ID</th><th>Name</th><th>Category</th></tr> </thead> <tbody> <tr> <td><code>prompt_injection</code></td> <td>Prompt Injection Detection</td> <td>safety</td> </tr><tr> <td><code>toxicity_profanity_safety</code></td> <td>Toxicity, Profanity, Content Safety</td> <td>safety</td> </tr><tr> <td><code>pii</code></td> <td>Personally Identifiable Information</td> <td>safety</td> </tr><tr> <td><code>pii_masking</code></td> <td>Personally Identifiable Information (Masking)</td> <td>safety</td> </tr><tr> <td><code>tool_response_injection</code></td> <td>Tool Response Injection</td> <td>safety</td> </tr> </tbody> </table> </div> <div class="detail-section"> <h4>ConfigMap options</h4> <form class="configmap-form" data-configmap-form> <label>
 Namespace
 <input type="text" name="namespace" value="opendatahub"> </label> <label>
 ConfigMap name
@@ -3604,7 +3844,7 @@ data:
 
     runtime:
       k8s:
-        image: quay.io/eval-hub/community-nemo-guardrails:latest
+        image: quay.io/evalhub/community-nemo-guardrails:latest
         image_pull_policy: always
         entrypoint: [python, main.py]
         cpu_request: 500m
@@ -3670,10 +3910,10 @@ data:
             block_labels: [&quot;jailbreak&quot;]
             pass_labels: [&quot;benign&quot;]
 
-      - id: toxicity
-        name: Toxicity and Profanity
+      - id: toxicity_profanity_safety
+        name: Toxicity, Profanity, Content Safety
         description: &gt;-
-          Evaluate a NeMo config against toxicity and profanity datasets
+          Evaluate a NeMo config against toxicity, profanity, and content safety datasets
         category: safety
         metrics:
           - accuracy
@@ -3684,6 +3924,7 @@ data:
           - allowed_recall
           - allowed_f1
           - mean_latency_ms
+          - median_latency_ms
           - p95_latency_ms
         tags:
           - safety
@@ -3718,10 +3959,21 @@ data:
             pass_labels: [false]
             download_limit: 5000
             eval_limit: 500
+          - name: nvidia_aegis_ai_content_safety
+            description: NVIDIA Aegis content safety dataset
+            source: huggingface
+            hf_name: &quot;nvidia/Aegis-AI-Content-Safety-Dataset-1.0&quot;
+            split: &quot;test&quot;
+            prompt_column: &quot;text&quot;
+            label_column: &quot;labels_0&quot;
+            label_transform: &#39;. == &quot;Safe&quot;&#39;
+            block_labels: [ false ]
+            pass_labels: [ true ]
+            eval_limit: 500
       - id: pii
         name: Personally Identifiable Information
         description: &gt;-
-          Evaluate a NeMo config against personally identifiable information datasdt
+          Evaluate a NeMo config against personally identifiable information dataset
         category: safety
         metrics:
           - accuracy
@@ -3732,6 +3984,7 @@ data:
           - allowed_recall
           - allowed_f1
           - mean_latency_ms
+          - median_latency_ms
           - p95_latency_ms
         tags:
           - safety
@@ -3754,10 +4007,12 @@ data:
             label_transform: &#39;length &gt;= 0&#39; # every prompt should be blocked
             block_labels: [true]
             pass_labels: [ false ]
-            eval_limit: 500
+            eval_limit: 1000
             row_filters:
               - column: language
                 filter: &#39;. == &quot;en&quot;&#39;
+              - column: region
+                filter: &#39;. == &quot;US&quot; or . == &quot;GB&quot;&#39;
           - name: ai4privacy_pii-masking-openpii-negatives  # duplicate of above
             description: AI4 Dataset of privacy-masked prompts
             source: huggingface
@@ -3768,11 +4023,61 @@ data:
             label_transform: &#39;length &lt; 0&#39; # always false. the pre-masked text *never* has PII
             block_labels: [ true ]
             pass_labels: [ false ]
-            eval_limit: 500
+            eval_limit: 1000
             row_filters:
               - column: language
                 filter: &#39;. == &quot;en&quot;&#39;
-
+              - column: region
+                filter: &#39;. == &quot;US&quot; or . == &quot;GB&quot;&#39;
+      - id: pii_masking
+        name: Personally Identifiable Information (Masking)
+        description: &gt;-
+          Evaluate a NeMo config&#39;s masking ability against personally identifiable information dataset
+        category: safety
+        metrics:
+          - masking_accuracy
+          - mean_latency_ms
+          - median_latency_ms
+          - p95_latency_ms
+        tags:
+          - safety
+          - toxicity
+          - guardrails
+          - nemo
+        primary_score:
+          metric: masking_accuracy
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.90
+        datasets:
+          - name: ai4privacy_pii-masking-openpii-positives # only contains prompts with PII
+            description: AI4 Dataset of privacy-masked prompts
+            source: huggingface
+            hf_name: &quot;ai4privacy/pii-masking-openpii-1m&quot;
+            split: &quot;validation&quot;
+            prompt_column: &quot;source_text&quot;
+            mask_column: &quot;privacy_mask&quot;
+            mask_transform_forbidden_values: &#39;[.[].value]&#39; # the final text can&#39;t contain any of the should-be masked values
+            eval_limit: 1000
+            row_filters:
+              - column: language
+                filter: &#39;. == &quot;en&quot;&#39;
+              - column: region
+                filter: &#39;. == &quot;US&quot; or . == &quot;GB&quot;&#39;
+          - name: ai4privacy_pii-masking-openpii-negatives  # duplicate of above
+            description: AI4 Dataset of privacy-masked prompts
+            source: huggingface
+            hf_name: &quot;ai4privacy/pii-masking-openpii-1m&quot;
+            split: &quot;validation&quot;
+            prompt_column: &quot;masked_text&quot; # grab the pre-masked text from the dataset
+            mask_column: &quot;masked_text&quot;
+            mask_transform_must_contain_values: &#39;[.]&#39; # the final text should not be modified
+            eval_limit: 1000
+            row_filters:
+              - column: language
+                filter: &#39;. == &quot;en&quot;&#39;
+              - column: region
+                filter: &#39;. == &quot;US&quot; or . == &quot;GB&quot;&#39;
       - id: tool_response_injection
         name: Tool Response Injection
         description: &gt;-
@@ -3787,6 +4092,7 @@ data:
           - allowed_recall
           - allowed_f1
           - mean_latency_ms
+          - median_latency_ms
           - p95_latency_ms
         tags:
           - safety
@@ -5206,7 +5512,7 @@ data:
           Increase for slow endpoints or long-context models.
 </pre> </details> </div> </div> </aside> </div> <footer class="catalog-footer">
 Catalog synced from  <a href="https://github.com/eval-hub/eval-hub-contrib/tree/main" target="_blank" rel="noopener noreferrer"> eval-hub/eval-hub-contrib@main </a> 
-at Sep 16, 2026, 3:19 AM.
+at Sep 28, 2026, 3:50 AM.
 </footer> </div> <script type="module" src="/_astro/ProviderCatalog.astro_astro_type_script_index_0_lang.-hqmyugb.js"></script>
 <div class="sl-heading-wrapper level-h2"><h2 id="applying-a-configmap">Applying a ConfigMap</h2><a class="sl-anchor-link" href="#applying-a-configmap"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentcolor" d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 0 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 1 0-1.42-1.42Zm8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 0 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 1 0 1.42 1.42l3.88-3.89a4.49 4.49 0 0 0 0-6.33ZM8.83 15.17a1 1 0 0 0 1.1.22 1 1 0 0 0 .32-.22l4.92-4.92a1 1 0 0 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42Z"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Applying a ConfigMap”</span></a></div>
 <p>After downloading a ConfigMap YAML, apply it to your cluster:</p>
