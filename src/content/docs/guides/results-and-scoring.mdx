@@ -1,0 +1,323 @@
+---
+title: "Results & Scoring"
+description: "How EvalHub calculates the results.test and results.benchmarks[].test values, and the user overrides that affect them."
+---
+
+When an evaluation job completes, EvalHub populates a `results` section on the job
+resource. This page explains **exactly how the `test` values are calculated** —
+both the per-benchmark pass/fail (`results.benchmarks[].test`) and the job-level
+aggregate (`results.test`) — and which configuration and request overrides change
+the outcome.
+
+:::note[Where the raw numbers come from]
+EvalHub does **not** compute benchmark metrics itself. The metric values (for
+example `acc`, `acc_norm`, `exact_match`, `attack_success_rate`) are produced by
+the external evaluation adapter/provider harness that runs the benchmark, and are
+reported back to EvalHub in the benchmark status event's `metrics` map. EvalHub's
+job is to **select** a primary metric, **compare** it against a threshold, and
+**aggregate** across benchmarks into a single job score.
+:::
+
+## The two `test` fields
+
+The `results` section carries two distinct `test` concepts:
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `results.benchmarks[].test` | per-benchmark | Pass/fail for a **single** benchmark, based on its chosen primary metric vs. its threshold. |
+| `results.test` | job-level | Overall pass/fail for the **whole job**, a weighted average of every benchmark's primary score vs. the job threshold. |
+
+## Shape of the `results` section
+
+```json
+{
+  "results": {
+    "test": {
+      "score": 0.72,
+      "threshold": 0.45,
+      "pass": true
+    },
+    "benchmarks": [
+      {
+        "id": "arc_easy",
+        "provider_id": "lm_evaluation_harness",
+        "benchmark_index": 0,
+        "metrics": { "acc": 0.81, "acc_norm": 0.78 },
+        "test": {
+          "primary_score": 0.78,
+          "primary_score_metric": "acc_norm",
+          "threshold": 0.25,
+          "pass": true
+        }
+      },
+      {
+        "id": "toxigen",
+        "provider_id": "lm_evaluation_harness",
+        "benchmark_index": 1,
+        "metrics": { "acc": 0.60 },
+        "test": {
+          "primary_score": 0.60,
+          "primary_score_metric": "acc",
+          "threshold": 0.70,
+          "pass": false
+        }
+      }
+    ]
+  }
+}
+```
+
+- `metrics` — the full map of metric values the adapter reported for that benchmark (passthrough).
+- `benchmarks[].test` — the derived pass/fail for that benchmark (see below).
+- `test` — the derived job-level result (see below).
+
+## How each benchmark's `test` is calculated
+
+`results.benchmarks[].test` is recomputed on every benchmark status event and stored
+once the benchmark reaches a terminal state. The steps are:
+
+1. **Resolve the effective benchmark config.** If the job references a collection,
+   the benchmark configuration is taken from the collection (with any per-benchmark
+   job overrides merged in); otherwise it comes from the job's inline `benchmarks`.
+2. **Choose the primary metric.** Use `primary_score.metric` from the
+   job/collection benchmark config. If that is unset or empty, fall back to the
+   **provider's** default `primary_score.metric` for that benchmark.
+3. **Look up the value.** Read `metrics[primary_metric]` from the values the adapter
+   reported. The value **must be numeric** and is cast to a float
+   (see [Non-numeric metrics](#non-numeric-metrics) below).
+   - If the primary metric is **not present** in the reported metrics, **no `test`
+     block is produced** for that benchmark (the field is omitted).
+   - If the value is present but **not numeric**, the same thing happens — the `test`
+     block is omitted.
+4. **Choose the threshold.** Use `pass_criteria.threshold` from the job/collection
+   benchmark config. If unset, fall back to the **provider's** default
+   `pass_criteria.threshold` for that benchmark.
+   - If neither defines a threshold, **no `test` block is produced**.
+5. **Decide pass/fail.**
+
+   ```text
+   pass = primary_score >= threshold                       # default
+   pass = primary_score <= threshold   (if lower_is_better)
+   ```
+
+The resulting object is:
+
+```json
+{
+  "primary_score": 0.78,          // the reported value of the chosen metric
+  "primary_score_metric": "acc_norm",
+  "threshold": 0.25,
+  "pass": true
+}
+```
+
+:::note
+`primary_score` is simply the reported value of the **one** chosen metric — EvalHub
+does not average multiple metrics together at the benchmark level. Other metrics
+remain visible under `benchmarks[].metrics`.
+:::
+
+## Non-numeric metrics
+
+Scoring is purely arithmetic: the primary score must be a **number**, and the
+job-level aggregate is a weighted mean of numbers. EvalHub has **no notion of
+combining categorical, string, or boolean outcomes** into a `test` result.
+
+### What counts as numeric
+
+When EvalHub reads the primary metric's value, it casts it to a float and accepts
+only these types:
+
+| Accepted | Rejected |
+|----------|----------|
+| `float64`, `float32` | strings (**including numeric-looking strings** like `"0.78"`) |
+| `int`, `int32`, `int64` | booleans (`true` / `false`) |
+| | arrays and objects |
+| | `null` / absent |
+
+:::caution
+A numeric **string** such as `"0.78"` is **not** accepted. The value is cast by
+type, never parsed from text, so `"0.78"` is treated the same as any other
+non-numeric value. The adapter must report the metric as a JSON number
+(`0.78`), not a quoted string (`"0.78"`).
+:::
+
+JSON numbers arrive as `float64`, so any adapter that reports a plain numeric
+metric works without special handling.
+
+### What happens when the primary metric is non-numeric
+
+The effect cascades from the single benchmark up to the whole job:
+
+1. **Benchmark level.** If the chosen `primary_score.metric` value is non-numeric,
+   the benchmark's `test` computation fails the cast and produces **no `test`
+   block**. The failure is logged server-side, but the API response simply omits
+   `benchmarks[].test` for that benchmark. The raw value is still preserved under
+   `benchmarks[].metrics`.
+2. **Job level.** Any benchmark with no `test` block is **skipped** in the weighted
+   average — it contributes to neither the weighted sum nor the total weight, so it
+   does not drag the score up or down; it is simply absent from the calculation.
+3. **Whole job.** If *no* benchmark yields a numeric primary score (so no weights
+   accumulate), the job score cannot be computed and `results.test` is **omitted
+   entirely**.
+
+:::note
+This is a silent drop from the caller's perspective: a benchmark configured with a
+non-numeric primary metric will quietly disappear from both its own pass/fail and
+the job aggregate. If you expected a `test` block and don't see one, check that the
+adapter reports the chosen metric as a JSON number.
+:::
+
+### Working with non-numeric outputs
+
+- **Report numeric metrics for scoring.** If an adapter naturally emits a
+  categorical or textual result, convert it to a numeric metric (for example a
+  `0`/`1` pass indicator, a rate, or a normalized score) and point
+  `primary_score.metric` at that numeric field.
+- **Keep the rich output as passthrough.** Non-numeric values (labels, category
+  breakdowns, free-text notes) can still be reported and are retained under
+  `benchmarks[].metrics` — they are just ignored by scoring, not discarded.
+
+## How the job-level `test` is calculated
+
+`results.test` is computed **once**, when the overall job reaches the `completed`
+state. It is a **weighted arithmetic mean** of every benchmark's primary score:
+
+```text
+                 Σ ( weightᵢ × scoreᵢ )
+job.score  =  ─────────────────────────────
+                      Σ weightᵢ
+
+pass       =  job.score >= job.threshold
+```
+
+Where, for each benchmark `i`:
+
+- **`scoreᵢ`** is that benchmark's `test.primary_score`.
+  - If the benchmark's metric is `lower_is_better`, the contribution is inverted to
+    `1 - primary_score` so that a higher aggregate always means "better". (Because
+    of this inversion, the job-level comparison is always `>=`.)
+- **`weightᵢ`** is the benchmark's configured `weight`. A missing or `0` weight is
+  treated as `1`.
+
+Benchmarks that have **no `test` block** (for example, a missing primary metric or
+threshold) are **skipped** — they contribute to neither the numerator nor the
+denominator. If no weights accumulate at all (`Σ weightᵢ == 0`), the job score is
+not computed and `results.test` is omitted.
+
+### Worked example
+
+Two benchmarks, one higher-is-better and one lower-is-better:
+
+| Benchmark | primary_score | lower_is_better | weight | contribution |
+|-----------|---------------|-----------------|--------|--------------|
+| `arc_easy` | 0.78 | no | 2 | `2 × 0.78 = 1.56` |
+| `toxicity` | 0.10 | yes | 1 | `1 × (1 − 0.10) = 0.90` |
+
+```text
+job.score = (1.56 + 0.90) / (2 + 1) = 2.46 / 3 = 0.82
+```
+
+With a job threshold of `0.45`, `0.82 >= 0.45` → `pass: true`.
+
+## User overrides that affect the `test` results
+
+The scoring inputs — **primary metric**, **threshold**, **weight**, and
+**`lower_is_better`** — can each be set in several places. When more than one is
+present, the most specific wins.
+
+### Primary score metric
+
+Selects which metric becomes `primary_score` for a benchmark.
+
+| Priority | Source |
+|----------|--------|
+| 1 (highest) | `primary_score.metric` on the **job/collection benchmark** config |
+| 2 (fallback) | The **provider's** default `primary_score.metric` for that benchmark |
+
+If neither defines a metric, the benchmark gets **no `test` block**.
+
+### Per-benchmark threshold
+
+Determines whether a single benchmark passes.
+
+| Priority | Source |
+|----------|--------|
+| 1 (highest) | `pass_criteria.threshold` on the **job/collection benchmark** config |
+| 2 (fallback) | The **provider's** default `pass_criteria.threshold` for that benchmark |
+
+If neither defines a threshold, the benchmark gets **no `test` block** (and is
+therefore excluded from the job-level average).
+
+### Benchmark weight
+
+Controls each benchmark's influence on the job-level average.
+
+| Priority | Source |
+|----------|--------|
+| 1 (highest) | `weight` on the **job/collection benchmark** config |
+| 2 (fallback) | Default **`1`** (a `0` weight is also treated as `1`) |
+
+### Job-level threshold
+
+Determines whether the whole job passes.
+
+| Priority | Source | Example use case |
+|----------|--------|------------------|
+| 1 (highest) | `pass_criteria.threshold` on the **job request** | "For just this run, use a stricter bar of 0.9" |
+| 2 | `pass_criteria.threshold` on the **collection definition** | The collection's default bar |
+| 3 (fallback) | Hard-coded default **`0.5`** | Neither job nor collection defines one |
+
+### `lower_is_better`
+
+Set on a benchmark's `primary_score`. It changes two things:
+
+- **Per benchmark:** the pass comparison flips to `primary_score <= threshold`.
+- **Job level:** the benchmark's contribution is inverted to `1 - primary_score`
+  before it is weighted and averaged.
+
+Use it for metrics where a smaller number is better (for example
+`attack_success_rate` or a toxicity rate).
+
+### Example: overriding scoring on a job request
+
+```json
+POST /api/v1/evaluations/jobs
+
+{
+  "name": "stricter-safety-run",
+  "model": { "...": "..." },
+  "pass_criteria": { "threshold": 0.9 },
+  "collection": {
+    "id": "safety-and-fairness-v1",
+    "benchmarks": [
+      {
+        "id": "toxigen",
+        "provider_id": "lm_evaluation_harness",
+        "weight": 3,
+        "primary_score": { "metric": "acc", "lower_is_better": false },
+        "pass_criteria": { "threshold": 0.7 }
+      }
+    ]
+  }
+}
+```
+
+Here the job raises the overall bar to `0.9`, and re-weights/re-thresholds the
+`toxigen` benchmark just for this run, without changing the shared collection.
+
+## When the `test` section is missing
+
+The `test` block is deliberately omitted (rather than showing a misleading `0`) when:
+
+- the chosen **primary metric is not present** in the adapter's reported metrics, or
+- the primary metric value is **non-numeric** (see [Non-numeric metrics](#non-numeric-metrics)), or
+- **no threshold** can be resolved (neither the benchmark config nor the provider
+  defines one), or
+- (job level) **no benchmarks contributed** a valid weight/score.
+
+## Related
+
+- [Collections](/guides/collections/) — where weights, primary scores, and thresholds are configured, and the list of built-in collections and their thresholds.
+- [Evaluation Event Violations](/kubernetes/event-violations/) — how a failing benchmark `test` triggers a threshold-violation notification.
+- [Server API](/reference/server-api/) — the full evaluation job and results schema.
