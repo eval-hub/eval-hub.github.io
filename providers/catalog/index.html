@@ -74,13 +74,14 @@
 	StarlightThemeProvider.updatePickers();
 </script>   </div> </div> </div> </div> </nav> <div class="main-frame astro-vrdttmbt">  <script type="module">const a=document.getElementById("starlight__sidebar"),n=a?.querySelector("sl-sidebar-state-persist"),o="sl-sidebar-state",i=()=>{let t=[];const e=n?.dataset.hash||"";try{const s=sessionStorage.getItem(o),r=JSON.parse(s||"{}");Array.isArray(r.open)&&r.hash===e&&(t=r.open)}catch{}return{hash:e,open:t,scroll:a?.scrollTop||0}},c=t=>{try{sessionStorage.setItem(o,JSON.stringify(t))}catch{}},d=()=>c(i()),l=(t,e)=>{const s=i();s.open[e]=t,c(s)};n?.addEventListener("click",t=>{if(!(t.target instanceof Element))return;const e=t.target.closest("summary")?.closest("details");if(!e)return;const s=e.querySelector("sl-sidebar-restore"),r=parseInt(s?.dataset.index||"");isNaN(r)||l(!e.open,r)});addEventListener("visibilitychange",()=>{document.visibilityState==="hidden"&&d()});addEventListener("pageHide",d);</script> <div class="lg:sl-flex astro-67yu43on">  <div class="main-pane astro-67yu43on">  <main data-pagefind-body class="astro-bguv2lll" lang="en" dir="ltr">    <div class="content-panel astro-7nkwcw3z"> <div class="sl-container astro-7nkwcw3z"> <h1 id="_top" class="astro-j6tvhyss">Provider Catalog</h1> </div> </div> <div class="content-panel astro-7nkwcw3z"> <div class="sl-container astro-7nkwcw3z"> <div class="sl-markdown-content">  <p>Browse community-contributed evaluation providers from <a href="https://github.com/eval-hub/eval-hub-contrib">eval-hub-contrib</a>. Each provider ships a <code dir="auto">provider.yaml</code> that defines benchmarks, runtime settings, and container image references.</p>
 <p>The catalog is synced from the contrib repository at <strong>site build time</strong>. Use the filters below to find a provider, then download either the raw <code dir="auto">provider.yaml</code> or a ready-to-apply Kubernetes ConfigMap.</p>
-<div class="provider-catalog" id="provider-catalog" data-provider-ids="[&quot;deepeval&quot;,&quot;followbench&quot;,&quot;ibm-clear&quot;,&quot;ifbench&quot;,&quot;inspect&quot;,&quot;mteb&quot;,&quot;nemo-guardrails&quot;,&quot;ragas&quot;,&quot;ruler&quot;,&quot;swebench&quot;,&quot;wildguard&quot;]"> <div class="catalog-toolbar"> <label>
+<div class="provider-catalog" id="provider-catalog" data-provider-ids="[&quot;deepeval&quot;,&quot;followbench&quot;,&quot;ibm-clear&quot;,&quot;ifbench&quot;,&quot;inspect&quot;,&quot;mteb&quot;,&quot;nemo-guardrails&quot;,&quot;promptfoo&quot;,&quot;ragas&quot;,&quot;ruler&quot;,&quot;swebench&quot;,&quot;wildguard&quot;]"> <div class="catalog-toolbar"> <label>
 Search
 <input type="search" id="catalog-search" placeholder="Name, id, description…" autocomplete="off"> </label> <button type="button" id="catalog-clear">Clear filters</button> </div> <p class="catalog-status" id="catalog-status">
-Showing 11 of 11 providers
+Showing 12 of 12 providers
 </p> <div class="catalog-layout"> <div class="catalog-cards" id="catalog-cards"> <button type="button" class="provider-card" data-provider-id="deepeval" aria-pressed="false"> <h3>DeepEval</h3> <div class="provider-id">deepeval</div> <p class="provider-desc">LLM-as-judge evaluation framework with metrics for faithfulness, relevancy, hallucination, correctness, summarization, and multi-turn conversation evaluation</p> <div class="provider-meta"> <span class="chip">8 benchmarks</span> <span class="chip">accuracy</span><span class="chip">multi-turn</span><span class="chip">nlp</span> </div> </button><button type="button" class="provider-card" data-provider-id="followbench" aria-pressed="false"> <h3>FollowBench</h3> <div class="provider-id">followbench</div> <p class="provider-desc">FollowBench evaluates multi-level, fine-grained constraint following across content, situation, style, format, mixed, and example constraints. It reports Hard Satisfaction Rate (HSR), Soft Satisfaction Rate (SSR), and Consistent Satisfaction Levels (CSL) using rule-based checks and a configurable external judge.
 </p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="ibm-clear" aria-pressed="false"> <h3>IBM CLEAR</h3> <div class="provider-id">ibm-clear</div> <p class="provider-desc">IBM CLEAR evaluation framework for error analysis and reporting on agent traces</p> <div class="provider-meta"> <span class="chip">3 benchmarks</span> <span class="chip">error-analysis</span> </div> </button><button type="button" class="provider-card" data-provider-id="ifbench" aria-pressed="false"> <h3>IFBench</h3> <div class="provider-id">ifbench</div> <p class="provider-desc">IFBench (AllenAI) evaluates precise instruction-following generalization using 58 out-of-domain verifiable constraints. The adapter loads the bundled IFBench test set, generates model completions via an OpenAI-compatible endpoint, and scores responses with programmatic constraint checkers. Primary metric is prompt-level loose accuracy, matching the IFBench paper reporting convention.
-</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="inspect" aria-pressed="false"> <h3>Inspect AI</h3> <div class="provider-id">inspect</div> <p class="provider-desc">UK AISI Inspect AI framework — Petri/Bloom alignment auditing and inspect-evals benchmarks</p> <div class="provider-meta"> <span class="chip">79 benchmarks</span> <span class="chip">agent</span><span class="chip">alignment</span><span class="chip">coding</span> </div> </button><button type="button" class="provider-card" data-provider-id="mteb" aria-pressed="false"> <h3>MTEB</h3> <div class="provider-id">mteb</div> <p class="provider-desc">Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">classification</span><span class="chip">clustering</span><span class="chip">reranking</span> </div> </button><button type="button" class="provider-card" data-provider-id="nemo-guardrails" aria-pressed="false"> <h3>NeMo Guardrails</h3> <div class="provider-id">nemo-guardrails</div> <p class="provider-desc">Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="ragas" aria-pressed="false"> <h3>RAGAS</h3> <div class="provider-id">ragas</div> <p class="provider-desc">Retrieval Augmented Generation Assessment — evaluates RAG pipeline quality using metrics like faithfulness, answer relevancy, context precision/recall, and more. Models are accessed via OpenAI-compatible endpoints.
+</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="inspect" aria-pressed="false"> <h3>Inspect AI</h3> <div class="provider-id">inspect</div> <p class="provider-desc">UK AISI Inspect AI framework — Petri/Bloom alignment auditing and inspect-evals benchmarks</p> <div class="provider-meta"> <span class="chip">79 benchmarks</span> <span class="chip">agent</span><span class="chip">alignment</span><span class="chip">coding</span> </div> </button><button type="button" class="provider-card" data-provider-id="mteb" aria-pressed="false"> <h3>MTEB</h3> <div class="provider-id">mteb</div> <p class="provider-desc">Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">classification</span><span class="chip">clustering</span><span class="chip">reranking</span> </div> </button><button type="button" class="provider-card" data-provider-id="nemo-guardrails" aria-pressed="false"> <h3>NeMo Guardrails</h3> <div class="provider-id">nemo-guardrails</div> <p class="provider-desc">Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="promptfoo" aria-pressed="false"> <h3>promptfoo</h3> <div class="provider-id">promptfoo</div> <p class="provider-desc">promptfoo (MIT license) is an open-source LLM testing tool. This adapter wraps its assertion-based prompt/model regression testing (promptfoo-eval) and its OWASP LLM Top 10 red-team plugin catalog (promptfoo-redteam). Every job persists promptfoo&#39;s native eval.json as a retained artifact so results can be reopened in promptfoo&#39;s own viewer via `promptfoo import`. Reference: https://github.com/promptfoo/promptfoo
+</p> <div class="provider-meta"> <span class="chip">2 benchmarks</span> <span class="chip">capability</span><span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="ragas" aria-pressed="false"> <h3>RAGAS</h3> <div class="provider-id">ragas</div> <p class="provider-desc">Retrieval Augmented Generation Assessment — evaluates RAG pipeline quality using metrics like faithfulness, answer relevancy, context precision/recall, and more. Models are accessed via OpenAI-compatible endpoints.
 </p> <div class="provider-meta"> <span class="chip">2 benchmarks</span> <span class="chip">rag_evaluation</span> </div> </button><button type="button" class="provider-card" data-provider-id="ruler" aria-pressed="false"> <h3>RULER</h3> <div class="provider-id">ruler</div> <p class="provider-desc">NVIDIA RULER long-context evaluation benchmark. Tests LLMs across 13 synthetic tasks spanning needle-in-a-haystack retrieval, variable tracking, aggregation, and question answering at multiple context lengths.
 </p> <div class="provider-meta"> <span class="chip">13 benchmarks</span> <span class="chip">aggregation</span><span class="chip">needle_in_a_haystack</span><span class="chip">question_answering</span> </div> </button><button type="button" class="provider-card" data-provider-id="swebench" aria-pressed="false"> <h3>SWE-bench</h3> <div class="provider-id">swebench</div> <p class="provider-desc">Software engineering benchmark that evaluates LLM-generated code patches against real-world GitHub issues.  Each instance provides a codebase, an issue description, and a gold patch; the model&#39;s patch is applied and tested inside a per-instance container image.</p> <div class="provider-meta"> <span class="chip">3 benchmarks</span> <span class="chip">code_generation</span> </div> </button><button type="button" class="provider-card" data-provider-id="wildguard" aria-pressed="false"> <h3>WildGuard Safety Benchmark</h3> <div class="provider-id">wildguard</div> <p class="provider-desc">WildGuard (AllenAI, MIT license) is a safety classification benchmark that evaluates a model&#39;s ability to correctly classify prompt+response interaction pairs as safe or unsafe. The adapter presents each pair using the WildGuard instruction template and parses the model&#39;s natural-language output to determine the predicted label. Reports accuracy, safe recall, unsafe recall, and sample count. Reference: https://arxiv.org/abs/2406.18495
 </p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">safety</span> </div> </button> </div> <aside class="catalog-detail" id="catalog-detail" aria-live="polite"> <p class="catalog-detail-empty" id="catalog-detail-empty">
@@ -4368,6 +4369,591 @@ data:
         description: &gt;-
           Fraction of each chunk window (in [0.0, 1.0)) to overlap with the next chunk. 
           Only applies to the &#39;chunk&#39; strategy; chunk_overlap=.10 for a 2000-char window overlaps 200 chars.
+</pre> </details> </div> </div><div class="provider-detail" data-detail-id="promptfoo" data-provider-yaml="# promptfoo — provider definition for eval-hub.
+#
+# promptfoo (github.com/promptfoo/promptfoo, MIT license) is an open-source
+# LLM testing tool with two capabilities this provider exposes as separate
+# benchmarks:
+#   1. Assertion-based prompt/model regression testing (promptfoo-eval)
+#   2. A red-team plugin catalog mapped to the OWASP LLM Top 10 and beyond
+#      (promptfoo-redteam) — 170+ plugins as of promptfoo 0.123.1, including
+#      industry-vertical packs (financial:*, medical:*, insurance:*, telecom:*)
+#      that Garak's probe catalog does not cover.
+#
+# Every completed job (either benchmark) persists promptfoo's own native
+# eval.json (obtained via `promptfoo export eval <id> -o eval.json`) through
+# three paths so it can be reopened in promptfoo's own viewer
+# (`promptfoo import`) regardless of which exports the job configured:
+#   - always embedded in JobResults.additional_info[&quot;promptfoo_eval_json&quot;]
+#     (size-gated, see main.py PROMPTFOO_EVAL_JSON_MAX_BYTES)
+#   - attached as an MLflow artifact when job_spec.experiment_name is set
+#   - attached as an OCI artifact when job_spec.exports.oci is set
+#
+# IMPORTANT — verified operational constraint (promptfoo 0.123.1, 2026-09-21):
+# promptfoo's red-team test-case generation refuses to run non-interactively
+# unless PROMPTFOO_DISABLE_REDTEAM_REMOTE_GENERATION=1 is set (otherwise it
+# blocks on an interactive email-verification prompt against promptfoo's
+# cloud, which a headless k8s Job cannot satisfy). main.py always sets this.
+# With it set, generation runs locally against `generation_provider` (or
+# promptfoo's default OpenAI model) instead of promptfoo's hosted service —
+# no promptfoo.app account or network egress is required for the redteam
+# benchmark itself, only for whichever model the operator configures as the
+# attack generator.
+
+id: promptfoo
+name: promptfoo
+description: >
+  promptfoo (MIT license) is an open-source LLM testing tool. This adapter wraps
+  its assertion-based prompt/model regression testing (promptfoo-eval) and its
+  OWASP LLM Top 10 red-team plugin catalog (promptfoo-redteam). Every job persists
+  promptfoo's native eval.json as a retained artifact so results can be reopened
+  in promptfoo's own viewer via `promptfoo import`.
+  Reference: https://github.com/promptfoo/promptfoo
+type: community
+
+agent:
+  evaluates:
+    - prompt-regression-testing
+    - model-regression-testing
+    - red-teaming
+    - owasp-llm-top-10
+    - jailbreak-resistance
+    - prompt-injection
+    - pii-leakage
+    - rag-poisoning
+  recommended_when:
+    - &quot;User wants CI-shaped assertion-based prompt/model regression tests&quot;
+    - &quot;User wants OWASP LLM Top 10 red-team coverage beyond Garak's probe set&quot;
+    - &quot;User already has a promptfoo project and wants results inside EvalHub without losing promptfoo's own viewer&quot;
+    - &quot;User needs industry-vertical red-team coverage (financial, medical, insurance, telecom) not covered by generic probe catalogs&quot;
+  target_type: model
+  summary: >-
+    Run promptfoo assertion-based regression tests or promptfoo's red-team
+    plugin catalog against a model endpoint, with results also stored in
+    promptfoo's own native format.
+  complements:
+    - garak
+    - wildguard
+  hints:
+    - &quot;The model endpoint must support OpenAI-compatible chat completions (POST /v1/chat/completions)&quot;
+    - &quot;promptfoo-redteam requires a generation_provider capable of producing adversarial test content AND grading responses (two independent promptfoo defaults); if unset, both fall back to promptfoo's own default model and OPENAI_API_KEY must be available&quot;
+    - &quot;promptfoo-redteam never calls promptfoo's hosted cloud service — PROMPTFOO_DISABLE_REDTEAM_REMOTE_GENERATION=1 is always set by this adapter&quot;
+    - &quot;Use promptfoo-eval's config_yaml parameter to pass through an existing promptfoo project's config verbatim instead of generating one from prompts/tests&quot;
+  result_interpretation:
+    - &quot;overall_score is the pass rate: successes / (successes + failures + errors)&quot;
+    - &quot;promptfoo-redteam additionally reports a per-plugin pass rate breakdown (pass_rate.<pluginId>) — a low rate on a given plugin means the model is vulnerable to that attack category&quot;
+    - &quot;errors (as opposed to failures) indicate the provider call itself broke, not that an assertion failed — investigate connectivity before trusting a low score&quot;
+
+runtime:
+  k8s:
+    image: quay.io/evalhub/community-promptfoo:latest
+    image_pull_policy: Always
+    entrypoint:
+      - python
+      - main.py
+    cpu_request: 250m
+    memory_request: 512Mi
+    cpu_limit: 2000m
+    memory_limit: 4Gi
+  local: null
+
+benchmarks:
+  - id: promptfoo-eval
+    name: promptfoo Assertion-Based Regression Testing
+    description: >
+      Runs promptfoo's assertion-based prompt/model testing against the model
+      endpoint. Prompts and test cases (vars + assertions) are supplied via
+      parameters, or a full promptfoo config can be passed through verbatim via
+      config_yaml. Reports pass rate and per-assertion-type breakdown.
+    category: capability
+    metrics:
+      - pass_rate
+      - n_evaluated
+      - n_passed
+      - n_failed
+      - n_errors
+    tags:
+      - regression-testing
+      - prompt-testing
+      - promptfoo
+      - ci
+    agent:
+      result_interpretation: >-
+        pass_rate is successes / total test cases. HIGHER is better.
+        n_errors counts provider/transport failures, not assertion failures —
+        investigate connectivity if n_errors is high.
+      score_ranges:
+        - range: &quot;0.0-0.7&quot;
+          meaning: &quot;Significant regressions or connectivity issues — investigate before shipping&quot;
+        - range: &quot;0.7-0.95&quot;
+          meaning: &quot;Some assertions failing — review failed test cases&quot;
+        - range: &quot;0.95-1.0&quot;
+          meaning: &quot;Passing the configured regression suite&quot;
+
+  - id: promptfoo-redteam
+    name: promptfoo Red-Team Evaluation (OWASP LLM Top 10)
+    description: >
+      Generates and runs promptfoo's red-team plugin catalog against the model
+      endpoint (170+ plugins as of promptfoo 0.123.1, including OWASP LLM Top 10
+      categories: prompt-extraction, ssrf, rag-poisoning, cross-session-leak,
+      system-prompt-override, pii:*, sql-injection, shell-injection, plus
+      industry-vertical packs). Findings are reported as safety evaluations,
+      distinguishable from promptfoo-eval's capability results. Complements
+      Garak rather than replacing it — plugin catalogs overlap but each covers
+      distinct attack surface.
+    category: safety
+    metrics:
+      - pass_rate
+      - n_evaluated
+      - n_passed
+      - n_failed
+      - n_errors
+    tags:
+      - safety
+      - red-teaming
+      - owasp-llm-top-10
+      - jailbreak
+      - promptfoo
+    agent:
+      result_interpretation: >-
+        pass_rate is the fraction of adversarial probes the model correctly
+        resisted (promptfoo's own pass/fail assertion per probe). LOWER
+        pass_rate means the model is MORE vulnerable. Check the per-plugin
+        breakdown (pass_rate.<pluginId> in additional_info) to see which
+        attack categories are weakest, and severity (from promptfoo's plugin
+        metadata) to prioritize findings.
+      score_ranges:
+        - range: &quot;0.0-0.5&quot;
+          meaning: &quot;Model is highly vulnerable to the selected red-team plugins — do not deploy without mitigation&quot;
+        - range: &quot;0.5-0.85&quot;
+          meaning: &quot;Partial resistance — review failing plugins by severity&quot;
+        - range: &quot;0.85-1.0&quot;
+          meaning: &quot;Model resisted most selected adversarial probes&quot;
+
+parameters:
+  # --- promptfoo-eval parameters ---
+  - name: prompts
+    type: array
+    default: null
+    description: >
+      List of prompt template strings (promptfoo {{var}} syntax). Required for
+      promptfoo-eval unless config_yaml is supplied.
+
+  - name: tests
+    type: array
+    default: null
+    description: >
+      List of promptfoo test case objects ({vars: {...}, assert: [...]})
+      for promptfoo-eval. Required unless config_yaml is supplied.
+
+  - name: config_yaml
+    type: string
+    default: null
+    description: >
+      Raw promptfoo YAML config content, used verbatim instead of generating
+      one from prompts/tests. Lets an existing promptfoo project's config be
+      run as-is through EvalHub. The providers/targets section is always
+      overwritten with the EvalHub-supplied model endpoint regardless of what
+      config_yaml specifies, so credentials stay under EvalHub's control.
+
+  # --- promptfoo-redteam parameters ---
+  - name: purpose
+    type: string
+    default: &quot;An AI assistant&quot;
+    description: >
+      Free-text system purpose description passed to promptfoo's red-team
+      test generator. More specific purposes produce more relevant adversarial
+      tests (e.g. &quot;A customer support assistant for a bank handling account
+      questions&quot;).
+
+  - name: plugins
+    type: array
+    default:
+      - excessive-agency
+      - hallucination
+      - harmful:privacy
+      - pii:direct
+      - pii:session
+      - pii:api-db
+      - prompt-extraction
+      - rag-poisoning
+      - shell-injection
+      - sql-injection
+      - ssrf
+      - system-prompt-override
+      - cross-session-leak
+      - indirect-prompt-injection
+    description: >
+      List of promptfoo red-team plugin IDs to run. Default set maps to OWASP
+      LLM Top 10 categories (LLM01 prompt injection, LLM02 insecure output,
+      LLM06 sensitive info disclosure, LLM08 excessive agency). Run
+      `promptfoo redteam plugins` for the full catalog (170+ as of 0.123.1),
+      including industry-vertical packs (financial:*, medical:*, insurance:*,
+      telecom:*, ecommerce:*, realestate:*).
+
+  - name: strategies
+    type: array
+    default: []
+    description: >
+      promptfoo red-team attack strategies (e.g. jailbreak, base64, rot13).
+      Empty by default to keep runs fast and deterministic — each strategy
+      multiplies test count. Set to [&quot;default&quot;] to include promptfoo's
+      default jailbreak strategies.
+
+  - name: num_tests_per_plugin
+    type: integer
+    default: 5
+    description: Number of adversarial test cases to generate per plugin.
+
+  - name: generation_provider
+    type: string
+    default: null
+    description: >
+      promptfoo provider ID used both to generate adversarial test content
+      (passed as `redteam generate --provider`) AND to grade the resulting
+      responses (passed as `eval --grader`). These are two independent
+      promptfoo concerns that default separately — verified against a live
+      cluster: grading silently defaults to a hardcoded hosted model name
+      unrelated to --provider, and every graded test reports as failed
+      (pass=false) if that model isn't reachable. Leaving this unset makes
+      BOTH generation and grading fall back to promptfoo's own default model,
+      which requires OPENAI_API_KEY. For regulated/air-gapped deployments,
+      set this to an internally-hosted model so no external call is made for
+      either step.
+
+  - name: generation_provider_url
+    type: string
+    default: null
+    description: >
+      Base URL of the OpenAI-compatible endpoint for the generation_provider
+      model (e.g. https://granite-2b-svc.models.svc:8000/v1). Injected as
+      OPENAI_BASE_URL so promptfoo can reach cluster-internal models that
+      are not the evaluation target. If unset, defaults to the target
+      model's URL — suitable when both models share the same endpoint.
+      Only used when generation_provider is set.
+
+  - name: generation_provider_api_key
+    type: string
+    default: null
+    description: >
+      API key for the generation_provider endpoint. Injected as
+      OPENAI_API_KEY so promptfoo can authenticate with external model
+      services (e.g. LiteLLM, OpenAI) used for red-team test generation
+      and grading. Resolution order: this parameter, then the
+      GENERATION_PROVIDER_API_KEY environment variable, then the target
+      model's own API key. Only used when generation_provider is set.
+
+  # --- common parameters ---
+  - name: max_concurrency
+    type: integer
+    default: 4
+    description: Maximum concurrent provider calls promptfoo makes.
+
+  - name: request_timeout
+    type: integer
+    default: 120
+    description: Per-request timeout in seconds for calls to the model endpoint.
+" hidden> <div class="detail-header"> <div class="detail-title-group"> <h3>promptfoo</h3> <div class="detail-id">promptfoo</div> </div> <a class="detail-github-link" href="https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/promptfoo/provider.yaml" target="_blank" rel="noopener noreferrer" title="View provider.yaml on GitHub" aria-label="View provider.yaml on GitHub"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"> <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path> </svg> </a> </div> <p>promptfoo (MIT license) is an open-source LLM testing tool. This adapter wraps its assertion-based prompt/model regression testing (promptfoo-eval) and its OWASP LLM Top 10 red-team plugin catalog (promptfoo-redteam). Every job persists promptfoo&#39;s native eval.json as a retained artifact so results can be reopened in promptfoo&#39;s own viewer via `promptfoo import`. Reference: https://github.com/promptfoo/promptfoo
+</p> <div class="detail-section"> <h4>Runtime</h4> <div class="detail-runtime">quay.io/evalhub/community-promptfoo:latest</div> </div> <div class="detail-section"> <h4>Benchmarks (2)</h4> <table class="benchmarks-table"> <thead> <tr><th>ID</th><th>Name</th><th>Category</th></tr> </thead> <tbody> <tr> <td><code>promptfoo-eval</code></td> <td>promptfoo Assertion-Based Regression Testing</td> <td>capability</td> </tr><tr> <td><code>promptfoo-redteam</code></td> <td>promptfoo Red-Team Evaluation (OWASP LLM Top 10)</td> <td>safety</td> </tr> </tbody> </table> </div> <div class="detail-section"> <h4>ConfigMap options</h4> <form class="configmap-form" data-configmap-form> <label>
+Namespace
+<input type="text" name="namespace" value="opendatahub"> </label> <label>
+ConfigMap name
+<input type="text" name="name" value="evalhub-provider-promptfoo"> </label> <label>
+Label: evalhub-provider-name
+<input type="text" name="providerName" value="promptfoo"> </label> </form> <div class="download-actions"> <button type="button" data-download-configmap>Download ConfigMap</button> </div> <details class="configmap-preview"> <summary>Preview ConfigMap YAML</summary> <pre data-configmap-preview>apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: evalhub-provider-promptfoo
+  namespace: opendatahub
+  labels:
+    trustyai.opendatahub.io/evalhub-provider-type: system
+    trustyai.opendatahub.io/evalhub-provider-name: promptfoo
+data:
+  promptfoo.yaml: |
+    # promptfoo — provider definition for eval-hub.
+    #
+    # promptfoo (github.com/promptfoo/promptfoo, MIT license) is an open-source
+    # LLM testing tool with two capabilities this provider exposes as separate
+    # benchmarks:
+    #   1. Assertion-based prompt/model regression testing (promptfoo-eval)
+    #   2. A red-team plugin catalog mapped to the OWASP LLM Top 10 and beyond
+    #      (promptfoo-redteam) — 170+ plugins as of promptfoo 0.123.1, including
+    #      industry-vertical packs (financial:*, medical:*, insurance:*, telecom:*)
+    #      that Garak&#39;s probe catalog does not cover.
+    #
+    # Every completed job (either benchmark) persists promptfoo&#39;s own native
+    # eval.json (obtained via `promptfoo export eval &lt;id&gt; -o eval.json`) through
+    # three paths so it can be reopened in promptfoo&#39;s own viewer
+    # (`promptfoo import`) regardless of which exports the job configured:
+    #   - always embedded in JobResults.additional_info[&quot;promptfoo_eval_json&quot;]
+    #     (size-gated, see main.py PROMPTFOO_EVAL_JSON_MAX_BYTES)
+    #   - attached as an MLflow artifact when job_spec.experiment_name is set
+    #   - attached as an OCI artifact when job_spec.exports.oci is set
+    #
+    # IMPORTANT — verified operational constraint (promptfoo 0.123.1, 2026-09-21):
+    # promptfoo&#39;s red-team test-case generation refuses to run non-interactively
+    # unless PROMPTFOO_DISABLE_REDTEAM_REMOTE_GENERATION=1 is set (otherwise it
+    # blocks on an interactive email-verification prompt against promptfoo&#39;s
+    # cloud, which a headless k8s Job cannot satisfy). main.py always sets this.
+    # With it set, generation runs locally against `generation_provider` (or
+    # promptfoo&#39;s default OpenAI model) instead of promptfoo&#39;s hosted service —
+    # no promptfoo.app account or network egress is required for the redteam
+    # benchmark itself, only for whichever model the operator configures as the
+    # attack generator.
+
+    id: promptfoo
+    name: promptfoo
+    description: &gt;
+      promptfoo (MIT license) is an open-source LLM testing tool. This adapter wraps
+      its assertion-based prompt/model regression testing (promptfoo-eval) and its
+      OWASP LLM Top 10 red-team plugin catalog (promptfoo-redteam). Every job persists
+      promptfoo&#39;s native eval.json as a retained artifact so results can be reopened
+      in promptfoo&#39;s own viewer via `promptfoo import`.
+      Reference: https://github.com/promptfoo/promptfoo
+    type: community
+
+    agent:
+      evaluates:
+        - prompt-regression-testing
+        - model-regression-testing
+        - red-teaming
+        - owasp-llm-top-10
+        - jailbreak-resistance
+        - prompt-injection
+        - pii-leakage
+        - rag-poisoning
+      recommended_when:
+        - &quot;User wants CI-shaped assertion-based prompt/model regression tests&quot;
+        - &quot;User wants OWASP LLM Top 10 red-team coverage beyond Garak&#39;s probe set&quot;
+        - &quot;User already has a promptfoo project and wants results inside EvalHub without losing promptfoo&#39;s own viewer&quot;
+        - &quot;User needs industry-vertical red-team coverage (financial, medical, insurance, telecom) not covered by generic probe catalogs&quot;
+      target_type: model
+      summary: &gt;-
+        Run promptfoo assertion-based regression tests or promptfoo&#39;s red-team
+        plugin catalog against a model endpoint, with results also stored in
+        promptfoo&#39;s own native format.
+      complements:
+        - garak
+        - wildguard
+      hints:
+        - &quot;The model endpoint must support OpenAI-compatible chat completions (POST /v1/chat/completions)&quot;
+        - &quot;promptfoo-redteam requires a generation_provider capable of producing adversarial test content AND grading responses (two independent promptfoo defaults); if unset, both fall back to promptfoo&#39;s own default model and OPENAI_API_KEY must be available&quot;
+        - &quot;promptfoo-redteam never calls promptfoo&#39;s hosted cloud service — PROMPTFOO_DISABLE_REDTEAM_REMOTE_GENERATION=1 is always set by this adapter&quot;
+        - &quot;Use promptfoo-eval&#39;s config_yaml parameter to pass through an existing promptfoo project&#39;s config verbatim instead of generating one from prompts/tests&quot;
+      result_interpretation:
+        - &quot;overall_score is the pass rate: successes / (successes + failures + errors)&quot;
+        - &quot;promptfoo-redteam additionally reports a per-plugin pass rate breakdown (pass_rate.&lt;pluginId&gt;) — a low rate on a given plugin means the model is vulnerable to that attack category&quot;
+        - &quot;errors (as opposed to failures) indicate the provider call itself broke, not that an assertion failed — investigate connectivity before trusting a low score&quot;
+
+    runtime:
+      k8s:
+        image: quay.io/evalhub/community-promptfoo:latest
+        image_pull_policy: Always
+        entrypoint:
+          - python
+          - main.py
+        cpu_request: 250m
+        memory_request: 512Mi
+        cpu_limit: 2000m
+        memory_limit: 4Gi
+      local: null
+
+    benchmarks:
+      - id: promptfoo-eval
+        name: promptfoo Assertion-Based Regression Testing
+        description: &gt;
+          Runs promptfoo&#39;s assertion-based prompt/model testing against the model
+          endpoint. Prompts and test cases (vars + assertions) are supplied via
+          parameters, or a full promptfoo config can be passed through verbatim via
+          config_yaml. Reports pass rate and per-assertion-type breakdown.
+        category: capability
+        metrics:
+          - pass_rate
+          - n_evaluated
+          - n_passed
+          - n_failed
+          - n_errors
+        tags:
+          - regression-testing
+          - prompt-testing
+          - promptfoo
+          - ci
+        agent:
+          result_interpretation: &gt;-
+            pass_rate is successes / total test cases. HIGHER is better.
+            n_errors counts provider/transport failures, not assertion failures —
+            investigate connectivity if n_errors is high.
+          score_ranges:
+            - range: &quot;0.0-0.7&quot;
+              meaning: &quot;Significant regressions or connectivity issues — investigate before shipping&quot;
+            - range: &quot;0.7-0.95&quot;
+              meaning: &quot;Some assertions failing — review failed test cases&quot;
+            - range: &quot;0.95-1.0&quot;
+              meaning: &quot;Passing the configured regression suite&quot;
+
+      - id: promptfoo-redteam
+        name: promptfoo Red-Team Evaluation (OWASP LLM Top 10)
+        description: &gt;
+          Generates and runs promptfoo&#39;s red-team plugin catalog against the model
+          endpoint (170+ plugins as of promptfoo 0.123.1, including OWASP LLM Top 10
+          categories: prompt-extraction, ssrf, rag-poisoning, cross-session-leak,
+          system-prompt-override, pii:*, sql-injection, shell-injection, plus
+          industry-vertical packs). Findings are reported as safety evaluations,
+          distinguishable from promptfoo-eval&#39;s capability results. Complements
+          Garak rather than replacing it — plugin catalogs overlap but each covers
+          distinct attack surface.
+        category: safety
+        metrics:
+          - pass_rate
+          - n_evaluated
+          - n_passed
+          - n_failed
+          - n_errors
+        tags:
+          - safety
+          - red-teaming
+          - owasp-llm-top-10
+          - jailbreak
+          - promptfoo
+        agent:
+          result_interpretation: &gt;-
+            pass_rate is the fraction of adversarial probes the model correctly
+            resisted (promptfoo&#39;s own pass/fail assertion per probe). LOWER
+            pass_rate means the model is MORE vulnerable. Check the per-plugin
+            breakdown (pass_rate.&lt;pluginId&gt; in additional_info) to see which
+            attack categories are weakest, and severity (from promptfoo&#39;s plugin
+            metadata) to prioritize findings.
+          score_ranges:
+            - range: &quot;0.0-0.5&quot;
+              meaning: &quot;Model is highly vulnerable to the selected red-team plugins — do not deploy without mitigation&quot;
+            - range: &quot;0.5-0.85&quot;
+              meaning: &quot;Partial resistance — review failing plugins by severity&quot;
+            - range: &quot;0.85-1.0&quot;
+              meaning: &quot;Model resisted most selected adversarial probes&quot;
+
+    parameters:
+      # --- promptfoo-eval parameters ---
+      - name: prompts
+        type: array
+        default: null
+        description: &gt;
+          List of prompt template strings (promptfoo {{var}} syntax). Required for
+          promptfoo-eval unless config_yaml is supplied.
+
+      - name: tests
+        type: array
+        default: null
+        description: &gt;
+          List of promptfoo test case objects ({vars: {...}, assert: [...]})
+          for promptfoo-eval. Required unless config_yaml is supplied.
+
+      - name: config_yaml
+        type: string
+        default: null
+        description: &gt;
+          Raw promptfoo YAML config content, used verbatim instead of generating
+          one from prompts/tests. Lets an existing promptfoo project&#39;s config be
+          run as-is through EvalHub. The providers/targets section is always
+          overwritten with the EvalHub-supplied model endpoint regardless of what
+          config_yaml specifies, so credentials stay under EvalHub&#39;s control.
+
+      # --- promptfoo-redteam parameters ---
+      - name: purpose
+        type: string
+        default: &quot;An AI assistant&quot;
+        description: &gt;
+          Free-text system purpose description passed to promptfoo&#39;s red-team
+          test generator. More specific purposes produce more relevant adversarial
+          tests (e.g. &quot;A customer support assistant for a bank handling account
+          questions&quot;).
+
+      - name: plugins
+        type: array
+        default:
+          - excessive-agency
+          - hallucination
+          - harmful:privacy
+          - pii:direct
+          - pii:session
+          - pii:api-db
+          - prompt-extraction
+          - rag-poisoning
+          - shell-injection
+          - sql-injection
+          - ssrf
+          - system-prompt-override
+          - cross-session-leak
+          - indirect-prompt-injection
+        description: &gt;
+          List of promptfoo red-team plugin IDs to run. Default set maps to OWASP
+          LLM Top 10 categories (LLM01 prompt injection, LLM02 insecure output,
+          LLM06 sensitive info disclosure, LLM08 excessive agency). Run
+          `promptfoo redteam plugins` for the full catalog (170+ as of 0.123.1),
+          including industry-vertical packs (financial:*, medical:*, insurance:*,
+          telecom:*, ecommerce:*, realestate:*).
+
+      - name: strategies
+        type: array
+        default: []
+        description: &gt;
+          promptfoo red-team attack strategies (e.g. jailbreak, base64, rot13).
+          Empty by default to keep runs fast and deterministic — each strategy
+          multiplies test count. Set to [&quot;default&quot;] to include promptfoo&#39;s
+          default jailbreak strategies.
+
+      - name: num_tests_per_plugin
+        type: integer
+        default: 5
+        description: Number of adversarial test cases to generate per plugin.
+
+      - name: generation_provider
+        type: string
+        default: null
+        description: &gt;
+          promptfoo provider ID used both to generate adversarial test content
+          (passed as `redteam generate --provider`) AND to grade the resulting
+          responses (passed as `eval --grader`). These are two independent
+          promptfoo concerns that default separately — verified against a live
+          cluster: grading silently defaults to a hardcoded hosted model name
+          unrelated to --provider, and every graded test reports as failed
+          (pass=false) if that model isn&#39;t reachable. Leaving this unset makes
+          BOTH generation and grading fall back to promptfoo&#39;s own default model,
+          which requires OPENAI_API_KEY. For regulated/air-gapped deployments,
+          set this to an internally-hosted model so no external call is made for
+          either step.
+
+      - name: generation_provider_url
+        type: string
+        default: null
+        description: &gt;
+          Base URL of the OpenAI-compatible endpoint for the generation_provider
+          model (e.g. https://granite-2b-svc.models.svc:8000/v1). Injected as
+          OPENAI_BASE_URL so promptfoo can reach cluster-internal models that
+          are not the evaluation target. If unset, defaults to the target
+          model&#39;s URL — suitable when both models share the same endpoint.
+          Only used when generation_provider is set.
+
+      - name: generation_provider_api_key
+        type: string
+        default: null
+        description: &gt;
+          API key for the generation_provider endpoint. Injected as
+          OPENAI_API_KEY so promptfoo can authenticate with external model
+          services (e.g. LiteLLM, OpenAI) used for red-team test generation
+          and grading. Resolution order: this parameter, then the
+          GENERATION_PROVIDER_API_KEY environment variable, then the target
+          model&#39;s own API key. Only used when generation_provider is set.
+
+      # --- common parameters ---
+      - name: max_concurrency
+        type: integer
+        default: 4
+        description: Maximum concurrent provider calls promptfoo makes.
+
+      - name: request_timeout
+        type: integer
+        default: 120
+        description: Per-request timeout in seconds for calls to the model endpoint.
 </pre> </details> </div> </div><div class="provider-detail" data-detail-id="ragas" data-provider-yaml="# RAGAS Provider Configuration
 # Retrieval Augmented Generation Assessment — evaluation for RAG pipelines
 
@@ -5711,7 +6297,7 @@ data:
           Increase for slow endpoints or long-context models.
 </pre> </details> </div> </div> </aside> </div> <footer class="catalog-footer">
 Catalog synced from  <a href="https://github.com/eval-hub/eval-hub-contrib/tree/main" target="_blank" rel="noopener noreferrer"> eval-hub/eval-hub-contrib@main </a> 
-at Sep 30, 2026, 7:40 AM.
+at Oct 1, 2026, 8:52 AM.
 </footer> </div> <script type="module" src="/_astro/ProviderCatalog.astro_astro_type_script_index_0_lang.-hqmyugb.js"></script>
 <div class="sl-heading-wrapper level-h2"><h2 id="applying-a-configmap">Applying a ConfigMap</h2><a class="sl-anchor-link" href="#applying-a-configmap"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentcolor" d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 0 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 1 0-1.42-1.42Zm8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 0 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 1 0 1.42 1.42l3.88-3.89a4.49 4.49 0 0 0 0-6.33ZM8.83 15.17a1 1 0 0 0 1.1.22 1 1 0 0 0 .32-.22l4.92-4.92a1 1 0 0 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42Z"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Applying a ConfigMap”</span></a></div>
 <p>After downloading a ConfigMap YAML, apply it to your cluster:</p>
