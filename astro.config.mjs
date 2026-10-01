@@ -106,6 +106,7 @@ export default defineConfig({
             { label: 'Job Lifecycle & States', slug: 'guides/job-lifecycle' },
             { label: 'Results & Scoring', slug: 'guides/results-and-scoring' },
             { label: 'Collections', slug: 'guides/collections' },
+            { label: 'Administration', slug: 'guides/administration' },
             { label: 'Hardware Profiles', slug: 'guides/hardware-profiles' },
             { label: 'OpenTelemetry', slug: 'guides/opentelemetry' },
           ],
