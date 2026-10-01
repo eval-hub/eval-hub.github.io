@@ -94,16 +94,18 @@ Finally, query the running service. Replace the route, namespace, and authentica
 ```bash
 EVALHUB_URL="https://$(oc get route evalhub -n evalhub -o jsonpath='{.spec.host}')"
 
-curl -sk "$EVALHUB_URL/api/v1/evaluations/collections/safety-and-fairness-v1" \
+curl -s "$EVALHUB_URL/api/v1/evaluations/collections/safety-and-fairness-v1" \
   -H "Authorization: Bearer $(oc whoami -t)" | jq '{id: .resource.id, curation_order}'
 ```
 
 To verify ordering across all system collections, request the explicit curation sort:
 
 ```bash
-curl -sk "$EVALHUB_URL/api/v1/evaluations/collections?scope=system&sort_by=curation_order" \
+curl -s "$EVALHUB_URL/api/v1/evaluations/collections?scope=system&sort_by=curation_order" \
   -H "Authorization: Bearer $(oc whoami -t)" | jq '.items[] | {id: .resource.id, curation_order}'
 ```
+
+These commands verify the route's TLS certificate. If your cluster uses a private CA that is not in the client's trust store, pass its certificate with `--cacert /path/to/ca.crt` on each command.
 
 When `sort_by=curation_order` is requested, positive values are sorted in ascending order and zero or absent values are placed last. Omitting `sort_by` preserves the default collection ordering.
 
