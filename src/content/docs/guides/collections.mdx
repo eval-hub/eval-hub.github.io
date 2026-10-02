@@ -35,17 +35,21 @@ The pass threshold can be set in multiple places. When more than one is present,
 
 ## System vs tenant collections
 
-EvalHub ships with **system collections** (out-of-the-box) that are available to all tenants. Tenant users can also create their own **tenant collections**.
+EvalHub exposes two collection scopes. The `resource` object on every response identifies the collection ID, owner, tenant, and timestamps.
 
 | | System collections | Tenant collections |
 |--|--------------------|--------------------|
-| **Created by** | Loaded from server config (`config/collections/`) at startup | Created via API by users |
-| **Owner** | `system` | The creating user |
-| **Visibility** | All tenants | Only the creating tenant |
-| **Mutable** | Read-only (cannot update or delete) | Fully mutable |
+| **Created by** | Installed and configured by an administrator | Created or copied through the API |
+| **`resource.owner`** | `system` | The creating user |
+| **Visibility** | Available across tenants | Available within the owning tenant |
+| **Mutable through the API** | No | Yes |
 | **Listing** | `scope=system` filter | `scope=tenant` filter |
 
-### Built-in collections
+When `scope` is omitted, the list endpoint returns both scopes visible to the requesting tenant.
+
+System collections are read-only through the collection API. `PUT`, `PATCH`, and `DELETE` attempts return `403 Forbidden`. To customize a system collection, [copy it to a tenant collection](#copying-a-collection) first. Administrators of operator-managed EvalHub deployments can control which system collections are installed and their curation priority through the [Administration guide](/guides/administration/).
+
+### Built-in collections in the current catalog
 
 | Collection | Category | Pass threshold | Benchmarks | Description |
 |------------|----------|----------------|------------|-------------|
@@ -68,20 +72,20 @@ EvalHub ships with **system collections** (out-of-the-box) that are available to
 | `open-telco-v1` | telecom | 0.475 | 4 | Telecom domain benchmarks |
 
 :::note
-System collections are read-only. To customize weights, thresholds, or benchmarks, create a new tenant collection with your desired configuration.
+The packaged collection catalog can change between EvalHub releases. Query `GET /api/v1/evaluations/collections?scope=system` for the collections and metadata installed in your environment.
 :::
 
 ## Creating a collection
 
 ### Collection structure
 
-A collection requires a `name`, `category`, and at least one benchmark entry. Each benchmark references an existing provider + benchmark pair.
+A collection requires a `name`, at least one benchmark entry, and either a non-empty `domains` array or the deprecated `category` field. Each benchmark references an existing provider and benchmark pair.
 
 ```json
 {
   "name": "My Safety Suite",
   "description": "Custom safety evaluation for our models",
-  "category": "safety",
+  "domains": ["trustworthiness"],
   "tags": ["safety", "production"],
   "pass_criteria": {
     "threshold": 0.8
@@ -125,7 +129,7 @@ POST /api/v1/evaluations/collections
 
 {
   "name": "My Safety Suite",
-  "category": "safety",
+  "domains": ["trustworthiness"],
   "tags": ["safety"],
   "pass_criteria": { "threshold": 0.8 },
   "benchmarks": [
@@ -157,7 +161,7 @@ curl -s -X POST $EVALHUB_URL/api/v1/evaluations/collections \
   -H "X-User: me" \
   -d '{
     "name": "My Safety Suite",
-    "category": "safety",
+    "domains": ["trustworthiness"],
     "tags": ["safety"],
     "pass_criteria": { "threshold": 0.8 },
     "benchmarks": [
@@ -187,7 +191,8 @@ Define the collection in a YAML file:
 ```yaml
 # my-safety-suite.yaml
 name: My Safety Suite
-category: safety
+domains:
+  - trustworthiness
 tags:
   - safety
 pass_criteria:
@@ -228,7 +233,7 @@ client = SyncEvalHubClient(base_url="http://evalhub:8080")
 
 request = CollectionCreateRequest(
     name="My Safety Suite",
-    category="safety",
+    domains=["trustworthiness"],
     tags=["safety"],
     pass_criteria=PassCriteria(threshold=0.8),
     benchmarks=[
@@ -258,14 +263,31 @@ collection = client.collections.create(request.model_dump(mode="json"))
 
 When creating or updating a collection, the server validates the request and rejects it with `400 Bad Request` if any of the following rules are violated:
 
-- `name` and `category` are required.
+- `name` is required.
+- Either a non-empty `domains` array or the deprecated `category` field is required.
+- `category` is deprecated. When used for backwards compatibility, it must be between 1 and 128 characters.
 - At least one benchmark entry is required.
 - Each benchmark must reference a valid `provider_id`.
 - `weight` must be ≥ 0 (0 is treated as 1 during scoring).
 - `pass_criteria.threshold` must be present when `pass_criteria` is set (value of 0 is valid).
-- `category` must be between 1 and 128 characters.
 - `description` must be between 1 and 1024 characters when set.
 - `tags` cannot contain `,` or `|` characters.
+
+## Classifying collections
+
+Classification metadata makes collections discoverable.
+
+| Field | Meaning | Population behavior |
+|-------|---------|---------------------|
+| `domains` | High-level evaluation domains, such as `knowledge_and_reasoning`, `grounded_document_understanding`, or `trustworthiness` | Explicit collection value, or the union of values from its benchmarks |
+| `tasks` | Evaluation tasks, such as `reasoning`, `rag`, `safety`, or `code_generation` | Explicit collection value, or the union of values from its benchmarks |
+| `modalities` | Data modalities, such as `text`, `vision`, or `multimodal` | Explicit collection value, or the union of values from its benchmarks |
+| `evaluation_targets` | Types of entities described by the evaluation, such as `model` or `agent` | Explicit collection value, or the union of values from its benchmarks |
+| `industries` | Collection-level business context, such as `health`, `telco`, `financial`, or `government` | Set explicitly on the collection; it is not derived from benchmarks |
+
+If an explicitly supplied derived field is non-empty, EvalHub keeps that value instead of combining it with benchmark metadata. The returned benchmark-derived values are unions, so they describe everything represented by the collection; they do not guarantee that every benchmark supports every value.
+
+`category` remains accepted for backwards compatibility but is deprecated. New collections should use `domains`.
 
 ## Running a collection
 
@@ -380,56 +402,69 @@ Set `pass_criteria` at the job level to override the collection's threshold for 
 }
 ```
 
-## Browsing collections
+### Tracking collection runs
 
-### List collections
-
-<Tabs>
-<TabItem label="curl">
+Filter the jobs endpoint by collection ID to find jobs submitted from a particular collection:
 
 ```bash
-# All collections (system + tenant)
-curl -s $EVALHUB_URL/api/v1/evaluations/collections \
-  -H "X-Tenant: my-team" | jq .
+curl -s --get "$EVALHUB_URL/api/v1/evaluations/jobs" \
+  -H "X-Tenant: my-team" \
+  --data-urlencode "collection_id=my-collection-id" | jq .
+```
 
-# System collections only
+When EvalHub accepts a job for a tenant collection, it increments that collection's `status.run_count`. System collections do not expose tenant-owned run status.
+
+The job records the collection's modification timestamp in `collection.collection_updated_at`. Compare it with the collection's current `resource.updated_at` to determine whether two jobs used the same observed collection state:
+
+```bash
+jq '.collection.collection_updated_at' job.json
+jq '.resource.updated_at' collection.json
+```
+
+:::note
+Two sufficiently close updates can share the same stored timestamp resolution.
+Concurrent `PUT` requests use last-writer-wins behavior.
+:::
+
+## Browsing collections
+
+`GET /api/v1/evaluations/collections` returns a paginated object. Use `limit` and `offset`, and follow the response links when present.
+
+```bash
+# All visible system and tenant collections, 25 at a time
+curl -s "$EVALHUB_URL/api/v1/evaluations/collections?limit=25&offset=0" \
+  -H "X-Tenant: my-team" | jq '{total_count, items}'
+
+# Only system collections
 curl -s "$EVALHUB_URL/api/v1/evaluations/collections?scope=system" \
   -H "X-Tenant: my-team" | jq .
 
-# Tenant collections only
+# Only custom collections of this tenant
 curl -s "$EVALHUB_URL/api/v1/evaluations/collections?scope=tenant" \
   -H "X-Tenant: my-team" | jq .
 ```
 
-</TabItem>
-<TabItem label="CLI">
+You can filter by `name`, `category` (deprecated), `tags`, `domains`, `tasks`, `modalities`, `industries`, and `evaluation_targets`. Repeat an array-field parameter to require all supplied values. For example, this request returns only collections containing both domain values:
 
 ```bash
-# All collections
-evalhub collections list
-
-# Filter by tag
-evalhub collections list --tag safety
-
-# JSON output
-evalhub collections list --format json
+curl -s --get "$EVALHUB_URL/api/v1/evaluations/collections" \
+  -H "X-Tenant: my-team" \
+  --data-urlencode "domains=knowledge_and_reasoning" \
+  --data-urlencode "domains=trustworthiness" | jq .
 ```
 
-</TabItem>
-<TabItem label="Python SDK">
+The repeated-value behavior is **AND**, not OR. The same rule applies to repeated `tasks`, `modalities`, `industries`, and `evaluation_targets` parameters.
 
-```python
-from evalhub import SyncEvalHubClient
+### Sort by curation priority
 
-client = SyncEvalHubClient(base_url="http://evalhub:8080")
+Sorting by curation priority is opt-in:
 
-collections = client.collections.list()
-for c in collections:
-    print(f"{c.resource.id}: {c.name} ({len(c.benchmarks)} benchmarks)")
+```bash
+curl -s "$EVALHUB_URL/api/v1/evaluations/collections?scope=system&sort_by=curation_order&limit=25&offset=0" \
+  -H "X-Tenant: my-team" | jq .
 ```
 
-</TabItem>
-</Tabs>
+EvalHub sorts the full filtered result before pagination. Positive `curation_order` values sort in ascending order, and zero or absent values sort last. When `sort_by` is omitted, the existing default ordering is unchanged.
 
 ### Get collection details
 
@@ -457,7 +492,7 @@ evalhub collections describe safety-and-fairness-v1 --format json
 ```python
 collection = client.collections.get("safety-and-fairness-v1")
 print(f"Name: {collection.name}")
-print(f"Category: {collection.category}")
+print(f"Domains: {collection.domains}")
 print(f"Benchmarks: {len(collection.benchmarks)}")
 if collection.pass_criteria:
     print(f"Pass threshold: {collection.pass_criteria.threshold}")
@@ -466,9 +501,39 @@ if collection.pass_criteria:
 </TabItem>
 </Tabs>
 
+See the [Server API reference](/reference/server-api/#collections) for the complete request and response schemas.
+
+## Copying a collection
+
+Use the clone endpoint to create a tenant-scoped copy of any visible collection. This is the normal way to customize a read-only system collection.
+
+```bash
+curl -s -X POST \
+  "$EVALHUB_URL/api/v1/evaluations/collections/safety-and-fairness-v1/clones" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant: my-team" \
+  -H "X-User: me" \
+  -d '{
+    "name": "My safety release gate",
+    "domains": ["trustworthiness"],
+    "tags": ["release-gate"]
+  }' | jq .
+```
+
+The request body is optional. Omitted configuration fields are inherited from the source. The new resource:
+
+- receives a new ID and tenant ownership;
+- records the source ID in immutable `derived_from`;
+- starts with `curation_order` reset to `0`, even if the source is curated;
+- starts with `pinned_order: 0` and `status.run_count: 0`.
+
+The clone body accepts configuration overrides but rejects unknown fields and `curation_order`. A malformed body or invalid merged collection returns `400 Bad Request`; an unavailable source returns `404 Not Found`; authentication or authorization failures return `401` or `403`.
+
 ## Updating a collection
 
-Tenant collections can be updated via `PUT` (full replace) or `PATCH` (partial update). System collections are read-only.
+Tenant collections can be updated via `PUT` (full replace) or `PATCH` (partial update).
+
+System collections are read-only. Attempts to update a system collection return `403 Forbidden`. Use [the clone endpoint](#copying-a-collection) when you need an editable tenant copy.
 
 :::note
 Update is currently supported via the REST API only. CLI and Python SDK do not provide update commands.
@@ -483,11 +548,16 @@ curl -s -X PATCH $EVALHUB_URL/api/v1/evaluations/collections/my-collection-id \
   -H "X-User: me" \
   -d '[
     {"op": "replace", "path": "/pass_criteria", "value": {"threshold": 0.85}},
-    {"op": "replace", "path": "/name", "value": "Updated Safety Suite"}
+    {"op": "replace", "path": "/name", "value": "Updated Safety Suite"},
+    {"op": "replace", "path": "/pinned_order", "value": 1}
   ]'
 ```
 
-Patchable fields: `/name`, `/description`, `/tags`, `/custom`, `/category`, `/benchmarks`, `/pass_criteria`.
+Patchable fields are `/name`, `/description`, `/tags`, `/custom`, `/category`, `/benchmarks`, `/pass_criteria`, `/domains`, `/tasks`, `/modalities`, `/industries`, `/evaluation_targets`, and `/pinned_order`.
+
+`pinned_order` is a user-controlled priority for tenant collections. `curation_order` is the administrator-controlled priority for system collections and is not a supported tenant update field. For both fields, `0` means no priority and lower positive values have higher priority.
+
+`PUT` replaces the complete collection configuration, so include every value that should remain.
 
 ## Deleting a collection
 
@@ -520,7 +590,7 @@ client.collections.delete("my-collection-id")
 </TabItem>
 </Tabs>
 
-System collections cannot be deleted.
+Attempts to delete system collections return `403 Forbidden`.
 
 ## Interpreting results
 

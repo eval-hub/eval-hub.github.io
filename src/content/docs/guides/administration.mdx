@@ -1,0 +1,129 @@
+---
+title: "Administration"
+description: "Install system collections and control their curation priority with the EvalHub custom resource."
+---
+
+This guide covers administrator-controlled configuration for system collections in an operator-managed EvalHub deployment. For creating, copying, or running tenant collections through the API, see [Collections](/guides/collections/).
+
+## Select system collections during installation
+
+Set `spec.collections` in the `EvalHub` custom resource (CR) to the system collections that the operator should install. Each value must identify an operator-packaged collection.
+
+You can also set an instance-specific curation priority for a selected collection with `spec.collectionOverrides[].curationOrder`:
+
+```yaml
+apiVersion: trustyai.opendatahub.io/v1
+kind: EvalHub
+metadata:
+  name: evalhub
+  namespace: evalhub
+spec:
+  database:
+    type: postgresql
+  collections:
+    - leaderboard-v2
+    - safety-and-fairness-v1
+    - toxicity-and-ethical-principles
+  collectionOverrides:
+    - collection: safety-and-fairness-v1
+      curationOrder: 1
+    - collection: leaderboard-v2
+      curationOrder: 2
+```
+
+Each override uses the stable collection identifier from `spec.collections`.
+
+| `curationOrder` value | Behavior |
+|-----------------------|----------|
+| Omitted | Retain the value packaged with that system collection |
+| `0` | Do not assign curation priority |
+| Positive integer | Assign priority; lower values have higher priority |
+
+An override is invalid when its collection is absent from `spec.collections`, its `collection` value is empty or duplicated, or `curationOrder` is negative. The operator reports invalid overrides in the CR status and does not apply them.
+
+## Update curation priority after installation
+
+Edit the same CR to change priorities or add and remove selected system collections:
+
+```bash
+oc edit evalhub evalhub -n evalhub
+```
+
+For an automated update, apply a version-controlled manifest containing the complete desired `spec.collections` and `spec.collectionOverrides` arrays:
+
+```bash
+oc apply -f evalhub.yaml
+```
+
+Removing an override restores the collection's packaged `curation_order` value. Setting the override to `0` explicitly replaces the packaged value with zero.
+
+:::caution
+Do not edit the generated collection ConfigMaps in the EvalHub namespace. The operator owns these resources and can replace manual changes during reconciliation. Configure per-instance curation priority through the EvalHub custom resource.
+:::
+
+## How an update reaches EvalHub
+
+The update passes through several components:
+
+1. The operator validates the EvalHub CR.
+2. It copies each selected packaged collection into an instance-owned ConfigMap and applies the supported overrides.
+3. Kubernetes updates the ConfigMap data projected into the EvalHub pod.
+4. EvalHub detects the projected-file change and reloads the system collection configuration.
+5. Collection API responses reflect the updated `curation_order`.
+
+The operator reporting a successful render proves that it updated the instance configuration, but it does not by itself prove that the running EvalHub process reloaded the projected data. Verify both stages.
+
+## Verify an update
+
+First, inspect the operator condition:
+
+```bash
+oc get evalhub evalhub -n evalhub \
+  -o jsonpath='{range .status.conditions[?(@.type=="CollectionOverridesReady")]}{.status}{"\t"}{.reason}{"\t"}{.message}{"\n"}{end}'
+```
+
+A successful render reports `True`, reason `Rendered`. Then inspect the instance-owned ConfigMap for the selected collection:
+
+```bash
+oc get configmap evalhub-collection-safety-and-fairness-v1 \
+  -n evalhub -o yaml
+```
+
+Finally, query the running service. Replace the route, namespace, and authentication details for your deployment:
+
+```bash
+EVALHUB_URL="https://$(oc get route evalhub -n evalhub -o jsonpath='{.spec.host}')"
+
+curl -s "$EVALHUB_URL/api/v1/evaluations/collections/safety-and-fairness-v1" \
+  -H "Authorization: Bearer $(oc whoami -t)" | jq '{id: .resource.id, curation_order}'
+```
+
+To verify ordering across all system collections, request the explicit curation sort:
+
+```bash
+curl -s "$EVALHUB_URL/api/v1/evaluations/collections?scope=system&sort_by=curation_order" \
+  -H "Authorization: Bearer $(oc whoami -t)" | jq '.items[] | {id: .resource.id, curation_order}'
+```
+
+These commands verify the route's TLS certificate. If your cluster uses a private CA that is not in the client's trust store, pass its certificate with `--cacert /path/to/ca.crt` on each command.
+
+When `sort_by=curation_order` is requested, positive values are sorted in ascending order and zero or absent values are placed last. Omitting `sort_by` preserves the default collection ordering.
+
+## Troubleshoot overrides
+
+If the `CollectionOverridesReady` condition is `False`, inspect its message and the operator logs:
+
+```bash
+oc describe evalhub evalhub -n evalhub
+
+# OpenDataHub commonly uses opendatahub; RHOAI deployments can use
+# redhat-ods-applications. Set this to the namespace used by your installation.
+OPERATOR_NAMESPACE=opendatahub
+oc logs -n "$OPERATOR_NAMESPACE" deployment/trustyai-service-operator
+```
+
+Check that every override names a collection selected in `spec.collections`, collection names are unique, and priorities are non-negative.
+
+If the rendered ConfigMap is correct but the collection API still returns the previous value, allow time for Kubernetes to refresh the projected volume, then inspect the EvalHub pod logs for a system-resource reload. Restarting the service should not normally be required.
+
+There is no administrator REST API that bypasses system-collection immutability. `PUT`, `PATCH`, and `DELETE` against a system collection return `403 Forbidden`; persistent per-instance administration belongs in the EvalHub CR.

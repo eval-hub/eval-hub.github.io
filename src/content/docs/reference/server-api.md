@@ -78,6 +78,7 @@ See [Agent Discoverability](/mcp/agent-discoverability/) for the full metadata m
 GET    /api/v1/evaluations/collections             # List collections
 POST   /api/v1/evaluations/collections             # Create collection
 GET    /api/v1/evaluations/collections/{id}        # Get collection
+POST   /api/v1/evaluations/collections/{id}/clones # Create a tenant copy
 PUT    /api/v1/evaluations/collections/{id}        # Update collection
 PATCH  /api/v1/evaluations/collections/{id}        # Patch collection
 DELETE /api/v1/evaluations/collections/{id}        # Delete collection
