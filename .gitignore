@@ -5,7 +5,7 @@ site/
 dist/
 .astro/
 
-# Generated provider catalog (fetched at build time)
+# Generated catalogs (fetched at build time)
 src/generated/
 
 # Node

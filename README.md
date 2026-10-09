@@ -27,6 +27,14 @@ Previews are cleaned up when the PR is closed. Fork PRs are not previewed (build
 
 Without write permissions, `deploy.yml` and `pr-preview.yml` cannot update `gh-pages`.
 
+## Generated catalogs
+
+`npm run dev` and `npm run build` refresh the provider and collection catalogs from GitHub. To refresh them separately, run `npm run fetch-providers` or `npm run fetch-collections`.
+
+The collection catalog reads `config/collections/*.yaml` (and `.yml`) from `eval-hub/eval-hub`. Override the source with `COLLECTIONS_REPO` and `COLLECTIONS_REF` (branch, tag, or commit). `GITHUB_TOKEN` is used when available. Generated JSON is written to `src/generated/` and is not committed.
+
+Collections with `curation_order > 0` appear first in ascending priority order; zero or omitted values appear in the non-curated section. Descriptions use the first sentence, capped at 220 characters, and the full definition remains available from each card.
+
 ## Adding Blog Posts
 
 Blog posts live in `src/content/docs/blog/`. Create a new Markdown file there with this frontmatter:
