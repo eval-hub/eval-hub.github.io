@@ -80,7 +80,11 @@ const fetchedDate = new Date(catalog.fetchedAt).toLocaleString('en', { dateStyle
       const query = (search?.value ?? '').trim().toLowerCase();
       let visible = 0;
       for (const card of cards) {
-        card.hidden = !`${card.textContent} ${card.dataset.tags}`.toLowerCase().includes(query);
+        const haystack = [
+          ...Array.from(card.querySelectorAll('h3, .collection-id, .collection-description, .collection-benchmarks'), (field) => field.textContent),
+          card.dataset.tags ?? '',
+        ].join(' ').toLowerCase();
+        card.hidden = !haystack.includes(query);
         if (!card.hidden) visible++;
       }
       if (status) status.textContent = `Showing ${visible} of ${cards.length} collections`;

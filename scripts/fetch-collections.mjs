@@ -47,6 +47,9 @@ async function main() {
     if (!parsed?.id || ids.has(parsed.id)) throw new Error(`Missing or duplicate collection id in ${path}`);
     ids.add(parsed.id);
     if (!Array.isArray(parsed.benchmarks)) throw new Error(`Missing benchmarks in ${path}`);
+    if (!Array.isArray(parsed.tags) || !parsed.tags.every((tag) => typeof tag === 'string')) {
+      throw new Error(`Invalid tags in ${path}: expected an array of strings`);
+    }
 
     const curationOrder = parsed.curation_order ?? 0;
     if (!Number.isInteger(curationOrder) || curationOrder < 0) throw new Error(`Invalid curation_order in ${path}`);
@@ -65,7 +68,7 @@ async function main() {
       name: parsed.name ?? parsed.id,
       description: shortDescription(parsed.description),
       curationOrder,
-      tags: parsed.tags ?? [],
+      tags: parsed.tags,
       benchmarks,
       sourceUrl: `https://github.com/${repo}/blob/${tree.sha}/${path}`,
       yaml: rawYaml.replace(/\r\n?/g, '\n'),
