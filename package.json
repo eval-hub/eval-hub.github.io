@@ -5,8 +5,10 @@
   "description": "Documentation site for EvalHub.",
   "scripts": {
     "fetch-providers": "node scripts/fetch-contrib-providers.mjs",
-    "prebuild": "npm run fetch-providers",
-    "predev": "npm run fetch-providers",
+    "fetch-collections": "node scripts/fetch-collections.mjs",
+    "fetch-catalogs": "npm run fetch-providers && npm run fetch-collections",
+    "prebuild": "npm run fetch-catalogs",
+    "predev": "npm run fetch-catalogs",
     "dev": "astro dev",
     "build": "astro build",
     "check": "astro check",

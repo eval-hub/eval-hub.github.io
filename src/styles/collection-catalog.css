@@ -1,0 +1,142 @@
+/* Collection catalog — shares toolbar, chip and footer styles with providers. */
+:has(.collection-catalog) .sl-container {
+  max-width: none;
+}
+
+.collection-catalog {
+  margin-block: 1.5rem;
+}
+
+.collection-catalog [hidden] {
+  display: none;
+}
+
+.collection-section {
+  margin-block: 2rem;
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.collection-card {
+  min-width: 0;
+  margin: 0 !important;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.6rem;
+  background: var(--sl-color-bg-nav);
+}
+
+.collection-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.collection-card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.35;
+}
+
+.collection-card .chip {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.collection-card .collection-id {
+  margin: 0.3rem 0 0.65rem;
+  color: var(--sl-color-accent-high);
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.collection-description {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--sl-color-gray-2);
+}
+
+.collection-card h4 {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.8rem;
+}
+
+.collection-card h4 span {
+  color: var(--sl-color-gray-3);
+  font-weight: normal;
+}
+
+.collection-card .collection-benchmarks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.collection-benchmarks li {
+  margin: 0;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--sl-color-gray-6);
+  line-height: 1.5;
+}
+
+.collection-benchmarks code {
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.collection-benchmark-provider {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--sl-color-gray-3);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.collection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+
+.collection-actions button {
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.35rem;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-accent-high);
+  font: inherit;
+  cursor: pointer;
+}
+
+.collection-actions button:hover {
+  border-color: var(--sl-color-accent);
+}
+
+@media (max-width: 900px) {
+  .collection-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .collection-catalog .catalog-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .collection-catalog .catalog-toolbar input {
+    min-width: 0;
+    width: 100%;
+  }
+}

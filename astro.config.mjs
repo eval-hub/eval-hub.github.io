@@ -238,6 +238,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Collections',
+          items: [
+            { label: 'Collection Catalog', slug: 'collections/catalog' },
+          ],
+        },
+        {
           label: 'Reference',
           items: [
             { label: 'Server API', slug: 'reference/server-api' },

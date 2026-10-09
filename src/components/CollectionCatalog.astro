@@ -1,0 +1,111 @@
+---
+import type { CatalogCollection } from '../types/collection';
+// @ts-ignore - file is generated at build time by fetch-collections
+import catalog from '../generated/collections-catalog.json';
+import '../styles/collection-catalog.css';
+
+const collections = catalog.collections as CatalogCollection[];
+const sections = [
+  { id: 'curated', title: 'Curated collections', collections: collections.filter((c) => c.curationOrder > 0) },
+  { id: 'non-curated', title: 'Non-curated collections', collections: collections.filter((c) => c.curationOrder === 0) },
+];
+const fetchedDate = new Date(catalog.fetchedAt).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
+---
+
+<div class="collection-catalog" id="collection-catalog">
+  <div class="catalog-toolbar">
+    <label>
+      Search collections
+      <input type="search" data-search placeholder="Collection, benchmark, provider…" autocomplete="off" />
+    </label>
+    <button type="button" data-clear>Clear filters</button>
+  </div>
+  <p class="catalog-status" data-status role="status">
+    Showing {collections.length} of {collections.length} collections
+  </p>
+
+  {sections.map((section) => (
+    <section class="collection-section" aria-labelledby={section.id}>
+      <h2 id={section.id}>{section.title}</h2>
+      <div class="collection-grid">
+        {section.collections.map((collection) => (
+          <article class="collection-card" data-collection-id={collection.id} data-tags={collection.tags.join(' ')}>
+            <header>
+              <h3>{collection.name}</h3>
+              {collection.curationOrder > 0 && <span class="chip">Curated</span>}
+            </header>
+            <p class="collection-id">{collection.id}</p>
+            <p class="collection-description">{collection.description}</p>
+            <h4>Benchmarks <span>({collection.benchmarks.length})</span></h4>
+            <ul class="collection-benchmarks">
+              {collection.benchmarks.map((benchmark) => (
+                <li>
+                  <code>{benchmark.task || benchmark.id}</code>
+                  <span class="collection-benchmark-provider">
+                    {benchmark.providerId}
+                    {benchmark.task && ` · ${benchmark.id}`}
+                    {benchmark.fewshot !== null && ` · ${benchmark.fewshot}-shot`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div class="collection-actions">
+              <a href={collection.sourceUrl} target="_blank" rel="noopener noreferrer">View definition ↗</a>
+              <button type="button" data-download={collection.id} data-yaml={collection.yaml} aria-label={`Download YAML for ${collection.name}`}>Download YAML</button>
+            </div>
+          </article>
+        ))}
+      </div>
+      <p class="catalog-empty-state" data-empty hidden={section.collections.length > 0}>No {section.title.toLowerCase()} match your search.</p>
+    </section>
+  ))}
+
+  <footer class="catalog-footer">
+    Catalog synced from{' '}
+    <a href={`https://github.com/${catalog.source.repo}/tree/${catalog.source.sha}/config/collections`} target="_blank" rel="noopener noreferrer">
+      {catalog.source.repo}@{catalog.source.ref}
+    </a>{' '}
+    at {fetchedDate} UTC.
+  </footer>
+</div>
+
+<script>
+  const root = document.getElementById('collection-catalog');
+  if (root) {
+    const search = root.querySelector<HTMLInputElement>('[data-search]');
+    const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-collection-id]'));
+    const status = root.querySelector('[data-status]');
+
+    function filterCollections() {
+      const query = (search?.value ?? '').trim().toLowerCase();
+      let visible = 0;
+      for (const card of cards) {
+        card.hidden = !`${card.textContent} ${card.dataset.tags}`.toLowerCase().includes(query);
+        if (!card.hidden) visible++;
+      }
+      if (status) status.textContent = `Showing ${visible} of ${cards.length} collections`;
+      root?.querySelectorAll('.collection-section').forEach((section) => {
+        const empty = section.querySelector<HTMLElement>('[data-empty]');
+        if (empty) empty.hidden = !!section.querySelector('[data-collection-id]:not([hidden])');
+      });
+    }
+
+    search?.addEventListener('input', filterCollections);
+    root.querySelector('[data-clear]')?.addEventListener('click', () => {
+      if (search) search.value = '';
+      filterCollections();
+      search?.focus();
+    });
+    root.querySelectorAll<HTMLButtonElement>('[data-download]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const url = URL.createObjectURL(new Blob([button.dataset.yaml ?? ''], { type: 'text/yaml;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${button.dataset.download}.yaml`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+    });
+    filterCollections();
+  }
+</script>
