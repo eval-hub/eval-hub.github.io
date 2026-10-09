@@ -6,6 +6,8 @@ on:
       - main
       - starlight
   workflow_dispatch:
+  repository_dispatch:
+    types: [catalogs-updated]
 
 permissions:
   contents: write

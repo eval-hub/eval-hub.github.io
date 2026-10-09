@@ -12,6 +12,10 @@ This repository contains the source for the [EvalHub documentation](https://eval
 
 Documentation is built on pushes to `main` and published to the `gh-pages` branch (GitHub Pages source: **Deploy from a branch** → `gh-pages` / root).
 
+The deployment workflow also rebuilds and publishes the site when it receives a `repository_dispatch` event of type `catalogs-updated`. The sender in `eval-hub/eval-hub` emits this event when `config/collections/**` changes on `main`; see [the sender PR](https://github.com/eval-hub/eval-hub/pull/1111). Each build fetches the latest catalogs through `npm run build`.
+
+The receiver workflow must be merged into this repository's default branch before events can trigger it. Configure `DOCS_DISPATCH_TOKEN` in `eval-hub/eval-hub` with **Contents: write** access to this repository. To verify the integration, manually run **Notify documentation of catalog changes** on `main` in `eval-hub/eval-hub`, then check for a **Deploy Documentation** run here. The receiver uses this repository's default branch; the event payload is informational and does not select code to check out.
+
 ### Pull request previews
 
 Same-repo pull requests get a sticky preview comment with a URL like:
