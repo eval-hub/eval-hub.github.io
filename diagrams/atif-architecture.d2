@@ -1,0 +1,48 @@
+# ATIF trajectory adapter architecture
+direction: down
+
+*.style.border-radius: 4
+
+evalhub: EvalHub Server {
+  direction: right
+  api: REST API
+  orch: Job Orchestrator
+}
+
+k8s: "Kubernetes / OpenShift" {
+  direction: right
+  cm: "ConfigMap\n/meta/job.json"
+  input: "Input mount\n/test_data (ATIF JSON)"
+  pod: ATIF Job Pod {
+    adapter: ATIF Adapter {
+      discover: "1. Discover + validate ATIF files"
+      criteria: "2. Derive or load criteria"
+      score: "3. Score steps (judge)"
+      aggregate: "4. Aggregate + categorize failures"
+      persist: "5. Persist artifacts"
+
+      discover -> criteria
+      criteria -> score
+      score -> aggregate
+      aggregate -> persist
+    }
+    sidecar: Sidecar
+  }
+}
+
+external: External {
+  direction: right
+  judge: "Judge endpoint\n(OpenAI-compatible)"
+  mlflow: MLflow
+}
+
+evalhub.orch -> k8s.cm: creates
+evalhub.orch -> k8s.pod: creates Job
+k8s.cm -> k8s.pod.adapter: mounted
+k8s.input -> k8s.pod.adapter.discover: recorded trajectories
+k8s.pod.adapter.score -> external.judge: scoring requests
+k8s.pod.adapter.persist -> k8s.pod.sidecar: callbacks
+k8s.pod.sidecar -> evalhub.api: "POST /events" {
+  style.stroke-dash: 3
+}
+k8s.pod.adapter.persist -> external.mlflow: "run + detailed artifacts"
