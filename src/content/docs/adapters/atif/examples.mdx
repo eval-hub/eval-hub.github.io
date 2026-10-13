@@ -248,7 +248,9 @@ The adapter requires an MLflow experiment for durable artifacts; `experiment_nam
 <TabItem label="3. Run the container">
 
 ```bash
+# --network=host reaches the MLflow server started in the previous tab
 podman run --rm \
+  --network=host \
   -e EVALHUB_MODE=local \
   -e EVALHUB_JOB_SPEC_PATH=/run/job.json \
   -e MLFLOW_TRACKING_URI=http://127.0.0.1:5000 \
