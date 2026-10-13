@@ -122,7 +122,7 @@ Then reference it from the job:
 
 ## Custom Rubric
 
-Score with an inline rubric and explicit aggregation:
+Score with an inline rubric and explicit aggregation. `provider_params.rubric` accepts a JSON object directly:
 
 ```json
 {
@@ -140,13 +140,36 @@ Score with an inline rubric and explicit aggregation:
     "trajectory_path": "/test_data",
     "scoring_mode": "custom",
     "provider_params": {
-      "rubric": "name: answer_quality\naggregation: weighted_mean\ncriteria:\n  - name: correctness\n    description: Addresses the requested task\n    weight: 2\n  - name: clarity\n    description: Explains the result clearly\n    weight: 1\n"
+      "rubric": {
+        "name": "answer_quality",
+        "aggregation": "weighted_mean",
+        "criteria": [
+          {
+            "name": "correctness",
+            "description": "Addresses the requested task",
+            "weight": 2
+          },
+          {
+            "name": "clarity",
+            "description": "Explains the result clearly",
+            "weight": 1
+          }
+        ]
+      }
     }
   }
 }
 ```
 
-`provider_params.rubric` also accepts a rubric object directly. Legacy `custom_rubric` and `custom_rubric_path` parameters still work — supply exactly one source.
+The rubric can also be supplied as a YAML or JSON document string, which is useful when mounting or generating rubrics as text:
+
+```json
+"provider_params": {
+  "rubric": "name: answer_quality\naggregation: weighted_mean\ncriteria:\n  - name: correctness\n    description: Addresses the requested task\n    weight: 2\n  - name: clarity\n    description: Explains the result clearly\n    weight: 1\n"
+}
+```
+
+Legacy `custom_rubric` and `custom_rubric_path` parameters still work — supply exactly one source, and keep either form under 16 KiB.
 
 **Use case**: Team-specific quality bars, weighted criteria, `mean`/`minimum` aggregation.
 
