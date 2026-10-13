@@ -74,9 +74,11 @@ The Environment Card summarizes common schema version, agent name/version, model
 
 ## Retrieving Results
 
-Fetch artifacts from the MLflow run referenced in the job's results:
+Fetch artifacts from the MLflow run referenced in the job's results. Set `MLFLOW_TRACKING_URI` to the tracking server the job used before running the command; without it, the CLI looks for the run on the local filesystem and cannot find it:
 
 ```bash
+export MLFLOW_TRACKING_URI=<tracking server URI used by the job>
+
 mlflow artifacts download \
   --run-id <run_id> \
   --artifact-path atif \
