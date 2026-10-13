@@ -1,0 +1,75 @@
+# ATIF trajectory adapter architecture
+#
+# Compact render (12px regular-weight font, steps in a 2-row grid — no
+# internal step arrows since the numbering conveys the order).
+# Regenerate with:
+#   d2 -l elk --elk-nodeNodeBetweenLayers 10 --elk-padding "[top=6,left=6,bottom=6,right=6]" \
+#       --pad 0 --theme 1 --dark-theme 200 diagrams/atif-architecture.d2 \
+#       public/images/diagrams/atif-architecture.svg
+# ...then apply the Makefile `diagrams` target's sed color pass to the SVG.
+direction: down
+
+*.style.border-radius: 4
+**.style.font-size: 12
+**.style.bold: false
+
+evalhub: EvalHub Server {
+  direction: right
+  api: REST API
+  orch: Job Orchestrator
+}
+
+k8s: "Kubernetes / OpenShift" {
+  direction: right
+  cm: "ConfigMap\n/meta/job.json"
+  input: "Input mount\n/test_data (ATIF JSON)"
+  pod: ATIF Job Pod {
+    adapter: ATIF Adapter {
+      grid-rows: 2
+      discover: "1. Discover + validate ATIF files"
+      criteria: "2. Derive or load criteria"
+      score: "3. Score steps (judge)"
+      aggregate: "4. Aggregate + categorize failures"
+      persist: "5. Persist artifacts"
+    }
+    sidecar: Sidecar
+  }
+}
+
+external: External {
+  direction: right
+  judge: "Judge endpoint\n(OpenAI-compatible)" {
+    width: 168
+    height: 64
+  }
+  mlflow: MLflow {
+    width: 168
+    height: 64
+  }
+}
+
+evalhub.orch -> k8s.cm: creates {
+  style.font-size: 12
+}
+evalhub.orch -> k8s.pod: creates Job {
+  style.font-size: 12
+}
+k8s.cm -> k8s.pod.adapter: mounted {
+  style.font-size: 12
+}
+k8s.input -> k8s.pod.adapter: recorded trajectories {
+  style.font-size: 12
+}
+k8s.pod.adapter -> external.judge: scoring requests {
+  style.font-size: 12
+}
+k8s.pod.adapter.persist -> k8s.pod.sidecar: callbacks {
+  style.font-size: 12
+}
+k8s.pod.sidecar -> evalhub.api: "POST /events" {
+  style.font-size: 12
+  style.stroke-dash: 3
+}
+k8s.pod.adapter -> external.mlflow: "run + detailed artifacts" {
+  style.font-size: 12
+}

@@ -1,0 +1,270 @@
+---
+title: "Configuration Examples"
+description: "Ready-to-run job specs for common ATIF evaluation scenarios"
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Complete examples for common ATIF trajectory evaluation scenarios.
+
+## Quick Test
+
+Minimal auto-mode job scoring a single trajectory file:
+
+```json
+{
+  "id": "atif-quick-001",
+  "provider_id": "atif",
+  "benchmark_id": "atif_trajectory_default",
+  "benchmark_index": 0,
+  "experiment_name": "atif-quick-test",
+  "model": {
+    "name": "microsoft-phi-4",
+    "url": "http://127.0.0.1:8000/v1"
+  },
+  "callback_url": "http://localhost:8081",
+  "parameters": {
+    "trajectory_path": "/test_data/trajectory.json",
+    "scoring_mode": "auto",
+    "concurrency_limit": 2,
+    "max_judge_requests": 24
+  }
+}
+```
+
+**Use case**: Quick validation, CI smoke tests, small fixture collections.
+
+---
+
+## Benchmark Rubric
+
+Score a collection of terminal-agent trajectories with the built-in rubric:
+
+```json
+{
+  "id": "atif-terminal-001",
+  "provider_id": "atif",
+  "benchmark_id": "atif_trajectory_default",
+  "benchmark_index": 0,
+  "experiment_name": "terminal-agent-regressions",
+  "model": {
+    "name": "microsoft-phi-4",
+    "url": "http://127.0.0.1:8000/v1"
+  },
+  "callback_url": "http://localhost:8081",
+  "parameters": {
+    "trajectory_path": "/test_data",
+    "scoring_mode": "benchmark",
+    "benchmark_name": "terminal-bench",
+    "partial_result_policy": "skip_failed_trajectory"
+  }
+}
+```
+
+**Use case**: Regression-tracking a corpus of recorded agent runs against a fixed rubric.
+
+:::caution
+Benchmark rubrics are assessment rubrics, not benchmark execution. A high score is not equivalent to passing the benchmark's verifier.
+:::
+
+---
+
+## Reference Registry
+
+Score against expected answers from a registry file. First write the registry:
+
+```json
+{
+  "rubrics": {
+    "default": {
+      "criteria": [
+        {
+          "name": "correctness",
+          "description": "Matches the reference",
+          "weight": 1
+        }
+      ],
+      "references": {
+        "t1": { "answer": "The server on port 8080 must be restarted" },
+        "t2": { "answer": "Rotate the credential and update the secret" }
+      }
+    }
+  }
+}
+```
+
+Then reference it from the job:
+
+```json
+{
+  "id": "atif-reference-001",
+  "provider_id": "atif",
+  "benchmark_id": "atif_trajectory_default",
+  "benchmark_index": 0,
+  "experiment_name": "atif-reference-test",
+  "model": {
+    "name": "microsoft-phi-4",
+    "url": "http://127.0.0.1:8000/v1"
+  },
+  "callback_url": "http://localhost:8081",
+  "parameters": {
+    "trajectory_path": "/test_data",
+    "scoring_mode": "reference",
+    "reference_registry_path": "/rubrics/registry.json",
+    "reference_rubric": "default"
+  }
+}
+```
+
+**Use case**: Tasks with known-good outcomes. Reference selection uses each trajectory's `extra.reference_id`, then its `trajectory_id`, then the `default` reference.
+
+---
+
+## Custom Rubric
+
+Score with an inline rubric and explicit aggregation. `provider_params.rubric` accepts a JSON object directly:
+
+```json
+{
+  "id": "atif-custom-001",
+  "provider_id": "atif",
+  "benchmark_id": "atif_trajectory_default",
+  "benchmark_index": 0,
+  "experiment_name": "atif-custom-test",
+  "model": {
+    "name": "microsoft-phi-4",
+    "url": "http://127.0.0.1:8000/v1"
+  },
+  "callback_url": "http://localhost:8081",
+  "parameters": {
+    "trajectory_path": "/test_data",
+    "scoring_mode": "custom",
+    "provider_params": {
+      "rubric": {
+        "name": "answer_quality",
+        "aggregation": "weighted_mean",
+        "criteria": [
+          {
+            "name": "correctness",
+            "description": "Addresses the requested task",
+            "weight": 2
+          },
+          {
+            "name": "clarity",
+            "description": "Explains the result clearly",
+            "weight": 1
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+The rubric can also be supplied as a YAML or JSON document string, which is useful when mounting or generating rubrics as text:
+
+```json
+"provider_params": {
+  "rubric": "name: answer_quality\naggregation: weighted_mean\ncriteria:\n  - name: correctness\n    description: Addresses the requested task\n    weight: 2\n  - name: clarity\n    description: Explains the result clearly\n    weight: 1\n"
+}
+```
+
+Legacy `custom_rubric` and `custom_rubric_path` parameters still work — supply exactly one source, and keep either form under 16 KiB.
+
+**Use case**: Team-specific quality bars, weighted criteria, `mean`/`minimum` aggregation.
+
+---
+
+## Training-Data Selection
+
+Add a `training_threshold` to produce eligible/ineligible cohorts with source-addressable manifests:
+
+```json
+{
+  "id": "atif-training-001",
+  "provider_id": "atif",
+  "benchmark_id": "atif_trajectory_default",
+  "benchmark_index": 0,
+  "experiment_name": "atif-training-selection",
+  "model": {
+    "name": "microsoft-phi-4",
+    "url": "http://127.0.0.1:8000/v1"
+  },
+  "callback_url": "http://localhost:8081",
+  "parameters": {
+    "trajectory_path": "/test_data",
+    "scoring_mode": "auto",
+    "subagent_aggregation": "hierarchical",
+    "training_threshold": 0.8,
+    "completion_threshold": 0.5
+  }
+}
+```
+
+Retrieve `atif/report.json`, `atif/training/eligible_trajectories.json`, and `atif/training/ineligible_trajectories.json` from the MLflow run. See [Artifacts](../artifacts/) for the manifest contract.
+
+**Use case**: Curating high-scoring, completely-scored trajectories for fine-tuning.
+
+---
+
+## Running Locally Against a Private Judge
+
+<Tabs>
+<TabItem label="1. Prepare inputs">
+
+```bash
+# A directory of ATIF JSON files (or a single file)
+mkdir -p test_data
+cp trajectory.json test_data/
+
+# Judge auth directory: api-key file, optional ca_cert.
+# Must be a real directory with no symlinks anywhere in its path.
+install -d -m 750 ~/.config/atif-judge-auth
+install -m 640 /path/to/judge-key ~/.config/atif-judge-auth/api-key
+```
+
+The job spec's `model.auth.secret_ref` must point at the mounted copy of this directory:
+
+```json
+{
+  "model": {
+    "name": "microsoft-phi-4",
+    "url": "https://judge.internal.example.com/v1",
+    "auth": { "secret_ref": "file:///mnt/judge-auth" }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="2. Start MLflow">
+
+```bash
+mlflow server --host 127.0.0.1 --port 5000
+```
+
+The adapter requires an MLflow experiment for durable artifacts; `experiment_name` in the job spec selects it.
+
+</TabItem>
+<TabItem label="3. Run the container">
+
+```bash
+# --network=host reaches the MLflow server started in the previous tab
+podman run --rm \
+  --network=host \
+  -e EVALHUB_MODE=local \
+  -e EVALHUB_JOB_SPEC_PATH=/run/job.json \
+  -e MLFLOW_TRACKING_URI=http://127.0.0.1:5000 \
+  -v $(pwd)/job.json:/run/job.json:ro \
+  -v $(pwd)/test_data:/test_data:ro \
+  -v ~/.config/atif-judge-auth:/mnt/judge-auth:ro \
+  quay.io/evalhub/community-atif:latest
+```
+
+In local mode the adapter calls `model.url` directly using the mounted credentials. In Kubernetes, judge traffic goes through the runtime sidecar instead.
+
+</TabItem>
+</Tabs>
+
+:::tip[Cost control]
+For expensive judges, set `max_judge_requests` (a job-wide budget on judge HTTP attempts including derivation, categorization, and retries), lower `concurrency_limit`, and raise `judge_timeout_seconds` for slow endpoints.
+:::

@@ -209,6 +209,18 @@ export default defineConfig({
                 { label: 'Examples', slug: 'adapters/inspect/examples' },
               ],
             },
+            {
+              label: 'ATIF Trajectory',
+              collapsed: true,
+              items: [
+                { label: 'Overview', slug: 'adapters/atif' },
+                { label: 'Configuration', slug: 'adapters/atif/configuration' },
+                { label: 'Scoring Modes', slug: 'adapters/atif/scoring' },
+                { label: 'Metrics', slug: 'adapters/atif/metrics' },
+                { label: 'Artifacts', slug: 'adapters/atif/artifacts' },
+                { label: 'Examples', slug: 'adapters/atif/examples' },
+              ],
+            },
           ],
         },
         {
