@@ -70,7 +70,10 @@ export EVALHUB_MODE=local
 export EVALHUB_JOB_SPEC_PATH=/run/job.json
 
 # Mount a job spec, the trajectory collection, and the judge auth directory
+# --network=host lets the container reach services on the host, such as the
+# MLflow tracking server; 127.0.0.1 would otherwise be the container itself
 podman run --rm \
+  --network=host \
   -e EVALHUB_MODE=local \
   -e EVALHUB_JOB_SPEC_PATH=/run/job.json \
   -e MLFLOW_TRACKING_URI=http://127.0.0.1:5000 \
