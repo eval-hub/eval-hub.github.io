@@ -31,9 +31,11 @@ Criteria are derived once **per distinct task within a job**, keyed by task and 
 
 | Benchmark | Criteria |
 |-----------|----------|
-| `swe-bench-lite` | `task_correctness`, `patch_quality`, `regression_safety` |
+| `swebench-verified` | `task_correctness`, `patch_quality`, `regression_safety` |
 | `terminal-bench` | `task_completion`, `tool_effectiveness`, `environment_safety` |
-| `humaneval` | `functional_correctness`, `reasoning_quality`, `code_quality` |
+| `humanevalfix` | `functional_correctness`, `reasoning_quality`, `code_quality` |
+
+Seed names match the benchmark names in [Harbor's public benchmark registry](https://github.com/harbor-framework/harbor/blob/main/registry.json), so a job scored in benchmark mode targets the same benchmark population Harbor runs.
 
 :::caution[Assessment rubrics, not verifiers]
 Built-in benchmark rubrics are scoring instructions only. The registry does not contain the benchmark datasets, never executes a benchmark verifier, and a high score is not a correctness claim equivalent to running the benchmark.

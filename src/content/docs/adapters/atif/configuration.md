@@ -50,7 +50,7 @@ In local mode `model.url` is used directly and `model.auth.secret_ref` provides 
 |-----------|------|---------|-------------|
 | `trajectory_path` | string | `/test_data` | ATIF file or directory, scanned recursively in deterministic order |
 | `scoring_mode` | string | `auto` | `auto`, `benchmark`, `reference`, or `custom` — see [Scoring Modes](../scoring/) |
-| `benchmark_name` | string | unset | Built-in rubric for `benchmark` mode: `swe-bench-lite`, `terminal-bench`, or `humaneval` |
+| `benchmark_name` | string | unset | Built-in rubric for `benchmark` mode: `swebench-verified`, `terminal-bench`, or `humanevalfix` |
 | `reference_registry_path` | string | unset | JSON rubric registry, required in `reference` mode |
 | `reference_rubric` | string | `default` | Rubric name selected from the reference registry |
 | `provider_params.rubric` | object | unset | Inline custom rubric object or YAML/JSON document string, required in `custom` mode |
