@@ -95,11 +95,15 @@ See the [local mode guide](/guides/local-mode/) for running the full stack (serv
 # Pull from registry
 podman pull quay.io/evalhub/community-atif:latest
 
-# Run with a custom job spec
+# Run with a custom job spec (inputs mounted at the documented paths)
 podman run \
+  --network=host \
   -e EVALHUB_MODE=local \
   -e EVALHUB_JOB_SPEC_PATH=/meta/job.json \
+  -e MLFLOW_TRACKING_URI=http://127.0.0.1:5000 \
   -v $(pwd)/job.json:/meta/job.json:ro \
+  -v $(pwd)/test_data:/test_data:ro \
+  -v ~/.config/atif-judge-auth:/mnt/judge-auth:ro \
   quay.io/evalhub/community-atif:latest
 ```
 
