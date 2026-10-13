@@ -1,9 +1,9 @@
 # ATIF trajectory adapter architecture
 #
-# Compact render (12px regular-weight font, no internal step arrows — the
-# numbering conveys the order, which lets elk lay the steps out in one row).
+# Compact render (12px regular-weight font, steps in a 2-row grid — no
+# internal step arrows since the numbering conveys the order).
 # Regenerate with:
-#   d2 -l elk --elk-nodeNodeBetweenLayers 10 --elk-padding "[top=4,left=4,bottom=4,right=4]" \
+#   d2 -l elk --elk-nodeNodeBetweenLayers 10 --elk-padding "[top=6,left=6,bottom=6,right=6]" \
 #       --pad 0 --theme 1 --dark-theme 200 diagrams/atif-architecture.d2 \
 #       public/images/diagrams/atif-architecture.svg
 # ...then apply the Makefile `diagrams` target's sed color pass to the SVG.
@@ -25,7 +25,7 @@ k8s: "Kubernetes / OpenShift" {
   input: "Input mount\n/test_data (ATIF JSON)"
   pod: ATIF Job Pod {
     adapter: ATIF Adapter {
-      direction: right
+      grid-rows: 2
       discover: "1. Discover + validate ATIF files"
       criteria: "2. Derive or load criteria"
       score: "3. Score steps (judge)"
