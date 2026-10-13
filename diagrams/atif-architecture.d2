@@ -54,7 +54,7 @@ k8s.cm -> k8s.pod.adapter: mounted {
 k8s.input -> k8s.pod.adapter: recorded trajectories {
   style.font-size: 12
 }
-k8s.pod.adapter.score -> external.judge: scoring requests {
+k8s.pod.adapter -> external.judge: scoring requests {
   style.font-size: 12
 }
 k8s.pod.adapter.persist -> k8s.pod.sidecar: callbacks {
@@ -64,6 +64,6 @@ k8s.pod.sidecar -> evalhub.api: "POST /events" {
   style.font-size: 12
   style.stroke-dash: 3
 }
-k8s.pod.adapter.persist -> external.mlflow: "run + detailed artifacts" {
+k8s.pod.adapter -> external.mlflow: "run + detailed artifacts" {
   style.font-size: 12
 }
