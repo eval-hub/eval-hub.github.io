@@ -117,4 +117,4 @@ The judge must return numeric scores in the range [0, 1]:
 - Genuine zero scores are valid
 - For backward compatibility, **all recorded frames (including user and system frames) are scored** and participate in denominators; this convention is recorded as `atif_scored_frames=all` in the run metadata
 
-See [Metrics](metrics/) for how step scores roll up into node, subtree, and collection scores.
+See [Metrics](../metrics/) for how step scores roll up into node, subtree, and collection scores.

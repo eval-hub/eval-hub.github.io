@@ -13,7 +13,7 @@ The ATIF adapter reports a small set of summary metrics to the eval-hub service 
 | `atif_trajectory_count` | Number of scored trajectories contributing to the aggregate |
 | `atif_failure_categorization_rate` | Fraction of low-scoring trajectories where every low-scoring step received an actionable category |
 
-The run's `overall_score` equals `atif_overall_score`, and `num_examples_evaluated` counts scored trajectories. Detailed results — per-trajectory and per-step scores, criteria, categories, and provenance — are persisted to MLflow (see [Artifacts](artifacts/)).
+The run's `overall_score` equals `atif_overall_score`, and `num_examples_evaluated` counts scored trajectories. Detailed results — per-trajectory and per-step scores, criteria, categories, and provenance — are persisted to MLflow (see [Artifacts](../artifacts/)).
 
 ## Score Semantics
 

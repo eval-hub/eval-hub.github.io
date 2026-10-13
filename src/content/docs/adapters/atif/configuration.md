@@ -49,7 +49,7 @@ In local mode `model.url` is used directly and `model.auth.secret_ref` provides 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `trajectory_path` | string | `/test_data` | ATIF file or directory, scanned recursively in deterministic order |
-| `scoring_mode` | string | `auto` | `auto`, `benchmark`, `reference`, or `custom` — see [Scoring Modes](scoring/) |
+| `scoring_mode` | string | `auto` | `auto`, `benchmark`, `reference`, or `custom` — see [Scoring Modes](../scoring/) |
 | `benchmark_name` | string | unset | Built-in rubric for `benchmark` mode: `swe-bench-lite`, `terminal-bench`, or `humaneval` |
 | `reference_registry_path` | string | unset | JSON rubric registry, required in `reference` mode |
 | `reference_rubric` | string | `default` | Rubric name selected from the reference registry |
@@ -80,11 +80,11 @@ Symlink paths and non-regular files are rejected; rubric files follow the same p
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `subagent_aggregation` | string | `flat` | `flat`, `hierarchical`, or `separate` — see [Metrics](metrics/#aggregation-modes) |
+| `subagent_aggregation` | string | `flat` | `flat`, `hierarchical`, or `separate` — see [Metrics](../metrics/#aggregation-modes) |
 | `max_subagent_depth` | integer | 3 | Root depth is zero; deeper descendants remain explicitly unscored and make ancestors incomplete |
 | `failure_threshold` | float | 0.5 | Scores strictly below this trigger failure categorization |
 | `completion_threshold` | float | 0.5 | Aggregate score at or above this marks a trajectory passed |
-| `training_threshold` | float | unset | Optional threshold for complete node-level training selections — see [Artifacts](artifacts/#training-selections) |
+| `training_threshold` | float | unset | Optional threshold for complete node-level training selections — see [Artifacts](../artifacts/#training-selections) |
 | `partial_result_policy` | string | `fail_fast` | `fail_fast` or `skip_failed_trajectory` when a trajectory cannot be scored |
 
 ## Judge Runtime
