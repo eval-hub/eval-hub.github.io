@@ -38,8 +38,14 @@ k8s: "Kubernetes / OpenShift" {
 
 external: External {
   direction: right
-  judge: "Judge endpoint\n(OpenAI-compatible)"
-  mlflow: MLflow
+  judge: "Judge endpoint\n(OpenAI-compatible)" {
+    width: 168
+    height: 64
+  }
+  mlflow: MLflow {
+    width: 168
+    height: 64
+  }
 }
 
 evalhub.orch -> k8s.cm: creates {
