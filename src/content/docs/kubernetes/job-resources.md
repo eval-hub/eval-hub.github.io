@@ -14,12 +14,18 @@ Provider defaults are defined in
 Check the effective provider configuration and job pod in your deployment,
 since deployed versions and administrator configuration can differ.
 
+Benchmark-level or evaluation-level `hardware_config` can override provider
+defaults, either through direct CPU and memory settings or a referenced
+`HardwareProfile`. Benchmark-level configuration takes precedence over the
+evaluation-level fallback. See [Hardware Profiles](/guides/hardware-profiles/)
+for configuration modes and resource precedence.
+
 ## LightEval and LiveCodeBench
 
-The updated [LightEval provider configuration](https://github.com/eval-hub/eval-hub/blob/main/config/providers/lighteval.yaml)
-in [eval-hub#1151](https://github.com/eval-hub/eval-hub/pull/1151) uses the following
-adapter container defaults. Deployments that have not received this change
-can still use the previous allocation:
+The [LightEval provider configuration](https://github.com/eval-hub/eval-hub/blob/main/config/providers/lighteval.yaml)
+uses the following adapter container defaults when no hardware configuration
+overrides them. Older deployments may still use a `1Gi` memory request and
+`8Gi` limit:
 
 | Resource | Request | Limit |
 |---|---|---|
@@ -32,13 +38,13 @@ out-of-memory failures. Prior testing completed with the higher allocation.
 The tested allocation does not establish a minimum requirement, and the
 underlying memory consumption still requires investigation.
 
-**The settings apply to all evaluations using the shared LightEval
-provider, including benchmarks other than LiveCodeBench.** They are not
-selected automatically per benchmark. The `256Gi` request affects
+**These defaults apply to benchmarks using the shared LightEval provider
+unless overridden by hardware configuration.** They are not selected
+automatically per benchmark. The `256Gi` request affects
 scheduling even when a benchmark consumes much less memory; it does not
 force the process to consume `256Gi`.
 
-Before submitting an evaluation using this provider, ask your cluster
+Before submitting an evaluation using these defaults, ask your cluster
 administrator to confirm that:
 
 - A node has enough allocatable memory for the adapter's `256Gi` request
@@ -46,6 +52,9 @@ administrator to confirm that:
 - Namespace resource quotas allow the job's total requests and limits,
   including the adapter's `512Gi` memory limit.
 - There is capacity for the number of evaluations that will run at once.
+
+If hardware configuration overrides these defaults, use the effective job
+resource values for capacity and quota checks.
 
 Insufficient node capacity can leave jobs Pending. Resource quota admission
 can reject job pod creation. An out-of-memory failure means the allocation
