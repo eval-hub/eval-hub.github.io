@@ -81,11 +81,16 @@ in the job pod also require resources.</p>
 <a href="https://github.com/eval-hub/eval-hub/tree/main/config/providers"><code dir="auto">config/providers/</code></a>.
 Check the effective provider configuration and job pod in your deployment,
 since deployed versions and administrator configuration can differ.</p>
+<p>Benchmark-level or evaluation-level <code dir="auto">hardware_config</code> can override provider
+defaults, either through direct CPU and memory settings or a referenced
+<code dir="auto">HardwareProfile</code>. Benchmark-level configuration takes precedence over the
+evaluation-level fallback. See <a href="/guides/hardware-profiles/">Hardware Profiles</a>
+for configuration modes and resource precedence.</p>
 <div class="sl-heading-wrapper level-h2"><h2 id="lighteval-and-livecodebench">LightEval and LiveCodeBench</h2><a class="sl-anchor-link" href="#lighteval-and-livecodebench"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentcolor" d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 0 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 1 0-1.42-1.42Zm8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 0 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 1 0 1.42 1.42l3.88-3.89a4.49 4.49 0 0 0 0-6.33ZM8.83 15.17a1 1 0 0 0 1.1.22 1 1 0 0 0 .32-.22l4.92-4.92a1 1 0 0 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42Z"></path></svg></span><span class="sr-only" data-pagefind-ignore="">Section titled “LightEval and LiveCodeBench”</span></a></div>
-<p>The updated <a href="https://github.com/eval-hub/eval-hub/blob/main/config/providers/lighteval.yaml">LightEval provider configuration</a>
-in <a href="https://github.com/eval-hub/eval-hub/pull/1151">eval-hub#1151</a> uses the following
-adapter container defaults. Deployments that have not received this change
-can still use the previous allocation:</p>
+<p>The <a href="https://github.com/eval-hub/eval-hub/blob/main/config/providers/lighteval.yaml">LightEval provider configuration</a>
+uses the following adapter container defaults when no hardware configuration
+overrides them. Older deployments may still use a <code dir="auto">1Gi</code> memory request and
+<code dir="auto">8Gi</code> limit:</p>
 
 
 
@@ -112,12 +117,12 @@ Testing with the previous <code dir="auto">1Gi</code> memory request and <code d
 out-of-memory failures. Prior testing completed with the higher allocation.
 The tested allocation does not establish a minimum requirement, and the
 underlying memory consumption still requires investigation.</p>
-<p><strong>The settings apply to all evaluations using the shared LightEval
-provider, including benchmarks other than LiveCodeBench.</strong> They are not
-selected automatically per benchmark. The <code dir="auto">256Gi</code> request affects
+<p><strong>These defaults apply to benchmarks using the shared LightEval provider
+unless overridden by hardware configuration.</strong> They are not selected
+automatically per benchmark. The <code dir="auto">256Gi</code> request affects
 scheduling even when a benchmark consumes much less memory; it does not
 force the process to consume <code dir="auto">256Gi</code>.</p>
-<p>Before submitting an evaluation using this provider, ask your cluster
+<p>Before submitting an evaluation using these defaults, ask your cluster
 administrator to confirm that:</p>
 <ul>
 <li>A node has enough allocatable memory for the adapter’s <code dir="auto">256Gi</code> request
@@ -126,6 +131,8 @@ plus the other containers and pod overhead.</li>
 including the adapter’s <code dir="auto">512Gi</code> memory limit.</li>
 <li>There is capacity for the number of evaluations that will run at once.</li>
 </ul>
+<p>If hardware configuration overrides these defaults, use the effective job
+resource values for capacity and quota checks.</p>
 <p>Insufficient node capacity can leave jobs Pending. Resource quota admission
 can reject job pod creation. An out-of-memory failure means the allocation
 was insufficient for that execution; increasing the limit does not reduce
