@@ -135,6 +135,7 @@ export default defineConfig({
         {
           label: 'Kubernetes',
           items: [
+            { label: 'Job Pod Resource Requirements', slug: 'kubernetes/job-resources' },
             { label: 'Evaluation Lifecycle Signals', slug: 'kubernetes/lifecycle-signals' },
             { label: 'Evaluation Event Violations', slug: 'kubernetes/event-violations' },
           ],
