@@ -195,7 +195,7 @@ For each benchmark run, the SDK logs:
 | **Params** | `benchmark_id`, `provider_id`, `model_name`, `num_examples_evaluated`, `duration_seconds`, plus selected EvalCard fields when present |
 | **Metrics** | Each `EvaluationResult` metric (keys sanitized for the MLflow REST API, e.g. commas → `_`) and `overall_score` when set |
 | **Tags** | JobSpec experiment tags on the run |
-| **Artifacts** | Optional adapter-supplied files (`MlflowArtifact`), e.g. JSON summaries or HTML dashboards |
+| **Artifacts** | Optional adapter-supplied content (`MlflowArtifact`) or local files (`MlflowFileArtifact`), e.g. JSON summaries or HTML dashboards |
 
 Job status / results include:
 
@@ -228,6 +228,33 @@ if run_id:
 
 callbacks.report_results(results)
 ```
+
+**Available in `eval-hub-sdk >= 1.0.6`:** Use `MlflowFileArtifact` for artifacts already on disk. Unlike `MlflowArtifact`, which takes in-memory bytes, it takes a local file path and streams the upload, reducing memory pressure for large artifacts. Both artifact types can be passed together to `save()`.
+
+```python
+from pathlib import Path
+
+from evalhub.adapter.mlflow import MlflowFileArtifact
+
+report_path = Path("/tmp/evaluation/report.html")  # Existing, complete report
+
+run_id = callbacks.mlflow.save(
+    results,
+    adapter.job_spec,
+    artifacts=[
+        MlflowFileArtifact(
+            path="reports/report.html",  # Destination relative to the run artifact root
+            local_path=report_path,      # Source file on disk (str or Path)
+        ),
+    ],
+)
+if run_id:
+    results.mlflow_run_id = run_id
+
+callbacks.report_results(results)
+```
+
+Keep the source file complete, unchanged, and available until `save()` returns. The SDK does not delete it.
 
 `save()` is a no-op (returns `None`) when `job_spec.experiment_name` is unset. On failure it reports a status event with `message_code=mlflow_save_failed` and raises.
 
