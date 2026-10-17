@@ -1,0 +1,98 @@
+---
+title: "Using Judge and Scorer Models"
+description: "Configure judge, grader, or scorer models and their credentials for EvalHub jobs."
+---
+
+Some benchmarks use a second model to judge or score the evaluated model's output. This guide explains how to select that model and configure its connection for Kubernetes evaluation jobs.
+
+The exact parameter name and format are benchmark-specific: a provider may call the model a **judge**, **grader**, or **scorer**. Follow the relevant benchmark documentation for its parameter shape. The Secret and sidecar connection behavior described here is shared by the supported model-authentication flow.
+
+For the sidecar's credential handling details, see [Model Authentication](/guides/model-authentication/). For collection job basics, see [Collections](/guides/collections/).
+
+## Before you start
+
+- Know the target model's endpoint URL and model identifier.
+- Know the judge/scorer model identifier and, if it uses a separate connection, its endpoint and API key.
+- Have a user or tenant administrator with Secret-creation permission create the Kubernetes Secret in the evaluation's **tenant namespace** before submitting the job. The EvalHub operator does not create per-job judge credential Secrets through the EvalHub custom resource.
+
+The Secret is referenced by name in `model.auth.secret_ref`. Keep its credential values out of job parameters, collection definitions, and source-controlled YAML.
+
+## Select the judge or scorer model
+
+Set the model identifier in the parameter expected by the benchmark. For example, a collection job can override an empty `judge_model` declared by the collection:
+
+```json
+{
+  "name": "instruction-output-with-judge",
+  "model": {
+    "url": "https://target.example/v1",
+    "name": "target-model",
+    "auth": {
+      "secret_ref": "target-and-judge-credentials"
+    }
+  },
+  "collection": {
+    "id": "instruction-output-v1",
+    "benchmarks": [
+      {
+        "id": "followbench",
+        "provider_id": "followbench",
+        "parameters": {
+          "judge_model": "judge-model-id"
+        }
+      }
+    ]
+  }
+}
+```
+
+In the UI, provide the judge/scorer identifier in the benchmark field exposed for that job, and select or reference the existing Secret in the model-authentication field. The corresponding API property is `model.auth.secret_ref`; the UI submits that reference but does not create the Kubernetes Secret. If a benchmark uses a different parameter shape—for example, standalone Inspect HLE's `model_roles.grader`—use that provider's instructions instead of assuming `judge_model` is universal.
+
+## Configure the connection Secret
+
+The Secret's optional judge-specific keys determine how the sidecar routes the judge connection:
+
+| Connection | Secret keys | Behavior |
+|---|---|---|
+| Same endpoint and credential as the target | No judge-specific keys; include `api-key` if the target requires it | Judge requests reuse the target URL and credential. |
+| Same endpoint, separate credential | `judge_api-key`; include `api-key` too if the target requires its own key | Judge requests use the target URL and the judge-specific key. |
+| Separate endpoint and credential | `judge_api-key` and `judge_url`; include `api-key` if the target requires its own key | Judge requests use the judge URL and judge-specific key. |
+
+`judge_url` without `judge_api-key` is invalid in the current contract. If the target endpoint is public and needs no key, omit `api-key`.
+
+For example, to use a different judge endpoint and key:
+
+```bash
+kubectl create secret generic target-and-judge-credentials \
+  --namespace "$TENANT_NAMESPACE" \
+  --from-literal=api-key="$TARGET_API_KEY" \
+  --from-literal=judge_api-key="$JUDGE_API_KEY" \
+  --from-literal=judge_url="$JUDGE_URL"
+```
+
+If both models use the same key and endpoint, omit `judge_api-key` and `judge_url`; the judge reuses the target connection. If they share the endpoint but require different keys, provide `judge_api-key` and omit `judge_url`.
+
+Create the Secret using your cluster's approved secret-management process, such as `kubectl`, `oc`, or the OpenShift console. Do not commit populated Secret manifests or paste credential values into job parameters. The operator grants EvalHub access to tenant Secrets for job setup, but does not provision these user credentials.
+
+## How the sidecar uses the Secret
+
+For Kubernetes jobs, EvalHub reads the referenced Secret and prepares an ephemeral internal Secret containing reference values for the adapter. The real API keys remain available to the sidecar, which forwards judge requests to the configured upstream and injects the credential. When `judge_url` is present, it is rewritten to the sidecar route in the adapter's job configuration.
+
+The user-provided Secret remains the source of the real credential values; the job's temporary internal Secret is not a replacement for it. For implementation details and other secret-key patterns, see [Model Authentication](/guides/model-authentication/#scenario-4-multi-model-secrets).
+
+## Provider-specific configuration
+
+The connection Secret does not determine how a benchmark configures its judge. The benchmark's provider defines that part:
+
+- Collection benchmarks may expose a `judge_model` field for the job, as in the example above.
+- Inspect HLE standalone jobs configure the grader through `model_roles.grader`; see the [Inspect HLE example](https://github.com/eval-hub/eval-hub/blob/main/examples/inspect-hle/README.md).
+- Other providers may use different names or require additional non-secret parameters. Consult the provider's configuration and examples.
+
+Use the model identifier expected by the judge endpoint. A valid Secret and URL do not guarantee that the endpoint hosts a model with that identifier.
+
+## Troubleshooting
+
+- **Missing or invalid Secret:** check that `secret_ref` names a Secret in the job's tenant namespace and that its keys are spelled exactly as documented.
+- **Judge authentication failure:** verify `judge_api-key` is present when using a separate judge key; do not put the key in benchmark parameters.
+- **Judge endpoint or model not found:** verify `judge_url` and the model identifier. A 404 from the upstream usually means the configured endpoint does not serve that model name.
+- **Unexpected target credentials used:** if judge-specific keys are absent, the judge intentionally reuses the target connection.

@@ -96,6 +96,7 @@ export default defineConfig({
           items: [
             { label: 'CLI', slug: 'guides/cli' },
             { label: 'Model Authentication', slug: 'guides/model-authentication' },
+            { label: 'Judge and Scorer Models', slug: 'guides/judge-and-scorer-models' },
             { label: 'Using Custom Data', slug: 'guides/custom-data' },
             { label: 'Disconnected Cluster', slug: 'guides/disconnected-cluster' },
             { label: 'Local Mode', slug: 'guides/local-mode' },
