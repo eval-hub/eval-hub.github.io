@@ -74,13 +74,14 @@
 	StarlightThemeProvider.updatePickers();
 </script>   </div> </div> </div> </div> </nav> <div class="main-frame astro-vrdttmbt">  <script type="module">const a=document.getElementById("starlight__sidebar"),n=a?.querySelector("sl-sidebar-state-persist"),o="sl-sidebar-state",i=()=>{let t=[];const e=n?.dataset.hash||"";try{const s=sessionStorage.getItem(o),r=JSON.parse(s||"{}");Array.isArray(r.open)&&r.hash===e&&(t=r.open)}catch{}return{hash:e,open:t,scroll:a?.scrollTop||0}},c=t=>{try{sessionStorage.setItem(o,JSON.stringify(t))}catch{}},d=()=>c(i()),l=(t,e)=>{const s=i();s.open[e]=t,c(s)};n?.addEventListener("click",t=>{if(!(t.target instanceof Element))return;const e=t.target.closest("summary")?.closest("details");if(!e)return;const s=e.querySelector("sl-sidebar-restore"),r=parseInt(s?.dataset.index||"");isNaN(r)||l(!e.open,r)});addEventListener("visibilitychange",()=>{document.visibilityState==="hidden"&&d()});addEventListener("pageHide",d);</script> <div class="lg:sl-flex astro-67yu43on">  <div class="main-pane astro-67yu43on">  <main data-pagefind-body class="astro-bguv2lll" lang="en" dir="ltr">    <div class="content-panel astro-7nkwcw3z"> <div class="sl-container astro-7nkwcw3z"> <h1 id="_top" class="astro-j6tvhyss">Provider Catalog</h1> </div> </div> <div class="content-panel astro-7nkwcw3z"> <div class="sl-container astro-7nkwcw3z"> <div class="sl-markdown-content">  <p>Browse community-contributed evaluation providers from <a href="https://github.com/eval-hub/eval-hub-contrib">eval-hub-contrib</a>. Each provider ships a <code dir="auto">provider.yaml</code> that defines benchmarks, runtime settings, and container image references.</p>
 <p>The catalog is synced from the contrib repository at <strong>site build time</strong>. Use the filters below to find a provider, then download either the raw <code dir="auto">provider.yaml</code> or a ready-to-apply Kubernetes ConfigMap.</p>
-<div class="provider-catalog" id="provider-catalog" data-provider-ids="[&quot;atif&quot;,&quot;databench&quot;,&quot;deepeval&quot;,&quot;evalhub-internal&quot;,&quot;followbench&quot;,&quot;ibm-clear&quot;,&quot;ifbench&quot;,&quot;inspect&quot;,&quot;mteb&quot;,&quot;nemo-guardrails&quot;,&quot;promptfoo&quot;,&quot;ragas&quot;,&quot;ruler&quot;,&quot;swebench&quot;,&quot;tooleval&quot;,&quot;wildguard&quot;]"> <div class="catalog-toolbar"> <label>
+<div class="provider-catalog" id="provider-catalog" data-provider-ids="[&quot;atif&quot;,&quot;databench&quot;,&quot;deepeval&quot;,&quot;evalhub-internal&quot;,&quot;followbench&quot;,&quot;ibm-clear&quot;,&quot;ifbench&quot;,&quot;inspect&quot;,&quot;lighteval&quot;,&quot;mteb&quot;,&quot;nemo-guardrails&quot;,&quot;promptfoo&quot;,&quot;ragas&quot;,&quot;ruler&quot;,&quot;swebench&quot;,&quot;tooleval&quot;,&quot;wildguard&quot;]"> <div class="catalog-toolbar"> <label>
 Search
 <input type="search" id="catalog-search" placeholder="Name, id, description…" autocomplete="off"> </label> <button type="button" id="catalog-clear">Clear filters</button> </div> <p class="catalog-status" id="catalog-status">
-Showing 16 of 16 providers
+Showing 17 of 17 providers
 </p> <div class="catalog-layout"> <div class="catalog-cards" id="catalog-cards"> <button type="button" class="provider-card" data-provider-id="atif" aria-pressed="false"> <h3>ATIF Trajectory Adapter</h3> <div class="provider-id">atif</div> <p class="provider-desc">Evaluate pre-recorded ATIF trajectories using an OpenAI-compatible judge.</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">agentic</span> </div> </button><button type="button" class="provider-card" data-provider-id="databench" aria-pressed="false"> <h3>DataBench</h3> <div class="provider-id">databench</div> <p class="provider-desc">Direct-answer question answering over DataBench CSV tables, scored by the official DataBench evaluator.</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">table_qa</span> </div> </button><button type="button" class="provider-card" data-provider-id="deepeval" aria-pressed="false"> <h3>DeepEval</h3> <div class="provider-id">deepeval</div> <p class="provider-desc">LLM-as-judge evaluation framework with metrics for faithfulness, relevancy, hallucination, correctness, summarization, and multi-turn conversation evaluation</p> <div class="provider-meta"> <span class="chip">8 benchmarks</span> <span class="chip">accuracy</span><span class="chip">multi-turn</span><span class="chip">nlp</span> </div> </button><button type="button" class="provider-card" data-provider-id="evalhub-internal" aria-pressed="false"> <h3>EvalHub Post Processor</h3> <div class="provider-id">evalhub-internal</div> <p class="provider-desc">Ordered post-processing operations on completed evaluation results.</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">post_processing</span> </div> </button><button type="button" class="provider-card" data-provider-id="followbench" aria-pressed="false"> <h3>FollowBench</h3> <div class="provider-id">followbench</div> <p class="provider-desc">FollowBench evaluates multi-level, fine-grained constraint following across content, situation, style, format, mixed, and example constraints. It reports Hard Satisfaction Rate (HSR), Soft Satisfaction Rate (SSR), and Consistent Satisfaction Levels (CSL) using rule-based checks and a configurable external judge.
 </p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="ibm-clear" aria-pressed="false"> <h3>IBM CLEAR</h3> <div class="provider-id">ibm-clear</div> <p class="provider-desc">IBM CLEAR evaluation framework for error analysis and reporting on agent traces</p> <div class="provider-meta"> <span class="chip">3 benchmarks</span> <span class="chip">error-analysis</span> </div> </button><button type="button" class="provider-card" data-provider-id="ifbench" aria-pressed="false"> <h3>IFBench</h3> <div class="provider-id">ifbench</div> <p class="provider-desc">IFBench (AllenAI) evaluates precise instruction-following generalization using 58 out-of-domain verifiable constraints. The adapter loads the bundled IFBench test set, generates model completions via an OpenAI-compatible endpoint, and scores responses with programmatic constraint checkers. Primary metric is prompt-level loose accuracy, matching the IFBench paper reporting convention.
-</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="inspect" aria-pressed="false"> <h3>Inspect AI</h3> <div class="provider-id">inspect</div> <p class="provider-desc">UK AISI Inspect AI framework — Petri/Bloom alignment auditing and inspect-evals benchmarks</p> <div class="provider-meta"> <span class="chip">80 benchmarks</span> <span class="chip">agent</span><span class="chip">alignment</span><span class="chip">coding</span> </div> </button><button type="button" class="provider-card" data-provider-id="mteb" aria-pressed="false"> <h3>MTEB</h3> <div class="provider-id">mteb</div> <p class="provider-desc">Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">classification</span><span class="chip">clustering</span><span class="chip">reranking</span> </div> </button><button type="button" class="provider-card" data-provider-id="nemo-guardrails" aria-pressed="false"> <h3>NeMo Guardrails</h3> <div class="provider-id">nemo-guardrails</div> <p class="provider-desc">Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="promptfoo" aria-pressed="false"> <h3>promptfoo</h3> <div class="provider-id">promptfoo</div> <p class="provider-desc">promptfoo (MIT license) is an open-source LLM testing tool. This adapter wraps its assertion-based prompt/model regression testing (promptfoo-eval) and its OWASP LLM Top 10 red-team plugin catalog (promptfoo-redteam). Every job persists promptfoo&#39;s native eval.json as a retained artifact so results can be reopened in promptfoo&#39;s own viewer via `promptfoo import`. Reference: https://github.com/promptfoo/promptfoo
+</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="inspect" aria-pressed="false"> <h3>Inspect AI</h3> <div class="provider-id">inspect</div> <p class="provider-desc">UK AISI Inspect AI framework — Petri/Bloom alignment auditing and inspect-evals benchmarks</p> <div class="provider-meta"> <span class="chip">80 benchmarks</span> <span class="chip">agent</span><span class="chip">alignment</span><span class="chip">coding</span> </div> </button><button type="button" class="provider-card" data-provider-id="lighteval" aria-pressed="false"> <h3>LightEval</h3> <div class="provider-id">lighteval</div> <p class="provider-desc">HuggingFace LightEval — endpoint-only evaluation against any OpenAI-compatible server (vLLM, Ollama, OpenRouter). Supports loglikelihood (multiple-choice) and generative tasks across reasoning, math, knowledge, coding, and safety benchmarks. Loglikelihood scoring uses the /v1/completions echo+logprobs path; no local model weights required.
+</p> <div class="provider-meta"> <span class="chip">28 benchmarks</span> <span class="chip">code</span><span class="chip">knowledge</span><span class="chip">language_understanding</span> </div> </button><button type="button" class="provider-card" data-provider-id="mteb" aria-pressed="false"> <h3>MTEB</h3> <div class="provider-id">mteb</div> <p class="provider-desc">Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">classification</span><span class="chip">clustering</span><span class="chip">reranking</span> </div> </button><button type="button" class="provider-card" data-provider-id="nemo-guardrails" aria-pressed="false"> <h3>NeMo Guardrails</h3> <div class="provider-id">nemo-guardrails</div> <p class="provider-desc">Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="promptfoo" aria-pressed="false"> <h3>promptfoo</h3> <div class="provider-id">promptfoo</div> <p class="provider-desc">promptfoo (MIT license) is an open-source LLM testing tool. This adapter wraps its assertion-based prompt/model regression testing (promptfoo-eval) and its OWASP LLM Top 10 red-team plugin catalog (promptfoo-redteam). Every job persists promptfoo&#39;s native eval.json as a retained artifact so results can be reopened in promptfoo&#39;s own viewer via `promptfoo import`. Reference: https://github.com/promptfoo/promptfoo
 </p> <div class="provider-meta"> <span class="chip">2 benchmarks</span> <span class="chip">capability</span><span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="ragas" aria-pressed="false"> <h3>RAGAS</h3> <div class="provider-id">ragas</div> <p class="provider-desc">Retrieval Augmented Generation Assessment — evaluates RAG pipeline quality using metrics like faithfulness, answer relevancy, context precision/recall, and more. Models are accessed via OpenAI-compatible endpoints.
 </p> <div class="provider-meta"> <span class="chip">2 benchmarks</span> <span class="chip">rag_evaluation</span> </div> </button><button type="button" class="provider-card" data-provider-id="ruler" aria-pressed="false"> <h3>RULER</h3> <div class="provider-id">ruler</div> <p class="provider-desc">NVIDIA RULER long-context evaluation benchmark. Tests LLMs across 13 synthetic tasks spanning needle-in-a-haystack retrieval, variable tracking, aggregation, and question answering at multiple context lengths.
 </p> <div class="provider-meta"> <span class="chip">13 benchmarks</span> <span class="chip">aggregation</span><span class="chip">needle_in_a_haystack</span><span class="chip">question_answering</span> </div> </button><button type="button" class="provider-card" data-provider-id="swebench" aria-pressed="false"> <h3>SWE-bench</h3> <div class="provider-id">swebench</div> <p class="provider-desc">Software engineering benchmark that evaluates LLM-generated code patches against real-world GitHub issues.  Each instance provides a codebase, an issue description, and a gold patch; the model&#39;s patch is applied and tested inside a per-instance container image.</p> <div class="provider-meta"> <span class="chip">3 benchmarks</span> <span class="chip">code_generation</span> </div> </button><button type="button" class="provider-card" data-provider-id="tooleval" aria-pressed="false"> <h3>ToolEval</h3> <div class="provider-id">tooleval</div> <p class="provider-desc">Tool-use sequencing evaluation against a simulated tool library (StableToolBench / ToolEval). Categories: single-tool (G1), multi-tool (G2), multi-step (G3). MUT via EvalHub sidecar; judge via judge_api-key / judge_url in the same model secret. Tool server is user-deployed (tool_server_url).
@@ -2483,13 +2484,24 @@ benchmarks:
     tags: [agent, inspect-evals]
 
   # Custom
+  # primary_score omitted: adapter reports task-dependent metric on the event.
+  # pass_criteria.threshold assumes higher-is-better (SDK default). For
+  # lower-is-better scorers, set job primary_score.metric and lower_is_better.
   - id: inspect/custom
     name: Custom Inspect Task
     description: >
       Run any Inspect AI task by providing 'task' in parameters.
       Supports any inspect-evals task or user-authored task file.
+      Scorer metric names are task-dependent; the adapter reports primary_score
+      on the completed status event so results.benchmarks[].test can be built
+      (unique */accuracy, or a unique non-dispersion score). When multiple
+      score metrics are present with no unique accuracy key, set the job's
+      primary_score.metric to the exact emitted metric name. The default pass
+      threshold (0.15) assumes a higher-is-better metric (e.g. accuracy). For
+      lower-is-better scorers, also set primary_score.lower_is_better: true.
     category: custom
-    metrics: [accuracy/accuracy]
+    pass_criteria:
+      threshold: 0.15
     tags: [custom, inspect-ai]
 
 parameters:
@@ -3643,13 +3655,24 @@ data:
         tags: [agent, inspect-evals]
 
       # Custom
+      # primary_score omitted: adapter reports task-dependent metric on the event.
+      # pass_criteria.threshold assumes higher-is-better (SDK default). For
+      # lower-is-better scorers, set job primary_score.metric and lower_is_better.
       - id: inspect/custom
         name: Custom Inspect Task
         description: &gt;
           Run any Inspect AI task by providing &#39;task&#39; in parameters.
           Supports any inspect-evals task or user-authored task file.
+          Scorer metric names are task-dependent; the adapter reports primary_score
+          on the completed status event so results.benchmarks[].test can be built
+          (unique */accuracy, or a unique non-dispersion score). When multiple
+          score metrics are present with no unique accuracy key, set the job&#39;s
+          primary_score.metric to the exact emitted metric name. The default pass
+          threshold (0.15) assumes a higher-is-better metric (e.g. accuracy). For
+          lower-is-better scorers, also set primary_score.lower_is_better: true.
         category: custom
-        metrics: [accuracy/accuracy]
+        pass_criteria:
+          threshold: 0.15
         tags: [custom, inspect-ai]
 
     parameters:
@@ -3985,6 +4008,949 @@ data:
         type: integer
         default: 1
         description: Number of languages in the evaluation dataset (optional).
+</pre> </details> </div> </div><div class="provider-detail" data-detail-id="lighteval" data-provider-yaml="# LightEval Adapter — Provider Configuration
+#
+# Wraps HuggingFace LightEval (https://github.com/huggingface/lighteval) as an
+# EvalHub community provider. Evaluates any OpenAI-compatible inference endpoint
+# against the benchmark suite without loading model weights locally.
+
+id: lighteval
+name: LightEval
+description: >
+  HuggingFace LightEval — endpoint-only evaluation against any OpenAI-compatible
+  server (vLLM, Ollama, OpenRouter). Supports loglikelihood (multiple-choice) and
+  generative tasks across reasoning, math, knowledge, coding, and safety benchmarks.
+  Loglikelihood scoring uses the /v1/completions echo+logprobs path; no local
+  model weights required.
+type: community
+
+# ── Agent Discoverability ──────────────────────────────────────────────────────
+agent:
+  evaluates:
+    - accuracy
+    - reasoning
+    - math
+    - knowledge
+    - coding
+    - safety
+    - truthfulness
+  recommended_when:
+    - &quot;User wants GSM8K, HellaSwag, ARC, WinoGrande, or TruthfulQA via endpoint&quot;
+    - &quot;Competition math benchmarks: AIME 2024/2025, MATH-500&quot;
+    - &quot;User wants GLUE language-understanding subtasks via a custom endpoint&quot;
+    - &quot;Lightweight truth-checking: TruthfulQA MC against an API model&quot;
+  target_type: model
+  summary: >-
+    HuggingFace LightEval — 28 benchmarks across reasoning, math, knowledge, coding,
+    and safety. Evaluates any OpenAI-compatible endpoint; no local GPU needed.
+  complements:
+    - inspect
+    - lm-eval
+  hints:
+    - >-
+      Pass max_samples in benchmark parameters to limit dataset size (e.g.
+      {&quot;max_samples&quot;: 50}). Without it the full dataset runs, which can take
+      hours for large benchmarks.
+    - >-
+      Log-likelihood benchmarks (arc:easy, arc:challenge, winogrande, glue:cola,
+      glue:sst2, glue:mrpc, truthfulqa:mc and the suites that include them:
+      commonsense_reasoning, scientific_reasoning, language_understanding,
+      truthfulness) are scored through /v1/completions with echo=True and
+      logprobs=1. The endpoint must support these parameters (vLLM does by
+      default); a request that cannot be scored fails the job instead of
+      producing an accuracy. If your endpoint does not expose them, use
+      lm-evaluation-harness instead.
+    - >-
+      The scored text is the one lighteval's own backends use: system prompt,
+      task instruction, few-shot examples (num_few_shot) and the question, then
+      each answer choice. Per-choice log-likelihoods match lighteval's
+      transformers backend for the same model and prompt settings.
+    - >-
+      Generation-only benchmarks (gsm8k, math*, aime*, gpqa:diamond, hellaswag,
+      piqa, openbookqa, mmlu, triviaqa, truthfulqa:gen, lcb:codegeneration_v6)
+      do not need /v1/completions logprobs.
+
+parameters:
+  - name: provider
+    type: string
+    default: endpoint
+    description: >
+      Model provider backend. Use &quot;endpoint&quot; (default) for any OpenAI-compatible
+      API server (vLLM, Ollama, OpenRouter, etc.). Other valid values are
+      &quot;transformers&quot;, &quot;vllm&quot;, &quot;openai&quot;, &quot;anthropic&quot;. &quot;anthropic&quot; runs the
+      generation-only benchmarks; log-likelihood benchmarks are rejected for it
+      because they need /v1/completions with echo+logprobs, which Anthropic's API
+      does not implement.
+
+  - name: max_samples
+    type: integer
+    default: null
+    description: >
+      Maximum number of examples to evaluate per task. When omitted the full
+      dataset runs, which can take hours for large benchmarks.
+
+  - name: num_few_shot
+    type: integer
+    default: 0
+    description: Number of few-shot examples prepended to each prompt (0 = zero-shot).
+
+  - name: random_seed
+    type: integer
+    default: 42
+    description: Random seed for reproducible sampling.
+
+  - name: generation_parameters
+    type: object
+    default: null
+    description: >
+      Generation config forwarded to the model (temperature, max_new_tokens,
+      top_p, top_k, stop_tokens, etc.). Passed as lighteval brace notation.
+
+runtime:
+  k8s:
+    image: quay.io/evalhub/community-lighteval:latest
+    entrypoint:
+      - python
+      - main.py
+    cpu_request: 500m
+    memory_request: 512Mi
+    cpu_limit: 2000m
+    memory_limit: 4Gi
+  local:
+    command: python main.py
+
+benchmarks:
+  # ── Math ──────────────────────────────────────────────────────────────────
+  - id: math
+    name: Math problem-solving suite
+    description: >
+      Mathematical problem-solving suite covering GSM8K, algebra,
+      counting &amp; probability, and MATH-500 competition problems.
+    category: math
+    metrics: [extractive_match]
+    tags: [math, reasoning, lighteval]
+    primary_score:
+      metric: extractive_match
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.3
+
+  - id: gsm8k
+    name: GSM8K
+    description: Grade-school math word problems requiring multi-step reasoning (8,500 problems).
+    category: math
+    metrics: [gsm8k.extractive_match]
+    tags: [math, reasoning, lighteval]
+    primary_score:
+      metric: gsm8k.extractive_match
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: math:algebra
+    name: Competition algebra
+    description: Algebra subset of MATH competition benchmark.
+    category: math
+    metrics: [extractive_match]
+    tags: [math, competition, lighteval]
+    primary_score:
+      metric: extractive_match
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.3
+
+  - id: math:counting_and_probability
+    name: Counting &amp; probability problems
+    description: Counting and probability subset of MATH competition benchmark.
+    category: math
+    metrics: [extractive_match]
+    tags: [math, competition, lighteval]
+    primary_score:
+      metric: extractive_match
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.3
+
+  - id: math_500
+    name: MATH-500
+    description: 500 competition math problems across all MATH difficulty levels.
+    category: math
+    metrics: [math_500.pass@1]
+    tags: [math, competition, lighteval]
+    primary_score:
+      metric: math_500.pass@1
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.3
+
+  - id: aime24
+    name: AIME 2024
+    description: American Invitational Mathematics Examination 2024 — 30 competition problems.
+    category: math
+    metrics: [aime24.pass@1, aime24.avg@n:n=1]
+    tags: [math, competition, aime, lighteval]
+    primary_score:
+      metric: aime24.pass@1
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.0
+
+  - id: aime25
+    name: AIME 2025
+    description: American Invitational Mathematics Examination 2025 — 30 competition problems.
+    category: math
+    metrics: [aime25.pass@1, aime25.avg@n:n=1]
+    tags: [math, competition, aime, lighteval]
+    primary_score:
+      metric: aime25.pass@1
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.0
+
+  # ── Reasoning ─────────────────────────────────────────────────────────────
+  - id: commonsense_reasoning
+    name: Commonsense reasoning suite
+    description: Everyday commonsense reasoning suite (HellaSwag, WinoGrande, OpenBookQA, ARC Easy).
+    category: reasoning
+    metrics: [accuracy, em]
+    tags: [reasoning, commonsense, lighteval]
+    primary_score:
+      metric: accuracy
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: scientific_reasoning
+    name: Science reasoning suite
+    description: Scientific reasoning suite (ARC Easy, ARC Challenge).
+    category: reasoning
+    metrics: [accuracy]
+    tags: [reasoning, science, lighteval]
+    primary_score:
+      metric: accuracy
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: physical_commonsense
+    name: Physical world understanding suite
+    description: Physical interaction intuition and commonsense (PIQA).
+    category: reasoning
+    metrics: [accuracy]
+    tags: [reasoning, commonsense, lighteval]
+    primary_score:
+      metric: accuracy
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.6
+
+  - id: hellaswag
+    name: HellaSwag
+    description: Everyday activity completion — commonsense NLI via loglikelihood scoring.
+    category: reasoning
+    metrics: [hellaswag.em]
+    tags: [reasoning, commonsense, lighteval]
+    primary_score:
+      metric: hellaswag.em
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: winogrande
+    name: WinoGrande
+    description: Pronoun commonsense reasoning (Winograd schema at scale).
+    category: reasoning
+    metrics: [winogrande.acc]
+    tags: [reasoning, commonsense, lighteval]
+    primary_score:
+      metric: winogrande.acc
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.6
+
+  - id: arc:easy
+    name: ARC Easy
+    description: Basic science Q&amp;A — AI2 Reasoning Challenge easy split.
+    category: reasoning
+    metrics: [arc:easy.acc]
+    tags: [reasoning, science, lighteval]
+    primary_score:
+      metric: arc:easy.acc
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.7
+
+  - id: arc:challenge
+    name: ARC Challenge
+    description: Hard science Q&amp;A — AI2 Reasoning Challenge challenge split.
+    category: reasoning
+    metrics: [arc:challenge.acc]
+    tags: [reasoning, science, lighteval]
+    primary_score:
+      metric: arc:challenge.acc
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: piqa
+    name: PIQA
+    description: Physical interaction intuition — two-choice physical world Q&amp;A.
+    category: reasoning
+    metrics: [piqa.em]
+    tags: [reasoning, commonsense, lighteval]
+    primary_score:
+      metric: piqa.em
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.7
+
+  - id: gpqa:diamond
+    name: GPQA Diamond
+    description: Graduate-level GPQA Diamond split — expert-level biology, chemistry, and physics.
+    category: reasoning
+    metrics: [gpqa:diamond.gpqa_pass@1]
+    tags: [reasoning, graduate, expert, lighteval]
+    primary_score:
+      metric: gpqa:diamond.gpqa_pass@1
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.3
+
+  # ── Knowledge ─────────────────────────────────────────────────────────────
+  - id: knowledge
+    name: Factual knowledge suite
+    description: Factual knowledge suite (MMLU, TriviaQA, OpenBookQA). Expands to mmlu, triviaqa, and openbookqa.
+    category: knowledge
+    metrics: [accuracy]
+    tags: [knowledge, factuality, lighteval]
+    primary_score:
+      metric: accuracy
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: mmlu
+    name: MMLU
+    description: Massive Multitask Language Understanding — 57 academic subjects.
+    category: knowledge
+    metrics: [accuracy]
+    tags: [knowledge, academic, lighteval]
+    primary_score:
+      metric: accuracy
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.6
+
+  - id: triviaqa
+    name: TriviaQA
+    description: Trivia factual recall — open-domain Q&amp;A across 95k question-answer pairs.
+    category: knowledge
+    metrics: [triviaqa.em]
+    tags: [knowledge, factuality, lighteval]
+    primary_score:
+      metric: triviaqa.em
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: openbookqa
+    name: OpenBookQA
+    description: Open-book science reasoning — 4-choice Q&amp;A with elementary science facts.
+    category: knowledge
+    metrics: [openbookqa.em]
+    tags: [knowledge, science, lighteval]
+    primary_score:
+      metric: openbookqa.em
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.4
+
+  # ── Language Understanding ─────────────────────────────────────────────────
+  - id: language_understanding
+    name: Language understanding suite
+    description: Language understanding suite combining GLUE subtasks.
+    category: language_understanding
+    metrics: [accuracy]
+    tags: [language, glue, lighteval]
+    primary_score:
+      metric: accuracy
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: glue:cola
+    name: CoLA — Grammatical acceptability
+    description: Corpus of Linguistic Acceptability — binary grammaticality classification.
+    category: language_understanding
+    metrics: [glue:cola.acc, glue:cola.mcc]
+    tags: [language, glue, lighteval]
+    primary_score:
+      metric: glue:cola.mcc
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.3
+
+  - id: glue:sst2
+    name: SST-2 — Sentiment classification
+    description: Stanford Sentiment Treebank — binary sentiment classification.
+    category: language_understanding
+    metrics: [glue:sst2.acc]
+    tags: [language, sentiment, glue, lighteval]
+    primary_score:
+      metric: glue:sst2.acc
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.8
+
+  - id: glue:mrpc
+    name: MRPC — Paraphrase detection
+    description: Microsoft Research Paraphrase Corpus — sentence pair paraphrase classification.
+    category: language_understanding
+    metrics: [glue:mrpc.acc, glue:mrpc.loglikelihood_f1]
+    tags: [language, nli, glue, lighteval]
+    primary_score:
+      metric: glue:mrpc.loglikelihood_f1
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.7
+
+  # ── Code ──────────────────────────────────────────────────────────────────
+  - id: lcb:codegeneration_v6
+    name: LiveCodeBench v6 — Code generation
+    description: LiveCodeBench v6 competitive programming and code generation tasks.
+    category: code
+    metrics: [lcb:codegeneration_v6.codegen_pass@1]
+    tags: [coding, competitive, lighteval]
+    primary_score:
+      metric: lcb:codegeneration_v6.codegen_pass@1
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.1
+
+  # ── Safety / Truthfulness ─────────────────────────────────────────────────
+  - id: truthfulness
+    name: Honesty &amp; hallucination suite
+    description: >
+      Truthfulness suite covering TruthfulQA multiple-choice (MC1, MC2) and
+      generation variants.
+    category: safety
+    metrics: [truthfulqa_mc1, truthfulqa_mc2, truthfulqa:gen.em]
+    tags: [safety, truthfulness, hallucination, lighteval]
+    primary_score:
+      metric: truthfulqa_mc2
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: truthfulqa:mc
+    name: TruthfulQA — Multiple choice
+    description: >
+      TruthfulQA multiple-choice variant — tests whether models reproduce common
+      misconceptions. MC1 = single correct answer; MC2 = multi-correct normalized.
+    category: safety
+    metrics: [truthfulqa_mc1, truthfulqa_mc2]
+    tags: [safety, truthfulness, lighteval]
+    primary_score:
+      metric: truthfulqa_mc2
+      lower_is_better: false
+    pass_criteria:
+      threshold: 0.5
+
+  - id: truthfulqa:gen
+    name: TruthfulQA — Generation
+    description: >
+      TruthfulQA generation variant — the model answers freely and the answer is
+      exact-matched against the reference correct answers.
+    category: safety
+    metrics: [truthfulqa:gen.em]
+    tags: [safety, truthfulness, lighteval]
+    primary_score:
+      metric: truthfulqa:gen.em
+      lower_is_better: false
+    pass_criteria:
+      # Placeholder: strict exact match on free-form text scores low by design.
+      threshold: 0.1
+
+" hidden> <div class="detail-header"> <div class="detail-title-group"> <h3>LightEval</h3> <div class="detail-id">lighteval</div> </div> <a class="detail-github-link" href="https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/lighteval/provider.yaml" target="_blank" rel="noopener noreferrer" title="View provider.yaml on GitHub" aria-label="View provider.yaml on GitHub"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"> <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path> </svg> </a> </div> <p>HuggingFace LightEval — endpoint-only evaluation against any OpenAI-compatible server (vLLM, Ollama, OpenRouter). Supports loglikelihood (multiple-choice) and generative tasks across reasoning, math, knowledge, coding, and safety benchmarks. Loglikelihood scoring uses the /v1/completions echo+logprobs path; no local model weights required.
+</p> <div class="detail-section"> <h4>Runtime</h4> <div class="detail-runtime">quay.io/evalhub/community-lighteval:latest</div> </div> <div class="detail-section"> <h4>Benchmarks (28)</h4> <table class="benchmarks-table"> <thead> <tr><th>ID</th><th>Name</th><th>Category</th></tr> </thead> <tbody> <tr> <td><code>math</code></td> <td>Math problem-solving suite</td> <td>math</td> </tr><tr> <td><code>gsm8k</code></td> <td>GSM8K</td> <td>math</td> </tr><tr> <td><code>math:algebra</code></td> <td>Competition algebra</td> <td>math</td> </tr><tr> <td><code>math:counting_and_probability</code></td> <td>Counting &amp; probability problems</td> <td>math</td> </tr><tr> <td><code>math_500</code></td> <td>MATH-500</td> <td>math</td> </tr><tr> <td><code>aime24</code></td> <td>AIME 2024</td> <td>math</td> </tr><tr> <td><code>aime25</code></td> <td>AIME 2025</td> <td>math</td> </tr><tr> <td><code>commonsense_reasoning</code></td> <td>Commonsense reasoning suite</td> <td>reasoning</td> </tr><tr> <td><code>scientific_reasoning</code></td> <td>Science reasoning suite</td> <td>reasoning</td> </tr><tr> <td><code>physical_commonsense</code></td> <td>Physical world understanding suite</td> <td>reasoning</td> </tr><tr> <td><code>hellaswag</code></td> <td>HellaSwag</td> <td>reasoning</td> </tr><tr> <td><code>winogrande</code></td> <td>WinoGrande</td> <td>reasoning</td> </tr><tr> <td><code>arc:easy</code></td> <td>ARC Easy</td> <td>reasoning</td> </tr><tr> <td><code>arc:challenge</code></td> <td>ARC Challenge</td> <td>reasoning</td> </tr><tr> <td><code>piqa</code></td> <td>PIQA</td> <td>reasoning</td> </tr><tr> <td><code>gpqa:diamond</code></td> <td>GPQA Diamond</td> <td>reasoning</td> </tr><tr> <td><code>knowledge</code></td> <td>Factual knowledge suite</td> <td>knowledge</td> </tr><tr> <td><code>mmlu</code></td> <td>MMLU</td> <td>knowledge</td> </tr><tr> <td><code>triviaqa</code></td> <td>TriviaQA</td> <td>knowledge</td> </tr><tr> <td><code>openbookqa</code></td> <td>OpenBookQA</td> <td>knowledge</td> </tr><tr> <td><code>language_understanding</code></td> <td>Language understanding suite</td> <td>language_understanding</td> </tr><tr> <td><code>glue:cola</code></td> <td>CoLA — Grammatical acceptability</td> <td>language_understanding</td> </tr><tr> <td><code>glue:sst2</code></td> <td>SST-2 — Sentiment classification</td> <td>language_understanding</td> </tr><tr> <td><code>glue:mrpc</code></td> <td>MRPC — Paraphrase detection</td> <td>language_understanding</td> </tr><tr> <td><code>lcb:codegeneration_v6</code></td> <td>LiveCodeBench v6 — Code generation</td> <td>code</td> </tr><tr> <td><code>truthfulness</code></td> <td>Honesty &amp; hallucination suite</td> <td>safety</td> </tr><tr> <td><code>truthfulqa:mc</code></td> <td>TruthfulQA — Multiple choice</td> <td>safety</td> </tr><tr> <td><code>truthfulqa:gen</code></td> <td>TruthfulQA — Generation</td> <td>safety</td> </tr> </tbody> </table> </div> <div class="detail-section"> <h4>ConfigMap options</h4> <form class="configmap-form" data-configmap-form> <label>
+Namespace
+<input type="text" name="namespace" value="opendatahub"> </label> <label>
+ConfigMap name
+<input type="text" name="name" value="evalhub-provider-lighteval"> </label> <label>
+Label: evalhub-provider-name
+<input type="text" name="providerName" value="lighteval"> </label> </form> <div class="download-actions"> <button type="button" data-download-configmap>Download ConfigMap</button> </div> <details class="configmap-preview"> <summary>Preview ConfigMap YAML</summary> <pre data-configmap-preview>apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: evalhub-provider-lighteval
+  namespace: opendatahub
+  labels:
+    trustyai.opendatahub.io/evalhub-provider-type: system
+    trustyai.opendatahub.io/evalhub-provider-name: lighteval
+data:
+  lighteval.yaml: |+
+    # LightEval Adapter — Provider Configuration
+    #
+    # Wraps HuggingFace LightEval (https://github.com/huggingface/lighteval) as an
+    # EvalHub community provider. Evaluates any OpenAI-compatible inference endpoint
+    # against the benchmark suite without loading model weights locally.
+
+    id: lighteval
+    name: LightEval
+    description: &gt;
+      HuggingFace LightEval — endpoint-only evaluation against any OpenAI-compatible
+      server (vLLM, Ollama, OpenRouter). Supports loglikelihood (multiple-choice) and
+      generative tasks across reasoning, math, knowledge, coding, and safety benchmarks.
+      Loglikelihood scoring uses the /v1/completions echo+logprobs path; no local
+      model weights required.
+    type: community
+
+    # ── Agent Discoverability ──────────────────────────────────────────────────────
+    agent:
+      evaluates:
+        - accuracy
+        - reasoning
+        - math
+        - knowledge
+        - coding
+        - safety
+        - truthfulness
+      recommended_when:
+        - &quot;User wants GSM8K, HellaSwag, ARC, WinoGrande, or TruthfulQA via endpoint&quot;
+        - &quot;Competition math benchmarks: AIME 2024/2025, MATH-500&quot;
+        - &quot;User wants GLUE language-understanding subtasks via a custom endpoint&quot;
+        - &quot;Lightweight truth-checking: TruthfulQA MC against an API model&quot;
+      target_type: model
+      summary: &gt;-
+        HuggingFace LightEval — 28 benchmarks across reasoning, math, knowledge, coding,
+        and safety. Evaluates any OpenAI-compatible endpoint; no local GPU needed.
+      complements:
+        - inspect
+        - lm-eval
+      hints:
+        - &gt;-
+          Pass max_samples in benchmark parameters to limit dataset size (e.g.
+          {&quot;max_samples&quot;: 50}). Without it the full dataset runs, which can take
+          hours for large benchmarks.
+        - &gt;-
+          Log-likelihood benchmarks (arc:easy, arc:challenge, winogrande, glue:cola,
+          glue:sst2, glue:mrpc, truthfulqa:mc and the suites that include them:
+          commonsense_reasoning, scientific_reasoning, language_understanding,
+          truthfulness) are scored through /v1/completions with echo=True and
+          logprobs=1. The endpoint must support these parameters (vLLM does by
+          default); a request that cannot be scored fails the job instead of
+          producing an accuracy. If your endpoint does not expose them, use
+          lm-evaluation-harness instead.
+        - &gt;-
+          The scored text is the one lighteval&#39;s own backends use: system prompt,
+          task instruction, few-shot examples (num_few_shot) and the question, then
+          each answer choice. Per-choice log-likelihoods match lighteval&#39;s
+          transformers backend for the same model and prompt settings.
+        - &gt;-
+          Generation-only benchmarks (gsm8k, math*, aime*, gpqa:diamond, hellaswag,
+          piqa, openbookqa, mmlu, triviaqa, truthfulqa:gen, lcb:codegeneration_v6)
+          do not need /v1/completions logprobs.
+
+    parameters:
+      - name: provider
+        type: string
+        default: endpoint
+        description: &gt;
+          Model provider backend. Use &quot;endpoint&quot; (default) for any OpenAI-compatible
+          API server (vLLM, Ollama, OpenRouter, etc.). Other valid values are
+          &quot;transformers&quot;, &quot;vllm&quot;, &quot;openai&quot;, &quot;anthropic&quot;. &quot;anthropic&quot; runs the
+          generation-only benchmarks; log-likelihood benchmarks are rejected for it
+          because they need /v1/completions with echo+logprobs, which Anthropic&#39;s API
+          does not implement.
+
+      - name: max_samples
+        type: integer
+        default: null
+        description: &gt;
+          Maximum number of examples to evaluate per task. When omitted the full
+          dataset runs, which can take hours for large benchmarks.
+
+      - name: num_few_shot
+        type: integer
+        default: 0
+        description: Number of few-shot examples prepended to each prompt (0 = zero-shot).
+
+      - name: random_seed
+        type: integer
+        default: 42
+        description: Random seed for reproducible sampling.
+
+      - name: generation_parameters
+        type: object
+        default: null
+        description: &gt;
+          Generation config forwarded to the model (temperature, max_new_tokens,
+          top_p, top_k, stop_tokens, etc.). Passed as lighteval brace notation.
+
+    runtime:
+      k8s:
+        image: quay.io/evalhub/community-lighteval:latest
+        entrypoint:
+          - python
+          - main.py
+        cpu_request: 500m
+        memory_request: 512Mi
+        cpu_limit: 2000m
+        memory_limit: 4Gi
+      local:
+        command: python main.py
+
+    benchmarks:
+      # ── Math ──────────────────────────────────────────────────────────────────
+      - id: math
+        name: Math problem-solving suite
+        description: &gt;
+          Mathematical problem-solving suite covering GSM8K, algebra,
+          counting &amp; probability, and MATH-500 competition problems.
+        category: math
+        metrics: [extractive_match]
+        tags: [math, reasoning, lighteval]
+        primary_score:
+          metric: extractive_match
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.3
+
+      - id: gsm8k
+        name: GSM8K
+        description: Grade-school math word problems requiring multi-step reasoning (8,500 problems).
+        category: math
+        metrics: [gsm8k.extractive_match]
+        tags: [math, reasoning, lighteval]
+        primary_score:
+          metric: gsm8k.extractive_match
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: math:algebra
+        name: Competition algebra
+        description: Algebra subset of MATH competition benchmark.
+        category: math
+        metrics: [extractive_match]
+        tags: [math, competition, lighteval]
+        primary_score:
+          metric: extractive_match
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.3
+
+      - id: math:counting_and_probability
+        name: Counting &amp; probability problems
+        description: Counting and probability subset of MATH competition benchmark.
+        category: math
+        metrics: [extractive_match]
+        tags: [math, competition, lighteval]
+        primary_score:
+          metric: extractive_match
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.3
+
+      - id: math_500
+        name: MATH-500
+        description: 500 competition math problems across all MATH difficulty levels.
+        category: math
+        metrics: [math_500.pass@1]
+        tags: [math, competition, lighteval]
+        primary_score:
+          metric: math_500.pass@1
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.3
+
+      - id: aime24
+        name: AIME 2024
+        description: American Invitational Mathematics Examination 2024 — 30 competition problems.
+        category: math
+        metrics: [aime24.pass@1, aime24.avg@n:n=1]
+        tags: [math, competition, aime, lighteval]
+        primary_score:
+          metric: aime24.pass@1
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.0
+
+      - id: aime25
+        name: AIME 2025
+        description: American Invitational Mathematics Examination 2025 — 30 competition problems.
+        category: math
+        metrics: [aime25.pass@1, aime25.avg@n:n=1]
+        tags: [math, competition, aime, lighteval]
+        primary_score:
+          metric: aime25.pass@1
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.0
+
+      # ── Reasoning ─────────────────────────────────────────────────────────────
+      - id: commonsense_reasoning
+        name: Commonsense reasoning suite
+        description: Everyday commonsense reasoning suite (HellaSwag, WinoGrande, OpenBookQA, ARC Easy).
+        category: reasoning
+        metrics: [accuracy, em]
+        tags: [reasoning, commonsense, lighteval]
+        primary_score:
+          metric: accuracy
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: scientific_reasoning
+        name: Science reasoning suite
+        description: Scientific reasoning suite (ARC Easy, ARC Challenge).
+        category: reasoning
+        metrics: [accuracy]
+        tags: [reasoning, science, lighteval]
+        primary_score:
+          metric: accuracy
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: physical_commonsense
+        name: Physical world understanding suite
+        description: Physical interaction intuition and commonsense (PIQA).
+        category: reasoning
+        metrics: [accuracy]
+        tags: [reasoning, commonsense, lighteval]
+        primary_score:
+          metric: accuracy
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.6
+
+      - id: hellaswag
+        name: HellaSwag
+        description: Everyday activity completion — commonsense NLI via loglikelihood scoring.
+        category: reasoning
+        metrics: [hellaswag.em]
+        tags: [reasoning, commonsense, lighteval]
+        primary_score:
+          metric: hellaswag.em
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: winogrande
+        name: WinoGrande
+        description: Pronoun commonsense reasoning (Winograd schema at scale).
+        category: reasoning
+        metrics: [winogrande.acc]
+        tags: [reasoning, commonsense, lighteval]
+        primary_score:
+          metric: winogrande.acc
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.6
+
+      - id: arc:easy
+        name: ARC Easy
+        description: Basic science Q&amp;A — AI2 Reasoning Challenge easy split.
+        category: reasoning
+        metrics: [arc:easy.acc]
+        tags: [reasoning, science, lighteval]
+        primary_score:
+          metric: arc:easy.acc
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.7
+
+      - id: arc:challenge
+        name: ARC Challenge
+        description: Hard science Q&amp;A — AI2 Reasoning Challenge challenge split.
+        category: reasoning
+        metrics: [arc:challenge.acc]
+        tags: [reasoning, science, lighteval]
+        primary_score:
+          metric: arc:challenge.acc
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: piqa
+        name: PIQA
+        description: Physical interaction intuition — two-choice physical world Q&amp;A.
+        category: reasoning
+        metrics: [piqa.em]
+        tags: [reasoning, commonsense, lighteval]
+        primary_score:
+          metric: piqa.em
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.7
+
+      - id: gpqa:diamond
+        name: GPQA Diamond
+        description: Graduate-level GPQA Diamond split — expert-level biology, chemistry, and physics.
+        category: reasoning
+        metrics: [gpqa:diamond.gpqa_pass@1]
+        tags: [reasoning, graduate, expert, lighteval]
+        primary_score:
+          metric: gpqa:diamond.gpqa_pass@1
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.3
+
+      # ── Knowledge ─────────────────────────────────────────────────────────────
+      - id: knowledge
+        name: Factual knowledge suite
+        description: Factual knowledge suite (MMLU, TriviaQA, OpenBookQA). Expands to mmlu, triviaqa, and openbookqa.
+        category: knowledge
+        metrics: [accuracy]
+        tags: [knowledge, factuality, lighteval]
+        primary_score:
+          metric: accuracy
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: mmlu
+        name: MMLU
+        description: Massive Multitask Language Understanding — 57 academic subjects.
+        category: knowledge
+        metrics: [accuracy]
+        tags: [knowledge, academic, lighteval]
+        primary_score:
+          metric: accuracy
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.6
+
+      - id: triviaqa
+        name: TriviaQA
+        description: Trivia factual recall — open-domain Q&amp;A across 95k question-answer pairs.
+        category: knowledge
+        metrics: [triviaqa.em]
+        tags: [knowledge, factuality, lighteval]
+        primary_score:
+          metric: triviaqa.em
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: openbookqa
+        name: OpenBookQA
+        description: Open-book science reasoning — 4-choice Q&amp;A with elementary science facts.
+        category: knowledge
+        metrics: [openbookqa.em]
+        tags: [knowledge, science, lighteval]
+        primary_score:
+          metric: openbookqa.em
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.4
+
+      # ── Language Understanding ─────────────────────────────────────────────────
+      - id: language_understanding
+        name: Language understanding suite
+        description: Language understanding suite combining GLUE subtasks.
+        category: language_understanding
+        metrics: [accuracy]
+        tags: [language, glue, lighteval]
+        primary_score:
+          metric: accuracy
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: glue:cola
+        name: CoLA — Grammatical acceptability
+        description: Corpus of Linguistic Acceptability — binary grammaticality classification.
+        category: language_understanding
+        metrics: [glue:cola.acc, glue:cola.mcc]
+        tags: [language, glue, lighteval]
+        primary_score:
+          metric: glue:cola.mcc
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.3
+
+      - id: glue:sst2
+        name: SST-2 — Sentiment classification
+        description: Stanford Sentiment Treebank — binary sentiment classification.
+        category: language_understanding
+        metrics: [glue:sst2.acc]
+        tags: [language, sentiment, glue, lighteval]
+        primary_score:
+          metric: glue:sst2.acc
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.8
+
+      - id: glue:mrpc
+        name: MRPC — Paraphrase detection
+        description: Microsoft Research Paraphrase Corpus — sentence pair paraphrase classification.
+        category: language_understanding
+        metrics: [glue:mrpc.acc, glue:mrpc.loglikelihood_f1]
+        tags: [language, nli, glue, lighteval]
+        primary_score:
+          metric: glue:mrpc.loglikelihood_f1
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.7
+
+      # ── Code ──────────────────────────────────────────────────────────────────
+      - id: lcb:codegeneration_v6
+        name: LiveCodeBench v6 — Code generation
+        description: LiveCodeBench v6 competitive programming and code generation tasks.
+        category: code
+        metrics: [lcb:codegeneration_v6.codegen_pass@1]
+        tags: [coding, competitive, lighteval]
+        primary_score:
+          metric: lcb:codegeneration_v6.codegen_pass@1
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.1
+
+      # ── Safety / Truthfulness ─────────────────────────────────────────────────
+      - id: truthfulness
+        name: Honesty &amp; hallucination suite
+        description: &gt;
+          Truthfulness suite covering TruthfulQA multiple-choice (MC1, MC2) and
+          generation variants.
+        category: safety
+        metrics: [truthfulqa_mc1, truthfulqa_mc2, truthfulqa:gen.em]
+        tags: [safety, truthfulness, hallucination, lighteval]
+        primary_score:
+          metric: truthfulqa_mc2
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: truthfulqa:mc
+        name: TruthfulQA — Multiple choice
+        description: &gt;
+          TruthfulQA multiple-choice variant — tests whether models reproduce common
+          misconceptions. MC1 = single correct answer; MC2 = multi-correct normalized.
+        category: safety
+        metrics: [truthfulqa_mc1, truthfulqa_mc2]
+        tags: [safety, truthfulness, lighteval]
+        primary_score:
+          metric: truthfulqa_mc2
+          lower_is_better: false
+        pass_criteria:
+          threshold: 0.5
+
+      - id: truthfulqa:gen
+        name: TruthfulQA — Generation
+        description: &gt;
+          TruthfulQA generation variant — the model answers freely and the answer is
+          exact-matched against the reference correct answers.
+        category: safety
+        metrics: [truthfulqa:gen.em]
+        tags: [safety, truthfulness, lighteval]
+        primary_score:
+          metric: truthfulqa:gen.em
+          lower_is_better: false
+        pass_criteria:
+          # Placeholder: strict exact match on free-form text scores low by design.
+          threshold: 0.1
+
 </pre> </details> </div> </div><div class="provider-detail" data-detail-id="mteb" data-provider-yaml="# MTEB Provider Configuration
 # Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models
 
@@ -5676,7 +6642,10 @@ parameters:
   - name: embedding_url
     type: string
     default: null
-    description: Base URL for embeddings endpoint (defaults to model URL)
+    description: >
+      Standalone embedding endpoint override. In Kubernetes, put embedding_url
+      and embedding_api-key in model.auth.secret_ref; the adapter uses the
+      projected sidecar URL and credential reference.
 
   - name: judge_model
     type: string
@@ -5690,16 +6659,17 @@ parameters:
     type: string
     default: null
     description: >
-      OpenAI-compatible base URL for the judge model (defaults to the evaluated
-      model URL). For OpenAI, use https://api.openai.com/v1.
+      Standalone judge endpoint override. In Kubernetes, put judge_url and
+      judge_api-key in model.auth.secret_ref; the adapter uses the projected
+      sidecar URL and credential reference.
 
   - name: judge_api_key
     type: string
     default: null
     description: >
-      Optional API key for the judge endpoint. Prefer injecting OPENAI_API_KEY
-      from a Kubernetes Secret or runtime environment; do not commit keys in
-      benchmark or job configuration.
+      Standalone judge key override or explicit sidecar credential reference.
+      In Kubernetes, use judge_api-key in model.auth.secret_ref. Real keys must
+      not be placed in benchmark or job configuration.
 
   - name: max_tokens
     type: integer
@@ -5836,7 +6806,10 @@ data:
       - name: embedding_url
         type: string
         default: null
-        description: Base URL for embeddings endpoint (defaults to model URL)
+        description: &gt;
+          Standalone embedding endpoint override. In Kubernetes, put embedding_url
+          and embedding_api-key in model.auth.secret_ref; the adapter uses the
+          projected sidecar URL and credential reference.
 
       - name: judge_model
         type: string
@@ -5850,16 +6823,17 @@ data:
         type: string
         default: null
         description: &gt;
-          OpenAI-compatible base URL for the judge model (defaults to the evaluated
-          model URL). For OpenAI, use https://api.openai.com/v1.
+          Standalone judge endpoint override. In Kubernetes, put judge_url and
+          judge_api-key in model.auth.secret_ref; the adapter uses the projected
+          sidecar URL and credential reference.
 
       - name: judge_api_key
         type: string
         default: null
         description: &gt;
-          Optional API key for the judge endpoint. Prefer injecting OPENAI_API_KEY
-          from a Kubernetes Secret or runtime environment; do not commit keys in
-          benchmark or job configuration.
+          Standalone judge key override or explicit sidecar credential reference.
+          In Kubernetes, use judge_api-key in model.auth.secret_ref. Real keys must
+          not be placed in benchmark or job configuration.
 
       - name: max_tokens
         type: integer
@@ -7342,7 +8316,7 @@ data:
           Increase for slow endpoints or long-context models.
 </pre> </details> </div> </div> </aside> </div> <footer class="catalog-footer">
 Catalog synced from  <a href="https://github.com/eval-hub/eval-hub-contrib/tree/main" target="_blank" rel="noopener noreferrer"> eval-hub/eval-hub-contrib@main </a> 
-at Oct 17, 2026, 1:03 AM.
+at Oct 28, 2026, 6:04 AM.
 </footer> </div> <script type="module" src="/_astro/ProviderCatalog.astro_astro_type_script_index_0_lang.-hqmyugb.js"></script>
 <div class="sl-heading-wrapper level-h2"><h2 id="applying-a-configmap">Applying a ConfigMap</h2><a class="sl-anchor-link" href="#applying-a-configmap"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentcolor" d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 0 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 1 0-1.42-1.42Zm8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 0 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 1 0 1.42 1.42l3.88-3.89a4.49 4.49 0 0 0 0-6.33ZM8.83 15.17a1 1 0 0 0 1.1.22 1 1 0 0 0 .32-.22l4.92-4.92a1 1 0 0 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42Z"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Applying a ConfigMap”</span></a></div>
 <p>After downloading a ConfigMap YAML, apply it to your cluster:</p>
