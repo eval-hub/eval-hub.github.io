@@ -2,7 +2,7 @@
 title: "Tool Reference"
 ---
 
-The EvalHub MCP server exposes four tools: one for discovering evaluation providers and three for managing evaluation jobs.
+The EvalHub MCP server exposes tools for discovering evaluation providers, designing benchmark collections, and managing evaluation jobs.
 
 ## Tool: discover_providers
 
@@ -76,6 +76,76 @@ The response includes a `_meta` object with diagnostic fields useful for debuggi
 - Prefer this tool over reading `evalhub://providers` when you need filtered, agent-oriented summaries.
 - `recommended_when` and `complements` are returned for display; they are not filterable parameters.
 - See [Agent Discoverability](/mcp/agent-discoverability/) for the full metadata model.
+
+---
+
+## Tool: design_collection
+
+Design a benchmark collection from a natural-language evaluation goal. The tool fetches the live benchmark catalog and curated collection examples and returns guidance for benchmark selection, weight assignment, and threshold calibration. Returns guidance only — follow it up with `create_collection` to persist the design. This is the model-callable equivalent of the `design_collection` prompt.
+
+### Parameters
+
+| Parameter          | Type   | Required | Description                                                                                                                             |
+| ------------------ | ------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `evaluation_goal`  | string | Yes      | Natural-language description of the evaluation use case (e.g. "enterprise deployment requiring safety, instruction following, and long-context support") |
+| `provider_filter`  | string | No       | Comma-separated provider IDs to restrict benchmark selection (e.g. `lm_evaluation_harness,lighteval`); omit to consider all providers    |
+| `max_benchmarks`   | int    | No       | Maximum number of benchmarks to include (default 12)                                                                                    |
+| `strictness`       | string | No       | Threshold strictness: `lenient`, `moderate`, or `strict`; shifts thresholds down/center/up respectively (default `moderate`)              |
+
+### Example request
+
+Design a collection for an enterprise deployment evaluation:
+
+```json
+{
+  "evaluation_goal": "enterprise deployment requiring safety, instruction following, and long-context support",
+  "strictness": "strict"
+}
+```
+
+### Example response
+
+```json
+{
+  "guidance": "Select benchmarks that cover each domain in the evaluation goal... Assign weights proportional to domain importance... Calibrate thresholds using the strictness setting...",
+  "benchmarks": [
+    {
+      "id": "ifeval",
+      "provider_id": "lm_evaluation_harness",
+      "name": "IFEval",
+      "description": "Evaluates instruction following in large language models",
+      "tags": ["instruction_following"],
+      "metrics": ["prompt_strict_acc"]
+    }
+  ],
+  "collection_examples": [
+    {
+      "id": "leaderboard-v2",
+      "name": "Leaderboard v2",
+      "domains": ["reasoning", "knowledge"],
+      "description": "A curated set of benchmarks for general model leaderboards.",
+      "tags": ["curated"],
+      "pass_criteria": {
+        "threshold": 0.72
+      },
+      "benchmarks": [
+        {
+          "id": "mmlu",
+          "provider_id": "lm_evaluation_harness",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Notes
+
+- Returns guidance only — nothing is persisted. Use `create_collection` to persist the designed collection, then reference its ID in `submit_evaluation`.
+- The benchmark catalog and curated collection examples are returned as the structured `benchmarks` and `collection_examples` fields, so you can consume them directly instead of re-querying `search_benchmarks`.
+- Use this tool when an agent drives the collection design workflow from a conversational request; the `design_collection` prompt is user-invoked and cannot take multi-word arguments via slash commands. Both share the same catalog and calibration guidance.
+- Iterate conversationally (e.g. "add more safety benchmarks", "lower the thresholds") before persisting the result with `create_collection`.
 
 ---
 
@@ -222,7 +292,7 @@ Get the current status of an evaluation job with progress and per-benchmark deta
   "benchmarks": [
     {
       "id": "mmlu",
-      "provider_id": "lm-evaluation-harness",
+      "provider_id": "lm_evaluation_harness",
       "status": "completed",
       "started_at": "2026-05-21T10:00:00Z",
       "completed_at": "2026-05-21T10:15:00Z",
@@ -231,7 +301,7 @@ Get the current status of an evaluation job with progress and per-benchmark deta
     },
     {
       "id": "hellaswag",
-      "provider_id": "lm-evaluation-harness",
+      "provider_id": "lm_evaluation_harness",
       "status": "running",
       "started_at": "2026-05-21T10:15:00Z"
     }
