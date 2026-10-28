@@ -81,7 +81,7 @@ The response includes a `_meta` object with diagnostic fields useful for debuggi
 
 ## Tool: design_collection
 
-Design a benchmark collection from a natural-language evaluation goal. The tool fetches the live provider catalog and curated collection examples and returns guidance for benchmark selection, weight assignment, and threshold calibration. Returns guidance only — follow it up with `create_collection` to persist the design. This is the model-callable equivalent of the `design_collection` prompt.
+Design a benchmark collection from a natural-language evaluation goal. The tool fetches the live benchmark catalog and curated collection examples and returns guidance for benchmark selection, weight assignment, and threshold calibration. Returns guidance only — follow it up with `create_collection` to persist the design. This is the model-callable equivalent of the `design_collection` prompt.
 
 ### Parameters
 
@@ -111,7 +111,7 @@ Design a collection for an enterprise deployment evaluation:
   "benchmarks": [
     {
       "id": "ifeval",
-      "provider_id": "lm-evaluation-harness",
+      "provider_id": "lm_evaluation_harness",
       "name": "IFEval",
       "description": "Evaluates instruction following in large language models",
       "tags": ["instruction_following"],
@@ -131,7 +131,7 @@ Design a collection for an enterprise deployment evaluation:
       "benchmarks": [
         {
           "id": "mmlu",
-          "provider_id": "lm-evaluation-harness",
+          "provider_id": "lm_evaluation_harness",
           "weight": 1
         }
       ]
@@ -292,7 +292,7 @@ Get the current status of an evaluation job with progress and per-benchmark deta
   "benchmarks": [
     {
       "id": "mmlu",
-      "provider_id": "lm-evaluation-harness",
+      "provider_id": "lm_evaluation_harness",
       "status": "completed",
       "started_at": "2026-05-21T10:00:00Z",
       "completed_at": "2026-05-21T10:15:00Z",
@@ -301,7 +301,7 @@ Get the current status of an evaluation job with progress and per-benchmark deta
     },
     {
       "id": "hellaswag",
-      "provider_id": "lm-evaluation-harness",
+      "provider_id": "lm_evaluation_harness",
       "status": "running",
       "started_at": "2026-05-21T10:15:00Z"
     }
