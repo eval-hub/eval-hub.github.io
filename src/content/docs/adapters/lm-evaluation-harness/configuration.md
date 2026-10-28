@@ -31,13 +31,74 @@ the source of truth.
 | `batch_size` | Request batch size; defaults to `1` |
 | `num_concurrent` | Number of concurrent requests, capped by the adapter at `128` |
 | `timeout_seconds` | Request timeout in seconds; defaults to `300` |
-| `tokenizer` | Hugging Face tokenizer ID or local path used with the OpenAI-compatible endpoint |
+| `tokenizer` | Hugging Face tokenizer ID or local path used with the OpenAI-compatible endpoint; defaults to `model.name` when omitted |
 | `random_seed` | Random seed used by LM Evaluation Harness; defaults to `42` |
 | `parameters` | Nested scalar generation parameters serialized as LM Evaluation Harness generation kwargs |
 
 Only the top-level keys listed above are interpreted by the adapter. Keys in
 the nested `parameters` object are serialized as generation kwargs; other
 top-level keys are not automatically translated into task configuration.
+
+## Tokenizer selection and authentication
+
+The adapter uses a Hugging Face tokenizer even when evaluating a model through
+an OpenAI-compatible endpoint. If `benchmarks[].parameters.tokenizer` is omitted,
+the adapter uses `model.name` as the Hugging Face tokenizer identifier.
+The example above uses
+`meta-llama/Llama-3.1-8B-Instruct` for both the served model name and the tokenizer.
+
+If your endpoint uses a model alias that is not a Hugging Face repository ID,
+set `parameters.tokenizer` explicitly to a tokenizer compatible with the served
+model. For example, for an endpoint serving Llama 3.1 8B Instruct:
+
+```yaml
+model:
+  name: my-served-llama
+  url: http://model-endpoint:8080/v1
+  auth:
+    secret_ref: my-model-auth
+benchmarks:
+  - id: arc_easy
+    provider_id: lm_evaluation_harness
+    parameters:
+      tokenizer: meta-llama/Llama-3.1-8B-Instruct
+      num_examples: 10
+```
+
+With the CLI, pass the tokenizer using `--param tokenizer=...`. For example,
+when the endpoint serves `Qwen/Qwen3.6-35B-A3B` under the name `Qwen3.6-35B-A3B`:
+
+```bash
+evalhub eval run \
+  --name my-eval \
+  --model-url https://my-model-url/v1 \
+  --model-name Qwen3.6-35B-A3B \
+  --provider lm_evaluation_harness \
+  --secret-ref my-model-auth \
+  --param tokenizer=Qwen/Qwen3.6-35B-A3B \
+  -b winogender
+```
+
+Without the override, the adapter tries `Qwen3.6-35B-A3B` as the Hugging Face
+repository ID. If that repository does not exist, the evaluation fails with a
+repository-not-found error.
+
+To download a tokenizer from a gated repository, provide `HF_TOKEN` for a
+Hugging Face account with approved access, using a token with read permission
+for that repository. This applies both to an explicitly
+configured tokenizer and to the implicit `model.name` default. Authentication
+to the model endpoint does not grant access to a gated Hugging Face repository.
+
+Use the existing [Hugging Face token Secret setup](/guides/bring-your-own-framework/#environment-variables)
+to add an `hf-token` key to your model authentication Secret (`my-model-auth`
+in both examples). Reference that Secret through `model.auth.secret_ref` in
+the job configuration or `--secret-ref` in the CLI. This makes the token available as
+`HF_TOKEN` to the built-in adapter. See
+[Model Authentication](/guides/model-authentication/) for combining the Hugging
+Face token with endpoint credentials.
+
+For air-gapped clusters, see
+[Disconnected Cluster Evaluation](/guides/disconnected-cluster/).
 
 ## Task-specific requirements
 
