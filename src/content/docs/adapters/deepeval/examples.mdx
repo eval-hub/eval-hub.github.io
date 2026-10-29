@@ -6,6 +6,20 @@ description: "Worked examples for evaluating LLM outputs with the DeepEval adapt
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Steps } from '@astrojs/starlight/components';
 
+## Model-auth Secret for these examples
+
+Create `deepeval-model-auth` in the tenant namespace before submitting a job.
+Use `api-key` for the primary credential and optional `judge_api-key` / `judge_url`
+entries for a separate judge. The examples below reference that Secret; see the
+[configuration reference](/adapters/deepeval/configuration/#model-auth-secret)
+for a complete placeholder manifest and adapter image requirements.
+
+**Do not put model connection URLs or API keys in `parameters`.** Select the
+judge with `eval_model_name`; legacy `eval_model_url` / `judge_*` connection
+parameters are ignored. The adapter reads only the Secret connection and uses
+the sidecar in Kubernetes. For local execution, replace the Secret name with
+an absolute `file:///` auth-directory URL containing the same named files.
+
 ## Faithfulness Evaluation
 
 Evaluates whether a RAG pipeline's responses are supported by the retrieved context.
@@ -35,44 +49,75 @@ Evaluates whether a RAG pipeline's responses are supported by the retrieved cont
 
 ### Submit a Faithfulness Evaluation Job
 
+Save this API request as `deepeval.json`. Create the model-auth Secret and the
+separate dataset S3 credential Secret in the tenant namespace first; see
+[Using Custom Data](/guides/custom-data/).
+
+```json
+{
+  "name": "deepeval-secret-routing",
+  "model": {
+    "url": "https://target.example/v1",
+    "name": "target-model",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
+  },
+  "benchmarks": [
+    {
+      "id": "faithfulness",
+      "provider_id": "deepeval",
+      "parameters": {
+        "eval_model_name": "judge-model",
+        "threshold": 0.7,
+        "dataset_format": "csv"
+      },
+      "test_data_ref": {
+        "s3": {
+          "bucket": "my-bucket",
+          "key": "deepeval-datasets/faithfulness.csv",
+          "secret_ref": "dataset-s3-credentials"
+        }
+      }
+    }
+  ]
+}
+```
+
 <Tabs>
 <TabItem label="SDK CLI">
 
 ```bash
-evalhub job submit \
-  --provider deepeval \
-  --benchmark faithfulness \
-  --model-name "gpt-4o" \
-  --model-url "https://api.openai.com/v1" \
-  --param eval_model_name=gpt-4o \
-  --param threshold=0.7 \
-  --param dataset_format=csv \
-  --test-data-s3 s3://my-bucket/deepeval-datasets/faithfulness.csv
+evalhub eval run --config deepeval.json --wait
 ```
 
 </TabItem>
-
 <TabItem label="Python SDK">
 
 ```python
-from evalhub import EvalHubClient
+import os
+from pathlib import Path
+from evalhub import SyncEvalHubClient
+from evalhub.models.api import JobSubmissionRequest
 
-client = EvalHubClient(base_url="http://localhost:8080")
-
-job = client.submit_job(
-    provider_id="deepeval",
-    benchmark_id="faithfulness",
-    model_name="gpt-4o",
-    model_url="https://api.openai.com/v1",
-    parameters={
-        "eval_model_name": "gpt-4o",
-        "threshold": 0.7,
-        "dataset_format": "csv",
-    },
-    test_data_ref={"s3": "s3://my-bucket/deepeval-datasets/faithfulness.csv"},
+client = SyncEvalHubClient(
+    base_url=os.environ["EVALHUB_URL"],
+    auth_token=os.environ.get("EVALHUB_TOKEN"),
 )
+request = JobSubmissionRequest.model_validate_json(Path("deepeval.json").read_text())
+job = client.jobs.submit(request, headers={"X-Tenant": os.environ["TENANT_NAMESPACE"]})
+print(job.id)
+```
 
-print(f"Job submitted: {job.id}")
+</TabItem>
+<TabItem label="REST API">
+
+```bash
+curl -X POST "$EVALHUB_URL/api/v1/evaluations/jobs" \
+  -H "Authorization: Bearer $EVALHUB_TOKEN" \
+  -H "X-Tenant: $TENANT_NAMESPACE" \
+  -H "Content-Type: application/json" \
+  --data-binary @deepeval.json
 ```
 
 </TabItem>
@@ -82,10 +127,10 @@ print(f"Job submitted: {job.id}")
 
 ```bash
 # Check job status
-evalhub job status <job-id>
+evalhub eval status <job-id>
 
 # Get results
-evalhub job results <job-id>
+evalhub eval results <job-id>
 ```
 
 Results include per-test-case scores and an aggregate:
@@ -129,11 +174,13 @@ Detects hallucinated content that is not grounded in the provided context.
   "benchmark_id": "hallucination",
   "model": {
     "url": "http://vllm-service:8000/v1",
-    "name": "mistral-7b-instruct"
+    "name": "mistral-7b-instruct",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.5,
     "dataset_format": "csv"
   }
@@ -163,11 +210,13 @@ Tests whether a chatbot maintains its assigned persona throughout a conversation
   "benchmark_id": "role-adherence",
   "model": {
     "url": "http://vllm-service:8000/v1",
-    "name": "llama-3-8b-instruct"
+    "name": "llama-3-8b-instruct",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.6,
     "dataset_format": "jsonl",
     "chatbot_role": "friendly and professional customer support agent for a software company"
@@ -201,11 +250,13 @@ Evaluates whether the chatbot addresses all user needs across a multi-turn suppo
   "benchmark_id": "conversation-completeness",
   "model": {
     "url": "http://vllm-service:8000/v1",
-    "name": "llama-3-8b-instruct"
+    "name": "llama-3-8b-instruct",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.6,
     "dataset_format": "jsonl"
   }
@@ -239,7 +290,8 @@ cp /path/to/my_dataset.csv test_data/data.csv
 # Configure the job spec (edit meta/job.json or set EVALHUB_JOB_SPEC_PATH)
 export EVALHUB_MODE=local
 export EVALHUB_JOB_SPEC_PATH=meta/job.json
-export OPENAI_API_KEY=your-api-key
+# Configure model.auth.secret_ref as file:///absolute/path/to/model-auth.
+# That directory contains api-key and optional judge_api-key / judge_url files.
 
 # Run
 python main.py
@@ -263,11 +315,13 @@ Track evaluation results in MLflow for comparison across model versions or promp
   "experiment_name": "rag-pipeline-v2-faithfulness",
   "model": {
     "url": "http://vllm-service:8000/v1",
-    "name": "mistral-7b-instruct"
+    "name": "mistral-7b-instruct",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.7,
     "dataset_format": "csv"
   }

@@ -29,7 +29,7 @@ The adapter resolves where traces live, runs the CLEAR agentic pipeline, reads `
 **Workflow:**
 
 1. **Input traces** — Prefers `/test_data` or `/data` when eval-hub has staged data from S3 (`test_data_ref`), or set `parameters.data_dir` to a directory of `*.json` traces. Alternatively, fetch traces from an MLflow experiment with `parameters.mlflow_traces_experiment_name` (requires `MLFLOW_TRACKING_URI`).
-2. **Configuration** — Job parameters drive CLEAR (`eval_model_name`, `provider`, `inference_backend`, frameworks, etc.); `model.url` is used as the OpenAI-compatible endpoint.
+2. **Configuration** — Parameters select `eval_model_name`, `provider: openai`, and evaluation settings. The `judge` Secret pair selects the connection, falling back to `model.url` and the primary Secret key.
 3. **Execution** — CLEAR prepares trace data and runs the step-by-step agentic pipeline.
 4. **Output** — Metrics (interactions, issues, agent scores) are returned to eval-hub; `clear_results.json` is persisted under the run output. Result upload via `callbacks.mlflow.save()` uses JobSpec `experiment_name` when set; otherwise CLEAR applies `parameters.mlflow_experiment_name` before calling `save()`.
 
@@ -68,13 +68,53 @@ Job `experiment.name` (JobSpec `experiment_name`) is the preferred experiment fo
 
 CLEAR can evaluate agent responses that were **already generated** rather than calling a live model at evaluation time. Set `test_data_ref.type` to `pre_recorded_data` and point it at your recorded responses; `model.url` can then be left empty. See [Using Custom Data → Pre-recorded data](/guides/custom-data/#pre-recorded-data) for details.
 
+## Model-auth Secret and judge routing
+
+**Model URLs and API keys must not be placed in API payload `parameters`.**
+Set the primary endpoint in `model.url` and reference one model-auth Secret with
+`model.auth.secret_ref`. For a separate judge, add these entries alongside the
+primary `api-key`:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: clear-model-auth
+  namespace: team-a
+type: Opaque
+stringData:
+  api-key: "<primary-credential>"
+  judge_api-key: "<judge-credential>"
+  judge_url: https://judge.example/v1
+```
+
+Both `litellm` and `endpoint` inference backends use this judge connection. With
+no judge entries, CLEAR reuses the primary connection; a key-only judge entry
+uses the primary URL. A judge URL without its key is invalid.
+
+The adapter reads synthetic references and sidecar URLs from
+`/var/run/secrets/model`. It sets the framework's `OPENAI_API_KEY` from Secret
+resolution and supplies the projected URL; the sidecar selects the real endpoint
+and inserts the real credential. An existing runtime API key cannot override it.
+
+Legacy `endpoint_url`, `inference_url`, `judge_url`, and `judge_api_key` parameters
+are ignored. Connection fields in `eval_model_params`, including nested
+dictionaries and lists, are removed; generation options remain available. The
+job is not rejected merely because legacy connection fields are present.
+
+Use `provider: openai` with an OpenAI-compatible endpoint. Native RITS, Watsonx,
+and other provider authentication need separate sidecar support. See
+[migration and image availability](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters)
+and [the Secret mount and client contract](/guides/model-authentication/#writing-an-adapter).
+Local jobs read the same entries from an absolute `file:///` auth directory.
+
 ## Configuration Parameters
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `data_dir` | string | Directory containing `*.json` trace files |
 | `eval_model_name` | string | LLM judge model name (e.g. `openai/gpt-4o`) |
-| `provider` | string | Inference provider (`openai`, `anthropic`, etc.) |
+| `provider` | string | Use `openai` for Secret-backed OpenAI-compatible routing |
 | `agent_framework` | string | Agent framework used to generate traces (e.g. `langgraph`) |
 | `observability_framework` | string | Observability framework (e.g. `mlflow`) |
 | `inference_backend` | string | `litellm` (default) or `endpoint` |

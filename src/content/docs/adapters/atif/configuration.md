@@ -44,6 +44,41 @@ The ATIF adapter uses a standardised `JobSpec` structure:
 In local mode `model.url` is used directly and `model.auth.secret_ref` provides credentials (see below). In Kubernetes the adapter talks to the runtime sidecar instead, and the sidecar owns upstream authentication.
 :::
 
+## Model-auth Secret
+
+**Judge URLs and API keys must not be placed in API payload `parameters`.**
+The primary judge endpoint is `model.url`; reference its credential Secret with
+`model.auth.secret_ref`. Optionally use a separate `judge` connection:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: atif-model-auth
+  namespace: team-a
+type: Opaque
+stringData:
+  api-key: "<primary-credential>"
+  judge_api-key: "<judge-credential>"
+  judge_url: https://judge.example/v1
+```
+
+ATIF still selects the judge model with `model.name`; this does not select the
+agent model recorded inside trajectory data. With no judge entries it reuses
+the primary Secret connection. A judge key alone reuses the primary URL; a judge
+URL without its matching key is invalid.
+
+In Kubernetes the adapter reads the projected `judge_api-key:ref` and sidecar URL
+under `/var/run/secrets/model`, and sends the reference as a Bearer token in its
+HTTPX chat-completions request. The sidecar routes it and substitutes the real
+credential. Legacy `judge_url` / `judge_api_key` parameters and
+`EVALHUB_JUDGE_PROXY_URL` are ignored; parameter presence alone does not fail a job.
+
+For direct local execution, the same keys are real-value files in the bounded
+`file:///` auth directory described below. See
+[migration and image availability](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters)
+and [Model Authentication](/guides/model-authentication/).
+
 ## Scoring Parameters
 
 | Parameter | Type | Default | Description |
@@ -105,14 +140,19 @@ HTTP 429/5xx and transport timeouts are retried with exponential backoff. Other 
 
 ### Kubernetes
 
-The adapter sends judge requests to the runtime sidecar (`http://localhost:8080` by default, overridden by `EVALHUB_JUDGE_PROXY_URL`). With `model.auth` configured it sends only a redacted `Bearer` placeholder; the sidecar owns upstream authentication and TLS. The adapter does not read cluster credential files.
+The adapter uses the projected `judge` connection or rewritten `model.url`.
+It reads credential references, such as `judge_api-key:ref` or `api-key:ref`,
+from the model-auth mount and sends the selected reference as a Bearer token.
+The real credential is available only to the sidecar, which owns upstream
+authentication and TLS. `EVALHUB_JUDGE_PROXY_URL` is no longer a connection input.
 
 ### Local
 
-In local mode the adapter calls `model.url` directly:
+In direct local mode the adapter uses `judge_url` from the auth directory when
+present, otherwise `model.url`:
 
 - `model.auth.secret_ref` must be an absolute `file:///` directory URL
-- The directory must contain an `api-key` file; an optional `ca_cert` file enables custom CA verification
+- Use `api-key` for the primary credential, or `judge_api-key` / `judge_url` for a separate judge; an optional `ca_cert` file enables custom CA verification
 - The directory must be a regular directory with no symlinks anywhere in its path
 
 ```json
@@ -161,7 +201,6 @@ The adapter reads runtime settings from environment variables:
 |----------|-------------|----------|---------|
 | `EVALHUB_MODE` | Execution mode (`k8s` or `local`) | No | `k8s` |
 | `EVALHUB_JOB_SPEC_PATH` | Path to job spec JSON | Yes (local mode) | `/meta/job.json` (k8s) |
-| `EVALHUB_JUDGE_PROXY_URL` | Sidecar judge proxy URL (k8s) | No | `http://localhost:8080` |
 | `TEST_DATA_S3_BUCKET` | S3 bucket for source URI reconstruction | No | unset |
 | `TEST_DATA_S3_KEY` | S3 prefix for source URI reconstruction | No | unset |
 

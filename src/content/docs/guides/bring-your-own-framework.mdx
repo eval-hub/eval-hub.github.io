@@ -83,6 +83,7 @@ from evalhub.adapter import (
     JobStatusUpdate,
     EvaluationResult,
 )
+from evalhub.adapter.auth import resolve_model_credentials
 
 class MyAdapter(FrameworkAdapter):
     def run_benchmark_job(
@@ -97,7 +98,12 @@ class MyAdapter(FrameworkAdapter):
             JobStatusUpdate(status=JobStatus.RUNNING, phase=JobPhase.LOADING_DATA)
         )
         benchmark = load_benchmark(config.benchmark_id)
-        model = connect_to_model(config.model.url, config.model.name)
+        credentials = resolve_model_credentials()
+        model = connect_to_model(
+            config.model.url,
+            config.model.name,
+            api_key=credentials.api_key or "local",
+        )
 
         # --- Run evaluation ---
         callbacks.report_status(
@@ -109,7 +115,7 @@ class MyAdapter(FrameworkAdapter):
             benchmark,
             model,
             num_examples=config.num_examples,
-            **config.parameters,
+            max_tokens=config.parameters.get("max_tokens", 1024),
         )
 
         # --- Post-process ---
@@ -135,6 +141,36 @@ class MyAdapter(FrameworkAdapter):
 
         return results
 ```
+
+### Model connections and the model-auth Secret
+
+For an OpenAI-compatible API, configure the client using `config.model.url` and
+the SDK's model-auth helpers. In Kubernetes the URL points to the sidecar and
+`api_key` is a reference such as `api-key:ref`; pass it unchanged to the client so
+it is sent as a Bearer token. The sidecar owns the real credential and upstream
+TLS. The `local` fallback above satisfies clients that require a non-empty key;
+it does not select an auxiliary route.
+
+For judge, embedding, or other model roles, create `<role>_api-key` /
+`<role>_url` entries in the same Secret referenced by `model.auth.secret_ref`.
+Read both with `read_model_auth_key()`, then create a separate client per role.
+The files are mounted under `/var/run/secrets/model` and contain synthetic
+references plus sidecar URLs, not real model credentials or upstream URLs.
+Adding an arbitrary role pair needs no sidecar change for OpenAI-compatible
+Bearer requests; the adapter must implement reading and using that role.
+
+**Do not read model connection URLs or API keys from API payload `parameters`,
+or from auxiliary runtime environment variables.** Keep model IDs and generation
+options as parameters. Select supported framework options explicitly, as above.
+If the framework accepts a passthrough configuration, copy it and remove nested
+connection overrides before forwarding it, while retaining generation settings
+and unrelated test data. Ignore legacy connection fields instead of failing
+solely because they are present.
+
+See [Model Authentication](/guides/model-authentication/#writing-an-adapter) for
+the exact Secret contents, container mounts, role fallback rules, executable
+OpenAI client construction, and supported authentication protocols. In local
+mode the same helpers read actual values from the job's `file:///` auth directory.
 
 ### Entrypoint script
 

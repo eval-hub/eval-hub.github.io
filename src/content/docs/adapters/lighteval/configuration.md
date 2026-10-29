@@ -8,6 +8,15 @@ Configuration reference for the LightEval adapter.
 
 Detailed configuration documentation is in progress.
 
+## Model authentication
+
+For OpenAI-compatible API access, configure `model.url` and a model-auth Secret
+containing `api-key`, referenced by `model.auth.secret_ref`. URLs and API keys
+must not be placed in API payload `parameters` or backend passthrough settings.
+The Kubernetes adapter uses the projected credential reference and sidecar URL;
+see [Model Authentication](/guides/model-authentication/) for the shared contract.
+Local model-loading parameters remain separate from endpoint authentication.
+
 ## Basic Configuration
 
 ```json

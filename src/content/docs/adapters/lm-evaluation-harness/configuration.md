@@ -3,6 +3,15 @@ title: "LM Evaluation Harness Configuration"
 description: "Configure LM Evaluation Harness benchmarks in EvalHub"
 ---
 
+## Model authentication
+
+For OpenAI-compatible API backends, put the primary URL in `model.url` and the
+credential in `api-key` in the Secret referenced by `model.auth.secret_ref`.
+Do not put model URLs or API keys in API payload `parameters` or backend
+passthrough settings. In Kubernetes, use the rewritten sidecar URL and mounted
+reference, as described in [Model Authentication](/guides/model-authentication/).
+This connection guidance does not change local model-loading or dataset options.
+
 ## Evaluation job example
 
 ```yaml

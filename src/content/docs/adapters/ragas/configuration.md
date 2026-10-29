@@ -89,8 +89,6 @@ See the [Metrics reference](metrics/) for details on each metric.
 | `max_tokens` | integer | Maximum tokens for LLM completions | `null` (server default) |
 | `temperature` | number | Sampling temperature for LLM completions | `null` (adapter default) |
 | `judge_model` | string | Model used for LLM-based RAGAS metrics | Evaluated model |
-| `judge_url` | string | OpenAI-compatible judge endpoint | Evaluated model URL |
-| `judge_api_key` | string | API key for an external judge endpoint | `OPENAI_API_KEY` |
 
 ### Separate Judge Model
 
@@ -101,30 +99,65 @@ struggle to return the structured JSON required by metrics such as
 ```json
 {
   "parameters": {
-    "judge_model": "gpt-4o-mini",
-    "judge_url": "https://api.openai.com/v1"
+    "judge_model": "judge-model"
   }
 }
 ```
 
-For an external judge endpoint, provide the credential through
-`OPENAI_API_KEY` from a Kubernetes Secret or runtime environment. A
-`judge_api_key` parameter is also supported, but a real key should never be
-committed to a benchmark, JobSpec, or provider file. The adapter tries
-`judge_api_key` first, then `OPENAI_API_KEY`. The evaluated model's mounted
-credential is used only when the judge uses the evaluated model endpoint. If
-no credential is available for an external judge, the request will fail with
-an authentication error.
+Configure the judge endpoint and key in the model-auth Secret, independently of
+the model identifier.
+
+### Model-auth Secret
+
+**Connection URLs and API keys must not be placed in Kubernetes API payload
+`parameters`.** Keep the primary endpoint in `model.url` and reference one Secret
+with `model.auth.secret_ref`:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ragas-model-auth
+  namespace: team-a
+type: Opaque
+stringData:
+  api-key: "<target-credential>"
+  judge_api-key: "<judge-credential>"
+  judge_url: https://judge.example/v1
+  embedding_api-key: "<embedding-credential>"
+  embedding_url: https://embedding.example/v1
+```
+
+The adapter reads `judge_api-key` / `judge_url` and `embedding_api-key` /
+`embedding_url` with the SDK. In Kubernetes these are reference tokens and
+sidecar URLs under `/var/run/secrets/model`; the sidecar selects the upstream
+from the Bearer reference and injects the real key. Equal projected localhost
+URLs still use independent references for the judge and embedding clients.
+
+For either role, omit both entries to reuse the primary connection. A role key
+alone reuses the primary URL; a role URL without its matching key is invalid.
+See [Model Authentication](/guides/model-authentication/#scenario-4-multi-model-secrets).
+
+Ragas retains standalone local-development `judge_url`, `judge_api_key`, and
+`embedding_url` overrides. These are not the Kubernetes connection contract:
+raw external URLs or real API-key parameters are rejected in Kubernetes. Use
+the Secret entries above for submitted jobs, and prefer the same entries in a
+`file:///` auth directory for direct local execution.
 
 ### Embedding Configuration
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `embedding_model` | string | Model name for embeddings | Same as `model.name` |
-| `embedding_url` | string | Base URL for embeddings endpoint | Same as `model.url` |
 
 :::caution[Embedding Model Selection]
-Several RAGAS metrics (notably `answer_relevancy` and `answer_similarity`) require embedding support. If your LLM endpoint does not serve embeddings, you must configure a separate `embedding_url` and `embedding_model`. A lightweight embedding model such as `all-MiniLM-L6-v2` or `nomic-embed-text` is recommended.
+Several RAGAS metrics (notably `answer_relevancy` and `answer_similarity`) require
+embedding support. If the chat endpoint does not serve `/v1/embeddings`, put a
+separate `embedding_url` and `embedding_api-key` in the Secret and select the
+embedding model with `parameters.embedding_model`. A chat model is not an
+embedding model merely because its endpoint serves chat completions. Verify the
+selected embedding endpoint implements the required API; otherwise the job can
+fail with a 404 on its embedding request.
 :::
 
 ### Data Configuration
@@ -217,8 +250,9 @@ The adapter reads runtime settings from environment variables:
   "benchmark_id": "ragas_rag_default",
   "benchmark_index": 0,
   "model": {
-    "url": "http://127.0.0.1:8000",
-    "name": "Qwen/Qwen2.5-1.5B-Instruct"
+    "url": "https://target.example/v1",
+    "name": "target-model",
+    "auth": {"secret_ref": "ragas-model-auth"}
   },
   "num_examples": 5,
   "parameters": {
@@ -229,7 +263,6 @@ The adapter reads runtime settings from environment variables:
       "context_recall"
     ],
     "embedding_model": "all-MiniLM-L6-v2",
-    "embedding_url": "http://127.0.0.1:8001",
     "max_tokens": 512,
     "temperature": 0.1
   },

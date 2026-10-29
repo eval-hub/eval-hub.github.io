@@ -4,7 +4,9 @@ title: "Model Authentication"
 
 import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-EvalHub routes all model traffic through a sidecar proxy running alongside the adapter. The sidecar handles credential resolution and upstream TLS — the adapter never sees real API keys or SA tokens. A secret is required only when the model or an in-cluster service needs authentication.
+For Kubernetes jobs, EvalHub routes model traffic through a sidecar proxy running alongside the adapter. The sidecar handles credential resolution and upstream TLS; the adapter receives credential references instead of real model API keys or SA tokens. Local jobs can read real credentials from a `file:///` auth directory.
+
+**Model connection URLs and API keys must not be placed in benchmark `parameters`.** Submit the primary endpoint in `model.url`, reference the model-auth Secret with `model.auth.secret_ref`, and put additional model connections in that Secret as `<role>_api-key` / `<role>_url` pairs. Model identifiers and evaluation settings remain parameters. See [migration and adapter availability](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters).
 
 ## How It Works
 
@@ -49,16 +51,35 @@ hf-token, ca_cert`"| AD
 
 All model traffic is routed through the **EvalHub sidecar proxy** running in the same pod as the adapter. You provide credentials in a Kubernetes secret — EvalHub ensures API keys and SA tokens are only visible to the sidecar; `hf-token` and `ca_cert` may be projected to the adapter as passthrough keys. The sidecar resolves and injects credentials into outbound requests on behalf of the adapter.
 
-EvalHub recognizes the following secret keys: `api-key`, `*_api-key`, `*_sa_token`, and `*_url`. When `model.auth.secret_ref` is set and the user secret contains any of these keys, EvalHub generates an ephemeral internal secret where values are replaced with `:ref` placeholders (e.g. `api-key` → `api-key:ref`) and `*_url` values are replaced with `http://localhost:8080` (the sidecar address). This internal secret is created per evaluation job and removed when the Job resource is deleted (Kubernetes GC via owner reference). For `ca_cert`-only or `hf-token`-only secrets no internal secret is created — those keys are passthrough.
+EvalHub recognizes the following secret keys: `api-key`, `*_api-key`, `*_sa_token`, and `*_url`. When `model.auth.secret_ref` is set and the user secret contains any of these keys, EvalHub generates an ephemeral internal secret where credentials become `:ref` placeholders (e.g. `api-key` → `api-key:ref`). A `*_url` becomes the sidecar address **with the original URL path preserved**: `https://judge.example/api/v1` becomes `http://localhost:8080/api/v1`. The internal secret is created per evaluation job and removed when the Job resource is deleted (Kubernetes GC via owner reference). For `ca_cert`-only or `hf-token`-only secrets no internal secret is created — those keys are passthrough.
 
 The adapter receives a projected volume combining the internal ref secret (when present) with passthrough keys (`hf-token`, `ca_cert`) from the user secret. The user-provided secret with real credential values is mounted only into the sidecar.
 
-You submit the real model URL in `model.url` when creating a job. EvalHub rewrites the in-pod configuration so the adapter always calls `http://localhost:8080` (the sidecar); the sidecar forwards to the real upstream URL.
+You submit the real model URL in `model.url` when creating a job. EvalHub rewrites the adapter's `JobSpec.model.url` to the sidecar, preserving its path in the same way. Auxiliary URLs are read from the projected Secret files, not inserted into `parameters`.
+
+### What is mounted in each container
+
+Both containers use `/var/run/secrets/model`, but receive different volumes:
+
+| File | User Secret / sidecar sees | Adapter sees in Kubernetes |
+|---|---|---|
+| `api-key` | Real primary-model credential | `api-key:ref` |
+| `judge_api-key` | Real judge credential | `judge_api-key:ref` |
+| `judge_url` | `https://judge.example/api/v1` | `http://localhost:8080/api/v1` |
+| `embedding_api-key` | Real embedding credential | `embedding_api-key:ref` |
+| `embedding_url` | `https://embedding.example/v1` | `http://localhost:8080/v1` |
+| `hf-token`, `ca_cert` | Original values, if supplied | Original values, passed through |
+
+The adapter's `model-auth-internal` projected volume combines synthetic references
+and allowed passthrough files. The raw `model-auth` Secret volume is mounted only
+in the sidecar. Unrecognized Secret keys are not automatically exposed to the
+adapter. These files are not automatically converted into per-role environment
+variables; the adapter must read them using the SDK.
 
 This means:
 - Real API keys and SA tokens are only ever seen by the sidecar, not the adapter
 - TLS to the model endpoint is handled by the sidecar using `ca_cert` from the secret
-- The adapter always calls `http://localhost:8080`, regardless of auth type
+- The adapter calls the sidecar URL supplied by EvalHub, including its API path
 
 This guide applies to evaluation jobs created by the Kubernetes runtime. Local runtime behavior may differ.
 
@@ -85,13 +106,18 @@ if creds.api_key:
     headers["Authorization"] = f"Bearer {creds.api_key}"
 
 resp = requests.post(
-    f"{config.model.url}/v1/chat/completions",
+    f"{config.model.url.rstrip('/')}/chat/completions",
     headers=headers,
     json={...},
 )
 ```
 
-The sidecar intercepts the request, resolves `api-key:ref` → real API key, and forwards to the model endpoint. If `api_key` is `None` (SA token-authenticated, RBAC-protected or open model), omit the Authorization header entirely — do not send a placeholder. The sidecar injects the pod SA token when no Authorization header is present or when an empty `Bearer` value is sent.
+This example assumes the submitted base URL already includes `/v1`. The sidecar
+resolves `api-key:ref` to the real API key and forwards the request. If `api_key`
+is `None`, an HTTP client can omit Authorization. The sidecar injects its pod SA
+token for requests without a credential reference. OpenAI SDK clients require a
+non-empty `api_key`; `local` can satisfy that client requirement when no Secret
+key exists, but it does not select an auxiliary model route.
 
 ### Custom keys (KFP, multi-model, hf-token)
 
@@ -119,11 +145,86 @@ if kfp_token is None:
     raise RuntimeError("kfp_sa_token not found in secret mount — check secret_ref")
 ```
 
+### OpenAI-compatible target, judge and embedding clients
+
+Configure each client with the URL and credential returned by the SDK. The same
+code reads synthetic references in Kubernetes and real files in local mode:
+
+```python
+from openai import OpenAI
+from evalhub.adapter.auth import read_model_auth_key
+
+
+def model_client(config, role=None):
+    key = read_model_auth_key(f"{role}_api-key") if role else None
+    url = read_model_auth_key(f"{role}_url") if role else None
+    if url and not key:
+        raise ValueError(f"{role}_url in model.auth.secret_ref requires {role}_api-key")
+    return OpenAI(
+        base_url=(url or config.model.url).rstrip("/"),
+        api_key=key or read_model_auth_key("api-key") or "local",
+    )
+
+
+target = model_client(config)
+judge = model_client(config, "judge")
+embedding = model_client(config, "embedding")
+
+judgment = judge.chat.completions.create(
+    model=config.parameters["judge_model"],
+    messages=[{"role": "user", "content": "Score the supplied answer."}],
+)
+vectors = embedding.embeddings.create(
+    model=config.parameters["embedding_model"],
+    input=["The answer to evaluate"],
+)
+```
+
+Supply OpenAI-compatible base URLs with the correct API path, such as `/v1` or
+`/api/v1`; the SDK appends `chat/completions` or `embeddings`. Do not append a
+second `/v1`, reconstruct the upstream URL, or change a returned reference token.
+The SDK sends the supplied key as `Authorization: Bearer <key>`.
+
+Two role URLs can both read as `http://localhost:8080/v1`. **The Bearer reference
+selects the upstream and its credential**, so `judge_api-key:ref` and
+`embedding_api-key:ref` must remain distinct even when their projected URLs match.
+
+Adding a new `<role>_api-key` / `<role>_url` pair does not require a sidecar change
+for this protocol. The adapter still needs to read that role's files and configure
+the appropriate client; the sidecar does not infer roles from model names.
+
+### Framework configuration and subprocesses
+
+Construct auxiliary connections only from the model-auth Secret. Do not read
+connection URLs or API keys from `config.parameters` or auxiliary runtime env
+variables. If the framework uses environment variables, set them in a subprocess
+environment from the resolved Secret values, independently for each role.
+
+Framework passthrough settings can override a correctly configured client. Strip
+connection fields such as `api_key`, `apiKey`, `base_url`, and `apiBaseUrl` from
+model-option dictionaries, including nested dictionaries and lists, before
+forwarding them. Copy the settings, retain generation options such as temperature,
+and preserve unrelated test data. Ignore legacy connection fields rather than
+failing solely because they are present. Secret validation, including a role URL
+without its matching key, still applies.
+
+### Protocol support
+
+The model proxy handles OpenAI-compatible Bearer-authenticated paths including
+`/v1/chat/completions`, `/v1/completions`, `/v1/embeddings`, `/v1/models`, and
+`/v1/responses`; the upstream must implement the requested API. Adding a role does
+not need a new path registration. This does not add native Anthropic `x-api-key`,
+Azure `api-key`, or other provider-specific authentication. Use an OpenAI-compatible
+gateway when a model's native client needs an unsupported authentication scheme.
+Inspect's pinned Ollama client uses OpenAI-compatible `/v1` requests with Bearer
+auth, so it can carry the reference; do not infer Ollama from the upstream port
+after EvalHub has rewritten the URL to the sidecar.
+
 ### Common mistakes
 
 - **Do not expect a real API key from the mount.** In Kubernetes jobs, `api-key` contains `api-key:ref` — a placeholder. The sidecar resolves the real value at request time.
-- **Do not send a placeholder Authorization header for SA token-authenticated, RBAC-protected or open models.** Omit the header (or send an empty `Bearer`) so the sidecar can inject the pod SA token. A non-empty, non-ref Authorization value is forwarded as-is and will bypass SA injection.
-- **Always use `config.model.url` from `JobSpec`; never hardcode the submitted URL.** Although you submit the real endpoint URL when creating a job, `config.model.url` is automatically rewritten to `http://localhost:8080` (the sidecar) inside the pod.
+- **Use the role's reference for role routing.** A dummy SDK key or an absent Authorization header cannot select a separate judge/embedding upstream; the sidecar instead uses the primary model route and its SA-token behavior.
+- **Use `config.model.url` for the target and `read_model_auth_key("<role>_url")` for other roles.** Both are rewritten to the sidecar inside a Kubernetes job. Do not recover upstream URLs from parameters.
 
 ---
 
@@ -467,108 +568,86 @@ kubectl create secret generic kfp-creds \
 
 ## Scenario 4: Multi-model secrets
 
-Use this when a single eval job needs to call multiple model endpoints, each with its own API key and URL.
+Use one Secret for the primary model and any judge, embedding, auditor, or other
+model clients. Create it in the tenant namespace where the evaluation Job runs.
+The values below are placeholders:
 
-### Secret structure
-
-Use a `<prefix>_api-key` / `<prefix>_url` pair per model:
-
-```bash
-kubectl create secret generic multi-model-creds \
-  --from-literal=model-1_api-key="sk-model1-key" \
-  --from-literal=model-1_url="https://model1.example.com" \
-  --from-literal=model-2_api-key="sk-model2-key" \
-  --from-literal=model-2_url="https://model2.example.com" \
-  -n team-a
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: multi-model-creds
+  namespace: team-a
+type: Opaque
+stringData:
+  api-key: "<target-credential>"
+  judge_api-key: "<judge-credential>"
+  judge_url: https://judge.example/v1
+  embedding_api-key: "<embedding-credential>"
+  embedding_url: https://embedding.example/v1
 ```
 
-<Steps>
+Submit only the Secret reference, primary endpoint and model identifiers:
 
-1. **Reference the secret in the job**
+```json
+{
+  "name": "ragas-with-separate-models",
+  "model": {
+    "url": "https://target.example/v1",
+    "name": "target-model",
+    "auth": {"secret_ref": "multi-model-creds"}
+  },
+  "benchmarks": [{
+    "provider_id": "ragas",
+    "id": "ragas_rag_default",
+    "parameters": {
+      "judge_model": "judge-model",
+      "embedding_model": "embedding-model"
+    }
+  }]
+}
+```
 
-   <Tabs>
-   <TabItem label="curl">
-   ```bash {10-12}
-   curl -k -X POST "$HOST/api/v1/evaluations/jobs" \
-     -H "Authorization: Bearer $token" \
-     -H "Content-Type: application/json" \
-     -H "X-Tenant: team-a" \
-     -d '{
-     "name": "multi-model test",
-     "model": {
-       "url": "https://model1.example.com/v1",
-       "name": "model-1",
-       "auth": {
-         "secret_ref": "multi-model-creds"
-       }
-     },
-     "benchmarks": [
-       {
-         "id": "arc_easy",
-         "provider_id": "lm_evaluation_harness",
-         "parameters": {
-           "limit": 5,
-           "num_examples": 10,
-           "tokenizer": "google/flan-t5-small"
-         }
-       }
-     ]
-   }'
-   ```
-   </TabItem>
-   <TabItem label="Python SDK">
-   ```python {13}
-   import os
-   from evalhub import SyncEvalHubClient
-   from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
+The adapter must use the role files as shown in the
+[OpenAI-compatible client example](#openai-compatible-target-judge-and-embedding-clients).
+For built-in adapters, see the [role-to-parameter table](/guides/judge-and-scorer-models/#provider-specific-configuration).
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+| Role entries | Adapter behavior |
+|---|---|
+| Neither key nor URL | Reuse `model.url` and the primary Secret's `api-key` |
+| Key only | Reuse `model.url` with that role's credential |
+| Key and URL | Use the role's projected URL and credential reference |
+| URL only | Reject: a separate route requires the matching role key |
 
-   job = client.jobs.submit(
-       JobSubmissionRequest(
-           name="multi-model test",
-           model=ModelConfig(
-               url="https://model1.example.com/v1",
-               name="model-1",
-               auth={"secret_ref": "multi-model-creds"},
-           ),
-           benchmarks=[
-               BenchmarkConfig(
-                   id="arc_easy",
-                   provider_id="lm_evaluation_harness",
-                   parameters={"limit": 5, "num_examples": 10, "tokenizer": "google/flan-t5-small"},
-               )
-           ],
-       ),
-       headers={"X-Tenant": "team-a"},
-   )
-   ```
-   </TabItem>
-   </Tabs>
+The suffix is exactly `_api-key`, including the hyphen. A plain `judge_api_key`
+Secret entry is unrecognized and is not projected to the adapter. If roles share
+a real credential but use different upstream URLs, copy that credential into
+each role's key; projected URL equality is not a reason to reuse another role's
+reference. Real role credentials must be non-empty.
 
-2. **Use ref tokens in your adapter**
+For an additional `critic` client, create `critic_api-key` / `critic_url` and
+implement the corresponding SDK reads in the adapter. The sidecar already
+understands arbitrary role prefixes for OpenAI-compatible Bearer requests; no
+role registration or sidecar code change is needed. New protocols with different
+authentication headers require separate support.
 
-   For multi-model secrets, your adapter code must read each key by name and send it as the Bearer token — the sidecar resolves the real key and routes to the matching `_url`.
+### Local auth directories
 
-   ```python
-   from evalhub.adapter.auth import read_model_auth_key
+For direct local adapter execution, set `EVALHUB_MODE=local` and
+`model.auth.secret_ref` to an absolute `file:///` directory URL. Create files
+with the same names (`api-key`, `judge_api-key`, `judge_url`, and so on). These
+files contain the **real credentials and real upstream URLs**; Kubernetes-style
+`:ref` values require a sidecar and must not be written into a direct local
+auth directory. The SDK resolves this directory from `EVALHUB_JOB_SPEC_PATH`.
 
-   model1_token = read_model_auth_key("model-1_api-key")  # returns "model-1_api-key:ref"
-   model1_url   = read_model_auth_key("model-1_url")       # returns sidecar address
+ATIF additionally requires a regular auth directory with no symlink components
+and bounded credential-file reads. See [ATIF configuration](/adapters/atif/configuration/).
+When the local runtime itself is configured with a sidecar, follow its
+[local-mode routing configuration](/guides/local-mode/) rather than assuming the
+Kubernetes projected-volume layout.
 
-   model2_token = read_model_auth_key("model-2_api-key")  # returns "model-2_api-key:ref"
-   model2_url   = read_model_auth_key("model-2_url")       # returns sidecar address
-
-   resp = requests.post(
-       f"{model1_url}/v1/chat/completions",
-       headers={"Authorization": f"Bearer {model1_token}"},
-       json={...},
-   )
-   ```
-
-   Each request is independently routed based on the prefix in the ref token.
-
-</Steps>
+Create or update the Secret before starting the job. The sidecar caches values
+at startup; changes require a new evaluation job.
 
 ---
 

@@ -6,6 +6,18 @@ description: "Worked examples for evaluating RAG pipelines with the RAGAS adapte
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Steps } from '@astrojs/starlight/components';
 
+## Model-auth Secret
+
+Create `ragas-model-auth` in the tenant namespace, with `api-key` for the primary
+credential and `judge_api-key` / `judge_url` plus `embedding_api-key` /
+`embedding_url` for separate endpoints. The complete placeholder manifest is in
+[Configuration](/adapters/ragas/configuration/#model-auth-secret).
+
+**Do not put judge/embedding URLs or API keys in API payload `parameters`.**
+The examples select model identifiers in parameters and put connections only in
+the model-auth Secret. The embedding endpoint must implement `/v1/embeddings`;
+a chat-only endpoint will not work for embedding-based metrics.
+
 ## End-to-End RAG Evaluation
 
 This example walks through evaluating a RAG pipeline from dataset preparation to results retrieval using the EvalHub SDK CLI.
@@ -48,47 +60,76 @@ This example walks through evaluating a RAG pipeline from dataset preparation to
 
 ### Submit a RAGAS Evaluation Job
 
+Save this API request as `ragas.json`. Create the model-auth Secret and the
+separate dataset S3 credential Secret in the tenant namespace first; see
+[Using Custom Data](/guides/custom-data/).
+
+```json
+{
+  "name": "ragas-secret-routing",
+  "model": {
+    "url": "https://target.example/v1",
+    "name": "target-model",
+    "auth": {
+      "secret_ref": "ragas-model-auth"
+    }
+  },
+  "benchmarks": [
+    {
+      "id": "ragas_rag_default",
+      "provider_id": "ragas",
+      "parameters": {
+        "judge_model": "judge-model",
+        "embedding_model": "embedding-model",
+        "max_tokens": 512,
+        "temperature": 0.1
+      },
+      "test_data_ref": {
+        "s3": {
+          "bucket": "my-bucket",
+          "key": "ragas-dataset/dataset.jsonl",
+          "secret_ref": "dataset-s3-credentials"
+        }
+      }
+    }
+  ]
+}
+```
+
 <Tabs>
 <TabItem label="SDK CLI">
 
 ```bash
-# Submit a RAGAS evaluation job
-evalhub job submit \
-  --provider ragas \
-  --benchmark ragas_rag_default \
-  --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
-  --model-url "http://vllm-service:8000" \
-  --param embedding_model=all-MiniLM-L6-v2 \
-  --param embedding_url=http://embeddings-service:8001 \
-  --param max_tokens=512 \
-  --param temperature=0.1 \
-  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
+evalhub eval run --config ragas.json --wait
 ```
 
 </TabItem>
-
 <TabItem label="Python SDK">
 
 ```python
-from evalhub import EvalHubClient
+import os
+from pathlib import Path
+from evalhub import SyncEvalHubClient
+from evalhub.models.api import JobSubmissionRequest
 
-client = EvalHubClient(base_url="http://localhost:8080")
-
-job = client.submit_job(
-    provider_id="ragas",
-    benchmark_id="ragas_rag_default",
-    model_name="Qwen/Qwen2.5-1.5B-Instruct",
-    model_url="http://vllm-service:8000",
-    parameters={
-        "embedding_model": "all-MiniLM-L6-v2",
-        "embedding_url": "http://embeddings-service:8001",
-        "max_tokens": 512,
-        "temperature": 0.1,
-    },
-    test_data_ref={"s3": "s3://my-bucket/ragas-dataset/dataset.jsonl"},
+client = SyncEvalHubClient(
+    base_url=os.environ["EVALHUB_URL"],
+    auth_token=os.environ.get("EVALHUB_TOKEN"),
 )
+request = JobSubmissionRequest.model_validate_json(Path("ragas.json").read_text())
+job = client.jobs.submit(request, headers={"X-Tenant": os.environ["TENANT_NAMESPACE"]})
+print(job.id)
+```
 
-print(f"Job submitted: {job.id}")
+</TabItem>
+<TabItem label="REST API">
+
+```bash
+curl -X POST "$EVALHUB_URL/api/v1/evaluations/jobs" \
+  -H "Authorization: Bearer $EVALHUB_TOKEN" \
+  -H "X-Tenant: $TENANT_NAMESPACE" \
+  -H "Content-Type: application/json" \
+  --data-binary @ragas.json
 ```
 
 </TabItem>
@@ -98,10 +139,10 @@ print(f"Job submitted: {job.id}")
 
 ```bash
 # Check job status
-evalhub job status <job-id>
+evalhub eval status <job-id>
 
 # Get results
-evalhub job results <job-id>
+evalhub eval results <job-id>
 ```
 
 Results include per-metric scores:
@@ -126,15 +167,11 @@ Results include per-metric scores:
 
 To evaluate with all 11 metrics, use the `ragas_rag_full` benchmark:
 
+Copy `ragas.json` to `ragas-full.json`, change the benchmark ID to
+`ragas_rag_full`, and keep the same model-auth Secret:
+
 ```bash
-evalhub job submit \
-  --provider ragas \
-  --benchmark ragas_rag_full \
-  --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
-  --model-url "http://vllm-service:8000" \
-  --param embedding_model=all-MiniLM-L6-v2 \
-  --param embedding_url=http://embeddings-service:8001 \
-  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
+evalhub eval run --config ragas-full.json --wait
 ```
 
 :::caution[Cost Consideration]
@@ -143,44 +180,46 @@ The full suite runs 11 metrics, most of which require LLM judge calls. For a dat
 
 ## Evaluation Collection with RAGAS
 
-EvalHub Evaluation Collections let you run benchmarks from multiple providers in a single evaluation. This example combines RAGAS with LM Evaluation Harness benchmarks to evaluate both the RAG pipeline quality and the underlying model capabilities.
+For an existing collection containing `ragas_rag_default`, use the same
+model-auth Secret and set only model identifiers in its benchmark override.
+Replace `your-rag-collection` with the registered collection ID:
 
-### Define a Collection
-
-```yaml
-name: healthcare_rag_eval_v1
-description: Healthcare RAG pipeline evaluation: RAG quality + medical knowledge
-providers:
-  - provider_id: ragas
-    benchmarks:
-      - benchmark_id: ragas_rag_default
-        weight: 0.6
-        pass_criteria:
-          threshold: 0.7
-  - provider_id: lm_evaluation_harness
-    benchmarks:
-      - benchmark_id: medqa
-        weight: 0.2
-        pass_criteria:
-          threshold: 0.5
-      - benchmark_id: pubmedqa
-        weight: 0.2
-        pass_criteria:
-          threshold: 0.5
+```json
+{
+  "name": "ragas-collection-routing",
+  "model": {
+    "url": "https://target.example/v1",
+    "name": "target-model",
+    "auth": {
+      "secret_ref": "ragas-model-auth"
+    }
+  },
+  "collection": {
+    "id": "your-rag-collection",
+    "benchmarks": [
+      {
+        "id": "ragas_rag_default",
+        "provider_id": "ragas",
+        "parameters": {
+          "judge_model": "judge-model",
+          "embedding_model": "embedding-model"
+        },
+        "test_data_ref": {
+          "s3": {
+            "bucket": "my-bucket",
+            "key": "ragas-dataset/dataset.jsonl",
+            "secret_ref": "dataset-s3-credentials"
+          }
+        }
+      }
+    ]
+  }
+}
 ```
 
-### Run the Collection
-
-```bash
-evalhub collection run healthcare_rag_eval_v1 \
-  --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
-  --model-url "http://vllm-service:8000" \
-  --param ragas.embedding_model=all-MiniLM-L6-v2 \
-  --param ragas.embedding_url=http://embeddings-service:8001 \
-  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
-```
-
-The collection produces a unified report with weighted scores from all providers, making it possible to set quality gates that cover both RAG-specific and general model capabilities.
+Save the request as `ragas-collection.json` and submit it with
+`evalhub eval run --config ragas-collection.json --wait`. See
+[Collections](/guides/collections/) to register or choose a collection.
 
 ## Local Development Example
 
@@ -202,3 +241,9 @@ export EVALHUB_MODE=local
 export EVALHUB_JOB_SPEC_PATH=meta/job.json
 python main.py
 ```
+
+
+For local model authentication, set `model.auth.secret_ref` in the adapter JobSpec
+to an absolute `file:///` auth directory containing the same key filenames and
+real values. The Kubernetes examples use a Secret name instead and receive
+projected references; do not copy `:ref` tokens into a direct local auth directory.

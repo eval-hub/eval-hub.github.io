@@ -86,10 +86,42 @@ All configuration is specified in the `parameters` object of the JobSpec.
 | Parameter | Type | Description | Default |
 |---|---|---|---|
 | `eval_model_name` | string | Name of the judge model | `model.name` |
-| `eval_model_url` | string | Base URL of the judge model endpoint | `model.url` |
 
 :::note[Separate Judge Endpoint]
-The judge model defaults to the same model being evaluated. To use a separate, more capable model as judge (a common pattern), set `eval_model_name` and `eval_model_url` to point to a different endpoint. Any OpenAI-compatible server is supported.
+The judge defaults to `model.name`. Select a different model with
+`eval_model_name`; configure its connection in the model-auth Secret below.
+
+### Model-auth Secret
+
+**URLs and API keys must not be placed in API payload `parameters`.** Put the
+primary endpoint in `model.url`, reference the Secret with
+`model.auth.secret_ref`, and use `judge_api-key` / `judge_url` for an independent
+OpenAI-compatible judge connection:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: deepeval-model-auth
+  namespace: team-a
+type: Opaque
+stringData:
+  api-key: "<target-credential>"
+  judge_api-key: "<judge-credential>"
+  judge_url: https://judge.example/v1
+```
+
+With no judge entries, DeepEval reuses the primary URL and Secret credential.
+A judge key alone uses the primary URL with that key. A judge URL requires its
+matching key. Legacy `eval_model_url`, `judge_url`, `judge_base_url`, and
+`judge_api_key` parameters are ignored, whether or not judge Secret entries exist;
+they never fill in a missing Secret value or cause failure merely by being present.
+
+In Kubernetes the adapter reads `judge_api-key:ref` and a sidecar URL from
+`/var/run/secrets/model`, then configures DeepEval's OpenAI-compatible judge
+client. Runtime `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` values are not auxiliary
+connection inputs. See [adapter availability and migration](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters)
+and [adapter implementation](/guides/model-authentication/#openai-compatible-target-judge-and-embedding-clients).
 :::
 
 ### Scoring
@@ -172,8 +204,6 @@ See the [MLflow guide](/guides/mlflow/) for setup and configuration details.
 |---|---|---|---|
 | `EVALHUB_MODE` | Execution mode: `k8s` or `local` | No | `k8s` |
 | `EVALHUB_JOB_SPEC_PATH` | Path to the job spec JSON file | Yes (local mode) | `/meta/job.json` |
-| `OPENAI_API_KEY` | API key for OpenAI-compatible judge endpoint | When using OpenAI | — |
-| `ANTHROPIC_API_KEY` | API key for Anthropic judge endpoint | When using Anthropic | — |
 | `DEEPEVAL_CACHE_DIR` | DeepEval cache directory | No | `/tmp` |
 | `MLFLOW_TRACKING_URI` | MLflow server URL | When using MLflow | — |
 | `MLFLOW_EXPERIMENT` | MLflow experiment name (fallback) | No | — |
@@ -191,12 +221,11 @@ See the [MLflow guide](/guides/mlflow/) for setup and configuration details.
     "url": "https://api.openai.com/v1",
     "name": "gpt-4o",
     "auth": {
-      "secret_ref": "openai-api-key-secret"
+      "secret_ref": "deepeval-model-auth"
     }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.7,
     "dataset_format": "csv",
     "max_concurrent": 2,
