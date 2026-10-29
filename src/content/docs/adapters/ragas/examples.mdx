@@ -16,6 +16,25 @@ This example walks through evaluating a RAG pipeline from dataset preparation to
 - An OpenAI-compatible model endpoint serving a judge model (e.g. vLLM, Ollama)
 - An embeddings endpoint (can be the same server if it supports `/v1/embeddings`)
 - The `eval-hub-sdk` CLI installed: `pip install eval-hub-sdk`
+- For S3 test data, create the `evalhub-s3-credentials` Secret in the evaluation job's namespace with the required keys documented in [Using Custom Data](/guides/custom-data/#how-it-works).
+
+### Configure Model Connections
+
+For Kubernetes evaluations, put the embedding endpoint and its API key in the Secret referenced by the job's model authentication settings. Create this Secret in the evaluation job's namespace, using your deployment's credentials:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ragas-model-connections
+type: Opaque
+stringData:
+  api-key: "<model-api-key>"
+  embedding_url: http://embeddings-service:8001/v1
+  embedding_api-key: "<embedding-api-key>"
+```
+
+Apply the Secret before submitting a job. The `embedding_url` entry requires a matching `embedding_api-key`; use a nonempty dummy key for an unauthenticated embedding endpoint. Select the deployed embedding model with `embedding_model` in the benchmark parameters. EvalHub routes requests through the sidecar using these connections.
 
 ### Prepare the Dataset
 
@@ -48,21 +67,26 @@ This example walks through evaluating a RAG pipeline from dataset preparation to
 
 ### Submit a RAGAS Evaluation Job
 
+Use `http://vllm-service:8000/v1` to explicitly specify the OpenAI-compatible API base path. The `/v1` path itself does not declare or guarantee compatibility; the server must implement the required API.
+
 <Tabs>
 <TabItem label="SDK CLI">
 
 ```bash
 # Submit a RAGAS evaluation job
-evalhub job submit \
+evalhub eval run \
+  --name ragas-default \
   --provider ragas \
   --benchmark ragas_rag_default \
   --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
-  --model-url "http://vllm-service:8000" \
+  --model-url "http://vllm-service:8000/v1" \
+  --model-auth-secret ragas-model-connections \
   --param embedding_model=all-MiniLM-L6-v2 \
-  --param embedding_url=http://embeddings-service:8001 \
   --param max_tokens=512 \
   --param temperature=0.1 \
-  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
+  --test-data-s3-bucket my-bucket \
+  --test-data-s3-key ragas-dataset/dataset.jsonl \
+  --test-data-s3-secret evalhub-s3-credentials
 ```
 
 </TabItem>
@@ -70,23 +94,36 @@ evalhub job submit \
 <TabItem label="Python SDK">
 
 ```python
-from evalhub import EvalHubClient
-
-client = EvalHubClient(base_url="http://localhost:8080")
-
-job = client.submit_job(
-    provider_id="ragas",
-    benchmark_id="ragas_rag_default",
-    model_name="Qwen/Qwen2.5-1.5B-Instruct",
-    model_url="http://vllm-service:8000",
-    parameters={
-        "embedding_model": "all-MiniLM-L6-v2",
-        "embedding_url": "http://embeddings-service:8001",
-        "max_tokens": 512,
-        "temperature": 0.1,
-    },
-    test_data_ref={"s3": "s3://my-bucket/ragas-dataset/dataset.jsonl"},
+from evalhub import SyncEvalHubClient
+from evalhub.models import (
+    BenchmarkConfig, JobSubmissionRequest, ModelAuth, ModelConfig,
+    S3TestDataRef, TestDataRef,
 )
+
+client = SyncEvalHubClient(base_url="http://localhost:8080")
+
+job = client.jobs.submit(JobSubmissionRequest(
+    name="ragas-default",
+    model=ModelConfig(
+        name="Qwen/Qwen2.5-1.5B-Instruct",
+        url="http://vllm-service:8000/v1",
+        auth=ModelAuth(secret_ref="ragas-model-connections"),
+    ),
+    benchmarks=[BenchmarkConfig(
+        provider_id="ragas",
+        id="ragas_rag_default",
+        parameters={
+            "embedding_model": "all-MiniLM-L6-v2",
+            "max_tokens": 512,
+            "temperature": 0.1,
+        },
+        test_data_ref=TestDataRef(s3=S3TestDataRef(
+            bucket="my-bucket",
+            key="ragas-dataset/dataset.jsonl",
+            secret_ref="evalhub-s3-credentials",
+        )),
+    )],
+))
 
 print(f"Job submitted: {job.id}")
 ```
@@ -98,10 +135,10 @@ print(f"Job submitted: {job.id}")
 
 ```bash
 # Check job status
-evalhub job status <job-id>
+evalhub eval status <job-id>
 
 # Get results
-evalhub job results <job-id>
+evalhub eval results <job-id>
 ```
 
 Results include per-metric scores:
@@ -127,14 +164,17 @@ Results include per-metric scores:
 To evaluate with all 11 metrics, use the `ragas_rag_full` benchmark:
 
 ```bash
-evalhub job submit \
+evalhub eval run \
+  --name ragas-full \
   --provider ragas \
   --benchmark ragas_rag_full \
   --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
-  --model-url "http://vllm-service:8000" \
+  --model-url "http://vllm-service:8000/v1" \
+  --model-auth-secret ragas-model-connections \
   --param embedding_model=all-MiniLM-L6-v2 \
-  --param embedding_url=http://embeddings-service:8001 \
-  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
+  --test-data-s3-bucket my-bucket \
+  --test-data-s3-key ragas-dataset/dataset.jsonl \
+  --test-data-s3-secret evalhub-s3-credentials
 ```
 
 :::caution[Cost Consideration]
@@ -171,13 +211,37 @@ providers:
 
 ### Run the Collection
 
+To supply S3 data for the RAGAS benchmark in a collection, use a job configuration file. The S3 bucket, key, and secret flags apply to `evalhub eval run` with inline benchmark flags; `evalhub collections run` does not accept them.
+
+Save the following as `healthcare-rag-job.yaml`, using the ID of your registered collection:
+
+```yaml
+name: healthcare-rag-eval
+model:
+  name: Qwen/Qwen2.5-1.5B-Instruct
+  url: http://vllm-service:8000/v1
+  auth:
+    secret_ref: ragas-model-connections
+collection:
+  id: healthcare_rag_eval_v1
+  benchmarks:
+    - id: ragas_rag_default
+      provider_id: ragas
+      parameters:
+        embedding_model: all-MiniLM-L6-v2
+      test_data_ref:
+        s3:
+          bucket: my-bucket
+          key: ragas-dataset/dataset.jsonl
+          secret_ref: evalhub-s3-credentials
+    - id: medqa
+      provider_id: lm_evaluation_harness
+    - id: pubmedqa
+      provider_id: lm_evaluation_harness
+```
+
 ```bash
-evalhub collection run healthcare_rag_eval_v1 \
-  --model-name "Qwen/Qwen2.5-1.5B-Instruct" \
-  --model-url "http://vllm-service:8000" \
-  --param ragas.embedding_model=all-MiniLM-L6-v2 \
-  --param ragas.embedding_url=http://embeddings-service:8001 \
-  --test-data-s3 s3://my-bucket/ragas-dataset/dataset.jsonl
+evalhub eval run --config healthcare-rag-job.yaml
 ```
 
 The collection produces a unified report with weighted scores from all providers, making it possible to set quality gates that cover both RAG-specific and general model capabilities.
