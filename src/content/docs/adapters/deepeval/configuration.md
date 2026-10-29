@@ -29,11 +29,8 @@ The DeepEval adapter uses the standard EvalHub `JobSpec` structure:
   "test_data_ref": {
     "s3": {
       "bucket": "string",
-      "path": "string",
-      "secret_ref": {
-        "name": "string",
-        "namespace": "string"
-      }
+      "key": "string",
+      "secret_ref": "string"
     }
   },
   "callback_url": "string"
@@ -208,11 +205,8 @@ See the [MLflow guide](/guides/mlflow/) for setup and configuration details.
   "test_data_ref": {
     "s3": {
       "bucket": "deepeval-datasets",
-      "path": "faithfulness/",
-      "secret_ref": {
-        "name": "deepeval-data-bucket",
-        "namespace": "your-namespace"
-      }
+      "key": "faithfulness/",
+      "secret_ref": "deepeval-data-bucket"
     }
   },
   "callback_url": "http://evalhub-service:8080"

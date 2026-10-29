@@ -117,27 +117,32 @@ print(f"Job submitted: {job.id}")
 <TabItem label="REST API">
 
 ```bash
-curl -X POST http://evalhub-service:8080/api/v1/jobs \
+curl -X POST http://evalhub-service:8080/api/v1/evaluations/jobs \
   -H "Content-Type: application/json" \
   -d '{
-    "id": "deepeval-faithfulness-001",
-    "provider_id": "deepeval",
-    "benchmark_id": "faithfulness",
+    "name": "deepeval-faithfulness",
     "model": {
       "url": "https://api.openai.com/v1",
       "name": "gpt-4o"
     },
-    "parameters": {
-      "eval_model_name": "gpt-4o",
-      "threshold": 0.7,
-      "dataset_format": "csv"
-    },
-    "test_data_ref": {
-      "s3": {
-        "bucket": "my-bucket",
-        "path": "deepeval-datasets/faithfulness.csv"
+    "benchmarks": [
+      {
+        "provider_id": "deepeval",
+        "id": "faithfulness",
+        "parameters": {
+          "eval_model_name": "gpt-4o",
+          "threshold": 0.7,
+          "dataset_format": "csv"
+        },
+        "test_data_ref": {
+          "s3": {
+            "bucket": "my-bucket",
+            "key": "deepeval-datasets/faithfulness.csv",
+            "secret_ref": "evalhub-s3-credentials"
+          }
+        }
       }
-    }
+    ]
   }'
 ```
 
