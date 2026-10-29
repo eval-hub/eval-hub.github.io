@@ -23,6 +23,15 @@ This example walks through evaluating a RAG pipeline from dataset preparation to
 - An OpenAI-compatible model endpoint serving a judge model (e.g. vLLM, Ollama)
 - An embeddings endpoint (can be the same server if it supports `/v1/embeddings`)
 - The `eval-hub-sdk` CLI installed: `pip install eval-hub-sdk`
+- For S3 test data, create the `evalhub-s3-credentials` Secret in the evaluation job's namespace with the required keys documented in [Using Custom Data](/guides/custom-data/#how-it-works).
+
+### Configure Model Connections
+
+Create the [model-auth Secret](#model-auth-secret) in the evaluation job's
+namespace before submitting the job. Keep `judge_model` and `embedding_model`
+in benchmark parameters; their connections come from the Secret. See the shared
+[multi-model setup](/guides/model-authentication/#scenario-4-multi-model-secrets)
+for the manifest and matching URL/API-key requirements.
 
 ### Prepare the Dataset
 
@@ -55,6 +64,10 @@ This example walks through evaluating a RAG pipeline from dataset preparation to
 
 ### Submit a RAGAS Evaluation Job
 
+Use your deployment's OpenAI-compatible API base path, such as
+`https://target.example/v1`. The `/v1` suffix does not guarantee compatibility;
+the server must implement the APIs used by its role.
+
 Save this API request as `ragas.json`. Create the model-auth Secret and the
 separate dataset S3 credential Secret in the tenant namespace first; see
 [Using Custom Data](/guides/custom-data/).
@@ -83,7 +96,7 @@ separate dataset S3 credential Secret in the tenant namespace first; see
         "s3": {
           "bucket": "my-bucket",
           "key": "ragas-dataset/dataset.jsonl",
-          "secret_ref": "dataset-s3-credentials"
+          "secret_ref": "evalhub-s3-credentials"
         }
       }
     }
@@ -171,7 +184,7 @@ Replace `your-rag-collection` with the registered collection ID:
           "s3": {
             "bucket": "my-bucket",
             "key": "ragas-dataset/dataset.jsonl",
-            "secret_ref": "dataset-s3-credentials"
+            "secret_ref": "evalhub-s3-credentials"
           }
         }
       }
@@ -179,6 +192,12 @@ Replace `your-rag-collection` with the registered collection ID:
   }
 }
 ```
+
+### Run the Collection
+
+Use a job configuration file to supply S3 data for a collection benchmark.
+The S3 bucket, key, and secret flags apply to `evalhub eval run` with inline
+benchmark flags; `evalhub collections run` does not accept them.
 
 Save the request as `ragas-collection.json` and submit it with
 `evalhub eval run --config ragas-collection.json --wait`. See

@@ -88,13 +88,14 @@ See the [Metrics reference](metrics/) for details on each metric.
 |-----------|------|-------------|---------|
 | `max_tokens` | integer | Maximum tokens for LLM completions | `null` (server default) |
 | `temperature` | number | Sampling temperature for LLM completions | `null` (adapter default) |
-| `judge_model` | string | Model used for LLM-based RAGAS metrics | Evaluated model |
+| `judge_model` | string | Model used for LLM-based RAGAS metrics (`parameters.judge_model`) | Evaluated model (`model.name`) |
 
 ### Separate Judge Model
 
 The evaluated model is used as the judge by default. For smaller models that
 struggle to return the structured JSON required by metrics such as
-`answer_relevancy`, configure a stronger OpenAI-compatible judge model:
+`answer_relevancy`, configure a stronger OpenAI-compatible judge model. Select
+`judge_model` in the benchmark parameters:
 
 ```json
 {
@@ -222,6 +223,10 @@ The adapter reads runtime settings from environment variables:
 | `LOG_LEVEL` | Logging level | No | `INFO` |
 
 ## Complete Example
+
+This adapter JobSpec uses the model-auth Secret described above. For a complete
+API submission, including the dataset reference, see the
+[worked example](/adapters/ragas/examples/#submit-a-ragas-evaluation-job).
 
 ```json
 {

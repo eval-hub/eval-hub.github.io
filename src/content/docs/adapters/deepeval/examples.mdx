@@ -292,14 +292,18 @@ Track evaluation results in MLflow for comparison across model versions or promp
 **Submit the job:**
 
 ```bash
-evalhub job submit \
+evalhub eval run \
+  --name rag-pipeline-v2-faithfulness \
   --provider deepeval \
   --benchmark faithfulness \
-  --experiment-name rag-pipeline-v2-faithfulness \
+  --experiment rag-pipeline-v2-faithfulness \
   --model-name "mistral-7b-instruct" \
   --model-url "http://vllm-service:8000/v1" \
+  --model-auth-secret deepeval-model-auth \
   --param eval_model_name=gpt-4o \
-  --test-data-s3 s3://my-bucket/deepeval-datasets/faithfulness.csv
+  --test-data-s3-bucket my-bucket \
+  --test-data-s3-key deepeval-datasets/faithfulness.csv \
+  --test-data-s3-secret evalhub-s3-credentials
 ```
 
 After the job completes, the run appears in MLflow under the `rag-pipeline-v2-faithfulness` experiment with the primary benchmark score, pass/fail status, and job metadata logged as metrics and parameters.
