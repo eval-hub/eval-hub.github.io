@@ -68,38 +68,12 @@ selects Inspect's Ollama wrapper, which also uses OpenAI-compatible Bearer auth.
 ### Kubernetes Secret (recommended for MaaS)
 
 **Model connection URLs and API keys are not supported in API payload
-`parameters`.** Keep the target URL in `model.url`, the target credential in
-`api-key`, and auxiliary connections in `<role>_api-key` / `<role>_url` entries
-of the same Secret. These rules also apply to local auth directories.
+`parameters`.** Use the shared [Secret setup](/guides/model-authentication/#scenario-4-multi-model-secrets)
+and the Inspect role mapping below. The [worked examples](/adapters/inspect/examples/)
+show shared MaaS credentials and separate Petri/Bloom role connections.
 
-The migration below requires an adapter image containing
-[contrib PR #263](https://github.com/eval-hub/eval-hub-contrib/pull/263).
-For an existing Inspect deployment, update the image and matching catalog
-together; see [adapter availability](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters).
-
-```bash
-kubectl create secret generic maas-creds \
-  -n <namespace> \
-  --from-literal=api-key="$MAAS_API_KEY" \
-  --from-literal=auditor_api-key="$AUDITOR_API_KEY" \
-  --from-literal=auditor_url="$AUDITOR_URL" \
-  --from-literal=judge_api-key="$JUDGE_API_KEY" \
-  --from-literal=judge_url="$JUDGE_URL" \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
-
-```yaml
-model:
-  url: https://maas.example.com/v1   # OpenAI-compatible base URL
-  name: microsoft-phi-4
-  auth:
-    secret_ref: maas-creds
-```
-
-If every role shares the primary connection, create only `api-key`; omit the
-role-specific entries. For a separate endpoint provide both role entries. A role
-key without a URL uses `model.url` with that key; a role URL without its matching
-key is invalid. Use the exact `judge_api-key` spelling, not `judge_api_key`.
+For existing deployments, see the [image requirements](/guides/model-authentication/#migration-from-inline-connection-parameters)
+and [Inspect migration steps](#migration-for-existing-inspect-jobs).
 
 ### Secret roles and model selection
 
@@ -114,25 +88,12 @@ key is invalid. Use the exact `judge_api-key` spelling, not `judge_api_key`.
 | StrongREJECT | `grader_model` | `judge_api-key` / `judge_url` |
 | Named roles, including standalone HLE | `model_roles: {grader: model_id}` | `grader_api-key` / `grader_url`; use the matching prefix for any role |
 
-### What Inspect receives
-
-The real Secret is mounted only in the sidecar. Inspect reads projected files
-under `/var/run/secrets/model`: `judge_api-key` contains `judge_api-key:ref`, and
-`judge_url` contains a sidecar URL such as `http://localhost:8080/v1`, preserving
-the original API path. `JobSpec.model.url` is also rewritten to the sidecar.
-The adapter uses SDK Secret readers and creates role-specific model specs; it
-passes the reference as the client's API key. The sidecar selects the real
-endpoint and injects its credential from the Bearer reference. Equal projected
-URLs do not mean the role credentials are interchangeable.
-
 ### Migration for existing Inspect jobs
 
 Remove `api_key`, `target_base_url`, `target_api_key`, role `*_base_url` /
 `*_api_key`, and `*_anthropic_*` connection fields from parameters. Put auxiliary
-connections in the Secret and the primary URL in `model.url`. Legacy inline
-connection fields are ignored; their presence alone does not fail a job, but
-their values cannot override or fill missing Secret entries. With no role
-entries, the role uses the primary connection.
+connections in the Secret and the primary URL in `model.url`. Legacy connection
+fields are ignored under the shared [migration and fallback rules](/guides/model-authentication/#migration-from-inline-connection-parameters).
 
 Connection fields in `model_args`, including nested dictionaries and lists,
 are removed before forwarding to Inspect; generation settings are retained.

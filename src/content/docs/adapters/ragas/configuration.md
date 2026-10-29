@@ -109,40 +109,20 @@ the model identifier.
 
 ### Model-auth Secret
 
-**Connection URLs and API keys must not be placed in Kubernetes API payload
-`parameters`.** Keep the primary endpoint in `model.url` and reference one Secret
-with `model.auth.secret_ref`:
+Use the shared [multi-model Secret example](/guides/model-authentication/#scenario-4-multi-model-secrets),
+naming it `ragas-model-auth` for the examples on this site. Connection URLs and
+API keys do not belong in Kubernetes API payload `parameters`.
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ragas-model-auth
-  namespace: team-a
-type: Opaque
-stringData:
-  api-key: "<target-credential>"
-  judge_api-key: "<judge-credential>"
-  judge_url: https://judge.example/v1
-  embedding_api-key: "<embedding-credential>"
-  embedding_url: https://embedding.example/v1
-```
-
-The adapter reads `judge_api-key` / `judge_url` and `embedding_api-key` /
-`embedding_url` with the SDK. In Kubernetes these are reference tokens and
-sidecar URLs under `/var/run/secrets/model`; the sidecar selects the upstream
-from the Bearer reference and injects the real key. Equal projected localhost
-URLs still use independent references for the judge and embedding clients.
-
-For either role, omit both entries to reuse the primary connection. A role key
-alone reuses the primary URL; a role URL without its matching key is invalid.
-See [Model Authentication](/guides/model-authentication/#scenario-4-multi-model-secrets).
+| Model selection | Secret connection |
+|---|---|
+| `judge_model` | `judge_api-key` / `judge_url` |
+| `embedding_model` | `embedding_api-key` / `embedding_url` |
 
 Ragas retains standalone local-development `judge_url`, `judge_api_key`, and
-`embedding_url` overrides. These are not the Kubernetes connection contract:
-raw external URLs or real API-key parameters are rejected in Kubernetes. Use
-the Secret entries above for submitted jobs, and prefer the same entries in a
-`file:///` auth directory for direct local execution.
+`embedding_url` overrides. In Kubernetes, raw external URL or real API-key
+overrides are rejected; use the Secret-based configuration. Prefer the shared
+[local auth-directory setup](/guides/model-authentication/#local-auth-directories)
+for direct local execution as well.
 
 ### Embedding Configuration
 

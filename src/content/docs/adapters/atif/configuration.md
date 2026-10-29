@@ -46,38 +46,17 @@ In local mode `model.url` is used directly and `model.auth.secret_ref` provides 
 
 ## Model-auth Secret
 
-**Judge URLs and API keys must not be placed in API payload `parameters`.**
-The primary judge endpoint is `model.url`; reference its credential Secret with
-`model.auth.secret_ref`. Optionally use a separate `judge` connection:
+Use the shared [Secret setup](/guides/model-authentication/#scenario-4-multi-model-secrets);
+judge URLs and API keys do not belong in `parameters`.
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: atif-model-auth
-  namespace: team-a
-type: Opaque
-stringData:
-  api-key: "<primary-credential>"
-  judge_api-key: "<judge-credential>"
-  judge_url: https://judge.example/v1
-```
+- `model.name` selects the judge, independently of the agent model recorded in
+  trajectory data. An optional `judge_api-key` / `judge_url` pair selects its connection.
+- Legacy `judge_url` / `judge_api_key` parameters and `EVALHUB_JUDGE_PROXY_URL`
+  are ignored.
+- Direct local execution uses ATIF's bounded auth-directory reads and symlink
+  restrictions, described under [Judge Routing and Authentication](#judge-routing-and-authentication).
 
-ATIF still selects the judge model with `model.name`; this does not select the
-agent model recorded inside trajectory data. With no judge entries it reuses
-the primary Secret connection. A judge key alone reuses the primary URL; a judge
-URL without its matching key is invalid.
-
-In Kubernetes the adapter reads the projected `judge_api-key:ref` and sidecar URL
-under `/var/run/secrets/model`, and sends the reference as a Bearer token in its
-HTTPX chat-completions request. The sidecar routes it and substitutes the real
-credential. Legacy `judge_url` / `judge_api_key` parameters and
-`EVALHUB_JUDGE_PROXY_URL` are ignored; parameter presence alone does not fail a job.
-
-For direct local execution, the same keys are real-value files in the bounded
-`file:///` auth directory described below. See
-[migration and image availability](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters)
-and [Model Authentication](/guides/model-authentication/).
+See the shared [migration and image requirements](/guides/model-authentication/#migration-from-inline-connection-parameters).
 
 ## Scoring Parameters
 
@@ -140,11 +119,7 @@ HTTP 429/5xx and transport timeouts are retried with exponential backoff. Other 
 
 ### Kubernetes
 
-The adapter uses the projected `judge` connection or rewritten `model.url`.
-It reads credential references, such as `judge_api-key:ref` or `api-key:ref`,
-from the model-auth mount and sends the selected reference as a Bearer token.
-The real credential is available only to the sidecar, which owns upstream
-authentication and TLS. `EVALHUB_JUDGE_PROXY_URL` is no longer a connection input.
+ATIF follows the shared [sidecar mount and credential-reference contract](/guides/model-authentication/#what-is-mounted-in-each-container).
 
 ### Local
 

@@ -70,43 +70,18 @@ CLEAR can evaluate agent responses that were **already generated** rather than c
 
 ## Model-auth Secret and judge routing
 
-**Model URLs and API keys must not be placed in API payload `parameters`.**
-Set the primary endpoint in `model.url` and reference one model-auth Secret with
-`model.auth.secret_ref`. For a separate judge, add these entries alongside the
-primary `api-key`:
+Use the shared [Secret setup](/guides/model-authentication/#scenario-4-multi-model-secrets);
+model URLs and API keys do not belong in `parameters`.
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: clear-model-auth
-  namespace: team-a
-type: Opaque
-stringData:
-  api-key: "<primary-credential>"
-  judge_api-key: "<judge-credential>"
-  judge_url: https://judge.example/v1
-```
+- Select the judge with `eval_model_name` and `provider: openai`. Both `litellm`
+  and `endpoint` backends use `judge_api-key` / `judge_url`.
+- Legacy `endpoint_url`, `inference_url`, `judge_url`, and `judge_api_key`
+  parameters are ignored. Connection overrides in `eval_model_params` are
+  removed; generation options are retained.
+- CLEAR sets the framework's `OPENAI_API_KEY` from Secret resolution. Native
+  RITS/Watsonx authentication requires separate sidecar support.
 
-Both `litellm` and `endpoint` inference backends use this judge connection. With
-no judge entries, CLEAR reuses the primary connection; a key-only judge entry
-uses the primary URL. A judge URL without its key is invalid.
-
-The adapter reads synthetic references and sidecar URLs from
-`/var/run/secrets/model`. It sets the framework's `OPENAI_API_KEY` from Secret
-resolution and supplies the projected URL; the sidecar selects the real endpoint
-and inserts the real credential. An existing runtime API key cannot override it.
-
-Legacy `endpoint_url`, `inference_url`, `judge_url`, and `judge_api_key` parameters
-are ignored. Connection fields in `eval_model_params`, including nested
-dictionaries and lists, are removed; generation options remain available. The
-job is not rejected merely because legacy connection fields are present.
-
-Use `provider: openai` with an OpenAI-compatible endpoint. Native RITS, Watsonx,
-and other provider authentication need separate sidecar support. See
-[migration and image availability](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters)
-and [the Secret mount and client contract](/guides/model-authentication/#writing-an-adapter).
-Local jobs read the same entries from an absolute `file:///` auth directory.
+See the shared [migration and image requirements](/guides/model-authentication/#migration-from-inline-connection-parameters).
 
 ## Configuration Parameters
 

@@ -3,7 +3,6 @@ title: "DeepEval Adapter"
 description: "Evaluate LLM outputs with DeepEval's LLM-as-judge metrics through EvalHub"
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
 import Since from '../../../../components/Since.astro';
 
 The DeepEval adapter integrates [DeepEval](https://github.com/confident-ai/deepeval) with the eval-hub evaluation service using the evalhub-sdk framework adapter pattern. DeepEval is an open-source LLM evaluation framework that uses an LLM-as-judge approach, where a separate model scores outputs for faithfulness, hallucination, answer relevancy, factual correctness, summarization quality, and multi-turn conversation properties.
@@ -54,90 +53,23 @@ The adapter follows the eval-hub framework adapter pattern:
 
 ## Model authentication
 
-**Do not put model URLs or API keys in API payload `parameters`.** Select the
-judge with `eval_model_name` and configure its connection with `judge_api-key` /
-`judge_url` in the Secret referenced by `model.auth.secret_ref`. Legacy connection
-parameters are ignored by the migrated adapter. See
-[Configuration](/adapters/deepeval/configuration/#model-auth-secret) for the mount,
-fallback rules, and adapter image requirements.
+Keep model URLs and API keys out of `parameters`; use the shared
+[Model Authentication guide](/guides/model-authentication/). DeepEval's
+[configuration reference](/adapters/deepeval/configuration/#model-auth-secret)
+lists its judge parameter and legacy fields.
 
 ## Quick Start
 
-Save this API request as `deepeval.json`. Create the model-auth Secret and the
-separate dataset S3 credential Secret in the tenant namespace first; see
-[Using Custom Data](/guides/custom-data/).
-
-```json
-{
-  "name": "deepeval-secret-routing",
-  "model": {
-    "url": "https://target.example/v1",
-    "name": "target-model",
-    "auth": {
-      "secret_ref": "deepeval-model-auth"
-    }
-  },
-  "benchmarks": [
-    {
-      "id": "faithfulness",
-      "provider_id": "deepeval",
-      "parameters": {
-        "eval_model_name": "judge-model",
-        "threshold": 0.7,
-        "dataset_format": "csv"
-      },
-      "test_data_ref": {
-        "s3": {
-          "bucket": "my-bucket",
-          "key": "deepeval-datasets/faithfulness.csv",
-          "secret_ref": "dataset-s3-credentials"
-        }
-      }
-    }
-  ]
-}
-```
-
-<Tabs>
-<TabItem label="SDK CLI">
+Follow the [faithfulness example](/adapters/deepeval/examples/#faithfulness-evaluation)
+to prepare the Secret and dataset, then save its submission as `deepeval.json`:
 
 ```bash
 evalhub eval run --config deepeval.json --wait
 ```
 
-</TabItem>
-<TabItem label="Python SDK">
-
-```python
-import os
-from pathlib import Path
-from evalhub import SyncEvalHubClient
-from evalhub.models.api import JobSubmissionRequest
-
-client = SyncEvalHubClient(
-    base_url=os.environ["EVALHUB_URL"],
-    auth_token=os.environ.get("EVALHUB_TOKEN"),
-)
-request = JobSubmissionRequest.model_validate_json(Path("deepeval.json").read_text())
-job = client.jobs.submit(request, headers={"X-Tenant": os.environ["TENANT_NAMESPACE"]})
-print(job.id)
-```
-
-</TabItem>
-<TabItem label="REST API">
-
-```bash
-curl -X POST "$EVALHUB_URL/api/v1/evaluations/jobs" \
-  -H "Authorization: Bearer $EVALHUB_TOKEN" \
-  -H "X-Tenant: $TENANT_NAMESPACE" \
-  -H "Content-Type: application/json" \
-  --data-binary @deepeval.json
-```
-
-</TabItem>
-</Tabs>
-
-See [Configuration](configuration/) for the full parameter reference and [Examples](examples/) for worked scenarios covering hallucination detection, multi-turn benchmarks, and MLflow-tracked evaluations.
+See [Configuration](configuration/) for the parameter reference and
+[Examples](examples/) for hallucination detection, multi-turn benchmarks, and
+MLflow-tracked evaluations.
 
 ## Provider Details
 
@@ -157,16 +89,10 @@ The adapter is distributed as a pre-built container image. Pull it directly for 
 
 ```bash
 podman pull quay.io/evalhub/community-deepeval:latest
-
-# Run locally with a mounted job spec and dataset
-podman run \
-  -e EVALHUB_MODE=local \
-  -e EVALHUB_JOB_SPEC_PATH=/meta/job.json \
-  -e OPENAI_API_KEY=your-key \
-  -v $(pwd)/job.json:/meta/job.json:ro \
-  -v $(pwd)/test_data:/test_data:ro \
-  quay.io/evalhub/community-deepeval:latest
 ```
+
+For direct local execution, use the auth-directory and mounted-dataset setup in
+[Local Testing](/adapters/deepeval/examples/#local-testing).
 
 ## Building from Source
 

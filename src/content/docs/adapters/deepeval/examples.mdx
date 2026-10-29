@@ -3,22 +3,15 @@ title: "Examples"
 description: "Worked examples for evaluating LLM outputs with the DeepEval adapter"
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Steps } from '@astrojs/starlight/components';
 
 ## Model-auth Secret for these examples
 
-Create `deepeval-model-auth` in the tenant namespace before submitting a job.
-Use `api-key` for the primary credential and optional `judge_api-key` / `judge_url`
-entries for a separate judge. The examples below reference that Secret; see the
-[configuration reference](/adapters/deepeval/configuration/#model-auth-secret)
-for a complete placeholder manifest and adapter image requirements.
-
-**Do not put model connection URLs or API keys in `parameters`.** Select the
-judge with `eval_model_name`; legacy `eval_model_url` / `judge_*` connection
-parameters are ignored. The adapter reads only the Secret connection and uses
-the sidecar in Kubernetes. For local execution, replace the Secret name with
-an absolute `file:///` auth-directory URL containing the same named files.
+Create `deepeval-model-auth` using the shared
+[Secret example](/guides/model-authentication/#scenario-4-multi-model-secrets) and
+DeepEval's [judge mapping](/adapters/deepeval/configuration/#model-auth-secret).
+Keep URLs and API keys out of `parameters`; the submissions below reference
+the Secret by name.
 
 ## Faithfulness Evaluation
 
@@ -84,44 +77,12 @@ separate dataset S3 credential Secret in the tenant namespace first; see
 }
 ```
 
-<Tabs>
-<TabItem label="SDK CLI">
-
 ```bash
 evalhub eval run --config deepeval.json --wait
 ```
 
-</TabItem>
-<TabItem label="Python SDK">
-
-```python
-import os
-from pathlib import Path
-from evalhub import SyncEvalHubClient
-from evalhub.models.api import JobSubmissionRequest
-
-client = SyncEvalHubClient(
-    base_url=os.environ["EVALHUB_URL"],
-    auth_token=os.environ.get("EVALHUB_TOKEN"),
-)
-request = JobSubmissionRequest.model_validate_json(Path("deepeval.json").read_text())
-job = client.jobs.submit(request, headers={"X-Tenant": os.environ["TENANT_NAMESPACE"]})
-print(job.id)
-```
-
-</TabItem>
-<TabItem label="REST API">
-
-```bash
-curl -X POST "$EVALHUB_URL/api/v1/evaluations/jobs" \
-  -H "Authorization: Bearer $EVALHUB_TOKEN" \
-  -H "X-Tenant: $TENANT_NAMESPACE" \
-  -H "Content-Type: application/json" \
-  --data-binary @deepeval.json
-```
-
-</TabItem>
-</Tabs>
+Submit the same JSON body with the [Python SDK](/reference/sdk-client/) or
+[REST API](/reference/server-api/) if preferred.
 
 ### Retrieve Results
 

@@ -87,42 +87,19 @@ All configuration is specified in the `parameters` object of the JobSpec.
 |---|---|---|---|
 | `eval_model_name` | string | Name of the judge model | `model.name` |
 
-:::note[Separate Judge Endpoint]
-The judge defaults to `model.name`. Select a different model with
-`eval_model_name`; configure its connection in the model-auth Secret below.
-
 ### Model-auth Secret
 
-**URLs and API keys must not be placed in API payload `parameters`.** Put the
-primary endpoint in `model.url`, reference the Secret with
-`model.auth.secret_ref`, and use `judge_api-key` / `judge_url` for an independent
-OpenAI-compatible judge connection:
+Use the shared [Secret setup](/guides/model-authentication/#scenario-4-multi-model-secrets),
+naming the Secret `deepeval-model-auth` for the examples on this site. Keep
+model connection URLs and API keys out of `parameters`.
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: deepeval-model-auth
-  namespace: team-a
-type: Opaque
-stringData:
-  api-key: "<target-credential>"
-  judge_api-key: "<judge-credential>"
-  judge_url: https://judge.example/v1
-```
+- Select the judge with `eval_model_name` (default `model.name`). Its connection
+  uses `judge_api-key` / `judge_url`.
+- Legacy `eval_model_url`, `judge_url`, `judge_base_url`, and `judge_api_key`
+  parameters are ignored. `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` runtime values
+  do not configure this judge connection.
 
-With no judge entries, DeepEval reuses the primary URL and Secret credential.
-A judge key alone uses the primary URL with that key. A judge URL requires its
-matching key. Legacy `eval_model_url`, `judge_url`, `judge_base_url`, and
-`judge_api_key` parameters are ignored, whether or not judge Secret entries exist;
-they never fill in a missing Secret value or cause failure merely by being present.
-
-In Kubernetes the adapter reads `judge_api-key:ref` and a sidecar URL from
-`/var/run/secrets/model`, then configures DeepEval's OpenAI-compatible judge
-client. Runtime `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` values are not auxiliary
-connection inputs. See [adapter availability and migration](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters)
-and [adapter implementation](/guides/model-authentication/#openai-compatible-target-judge-and-embedding-clients).
-:::
+See the shared [migration and image requirements](/guides/model-authentication/#migration-from-inline-connection-parameters).
 
 ### Scoring
 

@@ -9,16 +9,6 @@ The exact parameter name and format are benchmark-specific: a provider may call 
 
 For the sidecar's credential handling details, see [Model Authentication](/guides/model-authentication/). For collection job basics, see [Collections](/guides/collections/).
 
-:::note[Adapter image availability]
-The Secret-only auxiliary connection and migration behavior for Inspect, DeepEval,
-FollowBench, ToolEval, Promptfoo, CLEAR, and ATIF is implemented in
-[contrib PR #263](https://github.com/eval-hub/eval-hub-contrib/pull/263), with catalog
-and fixture updates in [EvalHub PR #1202](https://github.com/eval-hub/eval-hub/pull/1202).
-Deploy adapter images containing those changes with matching provider catalogs;
-older images can still read legacy parameters or environment variables. Ragas's
-Secret-backed judge/embedding routing is already part of contrib PR #243.
-:::
-
 ## Before you start
 
 - Know the target model's endpoint URL and model identifier.
@@ -65,43 +55,10 @@ In the UI, provide the judge/scorer identifier in the benchmark field exposed fo
 
 ## Configure the connection Secret
 
-The Secret's optional judge-specific keys determine how the sidecar routes the judge connection:
-
-| Connection | Secret keys | Behavior |
-|---|---|---|
-| Same endpoint and credential as the target | No judge-specific keys; include `api-key` if the target requires it | Judge requests reuse the target URL and credential. |
-| Same endpoint, separate credential | `judge_api-key`; include `api-key` too if the target requires its own key | Judge requests use the target URL and the judge-specific key. |
-| Separate endpoint and credential | `judge_api-key` and `judge_url`; include `api-key` if the target requires its own key | Judge requests use the judge URL and judge-specific key. |
-
-`judge_url` without `judge_api-key` is invalid in the current contract. If the target endpoint is public and needs no key, omit `api-key`.
-
-For example, to use a different judge endpoint and key:
-
-```bash
-kubectl create secret generic target-and-judge-credentials \
-  --namespace "$TENANT_NAMESPACE" \
-  --from-literal=api-key="$TARGET_API_KEY" \
-  --from-literal=judge_api-key="$JUDGE_API_KEY" \
-  --from-literal=judge_url="$JUDGE_URL"
-```
-
-If both models use the same key and endpoint, omit `judge_api-key` and `judge_url`; the judge reuses the target connection. If they share the endpoint but require different keys, provide `judge_api-key` and omit `judge_url`.
-
-Create the Secret using your cluster's approved secret-management process, such as `kubectl`, `oc`, or the OpenShift console. Do not commit populated Secret manifests or paste credential values into job parameters. The operator grants EvalHub access to tenant Secrets for job setup, but does not provision these user credentials.
-
-## How the sidecar uses the Secret
-
-For Kubernetes jobs, EvalHub prepares an ephemeral internal Secret for the adapter.
-At `/var/run/secrets/model/judge_api-key` the adapter reads `judge_api-key:ref`;
-`/var/run/secrets/model/judge_url` contains the sidecar URL with the upstream API
-path preserved. For example, `https://judge.example/v1` becomes
-`http://localhost:8080/v1`. The real values are mounted only into the sidecar.
-The adapter reads these files with `read_model_auth_key()` and supplies the
-returned URL and key to its model client. The sidecar uses the Bearer reference
-to choose the upstream and substitute the real key. Model names do not select
-the connection, and matching localhost URLs do not imply shared credentials.
-
-The user-provided Secret remains the source of the real credential values; the job's temporary internal Secret is not a replacement for it. For implementation details and other secret-key patterns, see [Model Authentication](/guides/model-authentication/#scenario-4-multi-model-secrets).
+Follow the shared [multi-model Secret setup](/guides/model-authentication/#scenario-4-multi-model-secrets).
+Name the Secret `target-and-judge-credentials` to match the request above. For
+a separate judge, use `judge_api-key` / `judge_url`; the shared guide defines
+the fallback rules, adapter mounts, and sidecar routing behavior.
 
 ## Provider-specific configuration
 
@@ -121,42 +78,22 @@ The provider defines the model-selection parameter and the Secret prefix it read
 | Promptfoo grading | `judge_model`, e.g. `openai:chat:judge-model` | `judge_api-key` / `judge_url` |
 | [Ragas](/adapters/ragas/configuration/) | `judge_model`, `embedding_model` | Matching `judge` and `embedding` pairs |
 
-All pairs follow the same fallback rules in the connection table above. Create
-the entries needed by the chosen adapter; adding a pair alone does not configure
+Use the shared [role fallback rules](/guides/model-authentication/#scenario-4-multi-model-secrets).
+Create the entries needed by the chosen adapter; adding a pair alone does not configure
 a model role that the adapter does not read. For custom adapters, use the
 [OpenAI-compatible client example](/guides/model-authentication/#openai-compatible-target-judge-and-embedding-clients).
 
-OpenAI-compatible Bearer authentication is supported for these auxiliary routes.
-Native Anthropic `x-api-key` routing and CLEAR's native RITS/Watsonx authentication
-need separate sidecar support; use an OpenAI-compatible gateway for those models.
+Check the shared [protocol support](/guides/model-authentication/#protocol-support)
+before choosing a provider's native client.
 
 Use the model identifier expected by the judge endpoint. A valid Secret and URL do not guarantee that the endpoint hosts a model with that identifier.
 
 ## Migration from inline connection parameters
 
-Move `judge_url`, `judge_api_key`, role `*_base_url` / `*_api_key` fields,
-DeepEval's `eval_model_url`, CLEAR's `endpoint_url` / `inference_url`, and
-Promptfoo's generation URL/key fields into the corresponding Secret entries.
-Use the exact hyphenated key suffix: **`judge_api-key`**, not `judge_api_key`.
-Keep the primary URL in `model.url` and the model IDs in parameters.
-
-Inspect, DeepEval, FollowBench, ToolEval, Promptfoo, CLEAR, and ATIF ignore legacy
-connection parameters; their presence alone does not fail a job. They never
-override or fill missing Secret entries. With no role entries, the primary
-connection is reused. A role URL without its matching key still fails validation.
-Nested model-option connection fields are removed before framework invocation;
-generation settings remain available. Inspect also accepts legacy named-role
-dictionaries containing `model`, while ignoring their connection settings.
-
-Remove auxiliary credential/URL environment variables too. Framework subprocess
-environment variables are populated from Secret resolution, not accepted as an
-independent connection source. Start a new job after changing a Secret because
-the sidecar caches its values when it starts. Remove old credentials from requests
-and fixture generators even when ignored: submitted parameters can be persisted.
-
-Ragas retains standalone local-development overrides. In Kubernetes, raw external
-URL or API-key overrides are rejected; use the Secret-based configuration shown
-in the [Ragas reference](/adapters/ragas/configuration/#model-auth-secret).
+Follow the shared [migration and adapter image requirements](/guides/model-authentication/#migration-from-inline-connection-parameters).
+Each adapter's configuration reference lists the legacy field names and any
+framework-specific behavior; Inspect has a dedicated
+[migration section](/adapters/inspect/configuration/#migration-for-existing-inspect-jobs).
 
 ## Troubleshooting
 

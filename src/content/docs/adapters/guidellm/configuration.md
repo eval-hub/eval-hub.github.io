@@ -6,12 +6,9 @@ Complete reference for GuideLLM adapter configuration options.
 
 ## Model authentication
 
-For OpenAI-compatible model access, put the primary URL in `model.url` and the
-credential in the model-auth Secret's `api-key`, referenced by
-`model.auth.secret_ref`. Model URLs and API keys must not be placed in API payload
-`parameters`. The Kubernetes adapter receives a sidecar URL and credential
-reference; the sidecar supplies the real key. See
-[Model Authentication](/guides/model-authentication/) for mounts and client usage.
+For OpenAI-compatible API backends, use `model.url` and the model-auth Secret;
+keep model URLs and API keys out of `parameters`. Follow the shared
+[Model Authentication guide](/guides/model-authentication/) for setup and client usage.
 
 ## JobSpec Structure
 

@@ -3,20 +3,15 @@ title: "Examples"
 description: "Worked examples for evaluating RAG pipelines with the RAGAS adapter"
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Steps } from '@astrojs/starlight/components';
 
 ## Model-auth Secret
 
-Create `ragas-model-auth` in the tenant namespace, with `api-key` for the primary
-credential and `judge_api-key` / `judge_url` plus `embedding_api-key` /
-`embedding_url` for separate endpoints. The complete placeholder manifest is in
-[Configuration](/adapters/ragas/configuration/#model-auth-secret).
-
-**Do not put judge/embedding URLs or API keys in API payload `parameters`.**
-The examples select model identifiers in parameters and put connections only in
-the model-auth Secret. The embedding endpoint must implement `/v1/embeddings`;
-a chat-only endpoint will not work for embedding-based metrics.
+Create `ragas-model-auth` using the shared
+[multi-model Secret example](/guides/model-authentication/#scenario-4-multi-model-secrets).
+The submissions below keep URLs/API keys out of `parameters` and select the
+judge and embedding models using the [Ragas mapping](/adapters/ragas/configuration/#model-auth-secret).
+The embedding endpoint must implement `/v1/embeddings`.
 
 ## End-to-End RAG Evaluation
 
@@ -96,44 +91,12 @@ separate dataset S3 credential Secret in the tenant namespace first; see
 }
 ```
 
-<Tabs>
-<TabItem label="SDK CLI">
-
 ```bash
 evalhub eval run --config ragas.json --wait
 ```
 
-</TabItem>
-<TabItem label="Python SDK">
-
-```python
-import os
-from pathlib import Path
-from evalhub import SyncEvalHubClient
-from evalhub.models.api import JobSubmissionRequest
-
-client = SyncEvalHubClient(
-    base_url=os.environ["EVALHUB_URL"],
-    auth_token=os.environ.get("EVALHUB_TOKEN"),
-)
-request = JobSubmissionRequest.model_validate_json(Path("ragas.json").read_text())
-job = client.jobs.submit(request, headers={"X-Tenant": os.environ["TENANT_NAMESPACE"]})
-print(job.id)
-```
-
-</TabItem>
-<TabItem label="REST API">
-
-```bash
-curl -X POST "$EVALHUB_URL/api/v1/evaluations/jobs" \
-  -H "Authorization: Bearer $EVALHUB_TOKEN" \
-  -H "X-Tenant: $TENANT_NAMESPACE" \
-  -H "Content-Type: application/json" \
-  --data-binary @ragas.json
-```
-
-</TabItem>
-</Tabs>
+Submit the same JSON body with the [Python SDK](/reference/sdk-client/) or
+[REST API](/reference/server-api/) if preferred.
 
 ### Retrieve Results
 

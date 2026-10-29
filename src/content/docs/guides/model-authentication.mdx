@@ -6,7 +6,7 @@ import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
 For Kubernetes jobs, EvalHub routes model traffic through a sidecar proxy running alongside the adapter. The sidecar handles credential resolution and upstream TLS; the adapter receives credential references instead of real model API keys or SA tokens. Local jobs can read real credentials from a `file:///` auth directory.
 
-**Model connection URLs and API keys must not be placed in benchmark `parameters`.** Submit the primary endpoint in `model.url`, reference the model-auth Secret with `model.auth.secret_ref`, and put additional model connections in that Secret as `<role>_api-key` / `<role>_url` pairs. Model identifiers and evaluation settings remain parameters. See [migration and adapter availability](/guides/judge-and-scorer-models/#migration-from-inline-connection-parameters).
+**Model connection URLs and API keys must not be placed in benchmark `parameters`.** Submit the primary endpoint in `model.url`, reference the model-auth Secret with `model.auth.secret_ref`, and put additional model connections in that Secret as `<role>_api-key` / `<role>_url` pairs. Model identifiers and evaluation settings remain parameters. See [migration and adapter availability](#migration-from-inline-connection-parameters).
 
 ## How It Works
 
@@ -86,6 +86,43 @@ This guide applies to evaluation jobs created by the Kubernetes runtime. Local r
 For an end-to-end workflow covering judge, grader, and scorer model selection and credentials, see [Using Judge and Scorer Models](/guides/judge-and-scorer-models/).
 
 See also: [ODH-ADR-EH-0004 — Eval Sidecar Credential Injection](https://github.com/opendatahub-io/architecture-decision-records/blob/main/architecture-decision-records/eval-hub/ODH-ADR-EH-0004-eval-sidecar-creds-injection.md)
+
+---
+
+## Migration from inline connection parameters
+
+:::note[Adapter image availability]
+The Secret-only auxiliary connection and migration behavior for Inspect, DeepEval,
+FollowBench, ToolEval, Promptfoo, CLEAR, and ATIF is implemented in
+[contrib PR #263](https://github.com/eval-hub/eval-hub-contrib/pull/263), with catalog
+and fixture updates in [EvalHub PR #1202](https://github.com/eval-hub/eval-hub/pull/1202).
+Deploy adapter images containing those changes with matching provider catalogs;
+older images can still read legacy parameters or environment variables. Ragas's
+Secret-backed judge/embedding routing is already part of contrib PR #243.
+:::
+
+1. Move auxiliary model URLs and API keys from parameters into the matching
+   `<role>_url` / `<role>_api-key` Secret entries. Use the exact hyphenated key
+   suffix; `judge_api_key` is not a recognized Secret credential key.
+2. Keep the primary endpoint in `model.url`, reference the Secret with
+   `model.auth.secret_ref`, and leave model IDs and generation settings in
+   parameters. Use the [role mapping](/guides/judge-and-scorer-models/#provider-specific-configuration)
+   to choose the prefix expected by the adapter.
+3. Remove auxiliary URL/key runtime environment variables. When a framework
+   needs such variables, the adapter populates them from Secret resolution.
+4. Submit a new job after changing the Secret; an already-running sidecar caches
+   its values at startup.
+
+Inspect, DeepEval, FollowBench, ToolEval, Promptfoo, CLEAR, and ATIF ignore legacy
+connection parameters. Their presence alone does not fail a job, and they never
+override or fill missing Secret entries. The [role fallback and validation rules](#scenario-4-multi-model-secrets)
+still apply. Connection fields in nested framework model options are removed
+while generation settings and unrelated test data are retained.
+
+Remove old credentials from submitted requests and fixture generators even
+though they are ignored: job metadata can still persist those inputs. Adapter
+references list their specific legacy fields and exceptions, including
+[Ragas's standalone local overrides](/adapters/ragas/configuration/#model-auth-secret).
 
 ---
 
