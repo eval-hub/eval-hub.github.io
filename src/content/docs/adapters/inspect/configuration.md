@@ -52,7 +52,10 @@ Inside the job pod, EvalHub flattens each benchmark into an adapter `JobSpec` (`
 
 ## Model Names and Credentials
 
-Model names are passed as-is — bare (`claude-opus-4-7`, `granite3.3`) or org/model (`ibm-granite/granite-3.3-8b-instruct`). Do not add provider prefixes; the adapter selects the API from credentials.
+Model identifiers remain parameters; endpoints and credentials come from the
+model-auth Secret. Use the identifier served by the selected OpenAI-compatible
+endpoint, either bare or `org/model`. An auxiliary `ollama/` prefix explicitly
+selects Inspect's Ollama wrapper, which also uses OpenAI-compatible Bearer auth.
 
 | Provider style | Model name examples |
 |---|---|
@@ -60,59 +63,56 @@ Model names are passed as-is — bare (`claude-opus-4-7`, `granite3.3`) or org/m
 | vLLM / HuggingFace | `ibm-granite/granite-3.3-8b-instruct`, `meta-llama/Llama-3.3-70B-Instruct` |
 | Ollama | `granite3.3:8b`, `llama3.3`, `qwen3:32b` |
 | OpenRouter | `meta-llama/llama-3.3-70b-instruct` |
-| Anthropic | `claude-opus-4-7`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001` |
+| Models behind an OpenAI-compatible gateway | The model ID exposed by that gateway |
 
 ### Kubernetes Secret (recommended for MaaS)
 
-Create a Secret with an `api-key` key and reference it from the job via `model.auth.secret_ref`. Plaintext API-key parameters (`api_key`, `target_api_key`, and other `*_api_key` fields) are for local or development use only — do not include them in persisted Kubernetes/API job submissions. Prefer `model.auth.secret_ref` or environment-based credentials (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) for submitted jobs:
+**Model connection URLs and API keys are not supported in API payload
+`parameters`.** Use the shared [Secret setup](/guides/model-authentication/#scenario-4-multi-model-secrets)
+and the Inspect role mapping below. The [worked examples](/adapters/inspect/examples/)
+show shared MaaS credentials and separate Petri/Bloom role connections.
 
-```bash
-kubectl create secret generic maas-creds \
-  -n <namespace> \
-  --from-literal=api-key="$MAAS_API_KEY" \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
+For existing deployments, see the [image requirements](/guides/model-authentication/#migration-from-inline-connection-parameters)
+and [Inspect migration steps](#migration-for-existing-inspect-jobs).
 
-```yaml
-model:
-  url: https://maas.example.com/v1   # OpenAI-compatible base URL
-  name: microsoft-phi-4
-  auth:
-    secret_ref: maas-creds
-```
+### Secret roles and model selection
 
-EvalHub mounts the Secret for the sidecar; the adapter resolves `api-key` via `resolve_model_credentials()` into `OPENAI_API_KEY`. See the [Model authentication](/guides/model-authentication/) guide.
+| Use | Model selection | Secret connection |
+|---|---|---|
+| Target | `model.name` | `api-key`, with endpoint in `model.url` |
+| Petri/Bloom auditor | `auditor_model` | `auditor_api-key` / `auditor_url` |
+| Petri/Bloom judge | `judge_model` | `judge_api-key` / `judge_url` |
+| Bloom generation | `scenarios_model` | `scenarios_api-key` / `scenarios_url` |
+| Optional realism role | `realism_model` | `realism_api-key` / `realism_url` |
+| HLE / CyberSecEval collection judge | `judge_model` | `judge_api-key` / `judge_url` |
+| StrongREJECT | `grader_model` | `judge_api-key` / `judge_url` |
+| Named roles, including standalone HLE | `model_roles: {grader: model_id}` | `grader_api-key` / `grader_url`; use the matching prefix for any role |
 
-### Global credentials
+### Migration for existing Inspect jobs
 
-These apply to all roles that do not have a per-role override:
+Remove `api_key`, `target_base_url`, `target_api_key`, role `*_base_url` /
+`*_api_key`, and `*_anthropic_*` connection fields from parameters. Put auxiliary
+connections in the Secret and the primary URL in `model.url`. Legacy connection
+fields are ignored under the shared [migration and fallback rules](/guides/model-authentication/#migration-from-inline-connection-parameters).
 
-| Env var / parameter | Used for |
-|---|---|
-| `OPENAI_BASE_URL` / `model.url` | OpenAI-compatible endpoint (MaaS, vLLM, Ollama `/v1`, OpenRouter) |
-| `OPENAI_API_KEY` / mounted `api-key` / `api_key` | API key for the OpenAI-compatible endpoint |
-| `ANTHROPIC_API_KEY` / `anthropic_api_key` | Anthropic Messages API |
-| `ANTHROPIC_BASE_URL` | Anthropic API base URL override (proxies, on-prem) |
+Connection fields in `model_args`, including nested dictionaries and lists,
+are removed before forwarding to Inspect; generation settings are retained.
+Legacy `model_roles` dictionaries may contain a `model` name, but their connection
+settings are ignored. Auxiliary `OPENAI_JUDGE_*`, `OPENAI_API_KEY`,
+`ANTHROPIC_API_KEY`, and URL environment variables do not configure role
+connections. The adapter sets framework environment values from Secret resolution.
 
-### Client selection priority (per role, no override)
-
-1. `model.url` present → OpenAI-compatible client (for the target)
-2. `ANTHROPIC_API_KEY` or `ANTHROPIC_BASE_URL` set → Anthropic client
-3. `OPENAI_BASE_URL` or `OPENAI_API_KEY` set → OpenAI-compatible client
-
-### Per-role credential overrides
-
-Each role (target, auditor, judge, scenarios, realism) accepts its own endpoint and key. When set, only that role uses the override.
-
-| Parameter pattern | Effect |
-|---|---|
-| `{role}_base_url` | OpenAI-compatible endpoint for this role only |
-| `{role}_api_key` | API key for that OpenAI-compatible endpoint |
-| `{role}_anthropic_base_url` | Anthropic endpoint for this role only |
-| `{role}_anthropic_api_key` | Anthropic API key for this role |
+Native `anthropic/` auxiliary clients are not supported by this Bearer-reference
+contract because they use `x-api-key`. Serve such models through an
+OpenAI-compatible gateway. Inspect's Ollama wrapper uses `/v1` and Bearer auth;
+its upstream port cannot be detected after the URL has been rewritten.
 
 :::note[Bloom scenarios step]
-The `bloom scenarios` CLI only accepts bare `client/model` strings (for example `openai/gpt-oss-20b`). JSON model specs with `model_args` are not supported at that step. Before the subprocess runs, the adapter maps `scenarios_base_url` / `scenarios_api_key` onto `OPENAI_BASE_URL` / `OPENAI_API_KEY` in a copy of the job environment (or `OLLAMA_BASE_URL` for Ollama endpoints). If those parameters are unset, the scenarios step uses the existing global credentials.
+The `bloom scenarios` CLI only accepts bare `client/model` strings. The adapter
+reads `scenarios_api-key` / `scenarios_url` from the Secret and sets
+`OPENAI_API_KEY` / `OPENAI_BASE_URL` in an isolated subprocess environment. With
+no scenario entries it uses the primary Secret connection, not the auditor's
+connection. This step uses the OpenAI-compatible client, including for Ollama.
 :::
 
 ## Parameters Reference
@@ -121,53 +121,32 @@ All configuration below is specified in the `parameters` object of each benchmar
 
 ### Target model
 
-| Parameter | Type | Description | Default |
-|---|---|---|---|
-| `api_key` | string | Global API key for OpenAI-compatible endpoints (`OPENAI_API_KEY`). Local/development only — do not include in persisted Kubernetes/API job submissions; use `model.auth.secret_ref` or env-based credentials instead. Not required for unauthenticated vLLM. | `null` |
-| `target_base_url` | string | Override endpoint URL for the target when it differs from `model.url` | `null` |
-| `target_api_key` | string | API key for the target endpoint when different from `api_key`. Local/development only — do not include in persisted job submissions; prefer `model.auth.secret_ref` or env-based credentials. | `null` |
+The target is configured by `model.name`, `model.url`, and `model.auth.secret_ref`,
+outside `parameters`. Do not add target URLs or API keys to this object.
 
 ### Auditor model (Petri / Bloom)
 
 | Parameter | Type | Description | Default |
 |---|---|---|---|
 | `auditor_model` | string | Auditor model name (bare or org/model) | `"claude-sonnet-4-6"` |
-| `auditor_base_url` | string | OpenAI-compatible endpoint for the auditor | `null` |
-| `auditor_api_key` | string | OpenAI-compatible API key for the auditor | `null` |
-| `auditor_anthropic_base_url` | string | Anthropic base URL for the auditor (proxies / on-prem) | `null` |
-| `auditor_anthropic_api_key` | string | Anthropic API key for the auditor | `null` |
 
 ### Judge model (Petri / Bloom)
 
 | Parameter | Type | Description | Default |
 |---|---|---|---|
 | `judge_model` | string | Judge model name. Use the strongest available model — judge quality has the largest impact on audit reliability. | `"claude-opus-4-7"` |
-| `judge_base_url` | string | OpenAI-compatible endpoint for the judge | `null` |
-| `judge_api_key` | string | OpenAI-compatible API key for the judge | `null` |
-| `judge_anthropic_base_url` | string | Anthropic base URL for the judge | `null` |
-| `judge_anthropic_api_key` | string | Anthropic API key for the judge | `null` |
-
-### Anthropic (global)
-
-| Parameter | Type | Description | Default |
-|---|---|---|---|
-| `anthropic_api_key` | string | API key for the Anthropic API. Falls back to `ANTHROPIC_API_KEY`. | `null` |
 
 ### Scenarios model (Bloom only)
 
 | Parameter | Type | Description | Default |
 |---|---|---|---|
 | `scenarios_model` | string | Model for the `bloom scenarios` generation step | `auditor_model` |
-| `scenarios_base_url` | string | OpenAI-compatible endpoint for the scenarios model. Mapped to `OPENAI_BASE_URL` (or `OLLAMA_BASE_URL`) in the bloom scenarios subprocess env before that step runs. | `null` |
-| `scenarios_api_key` | string | API key for the scenarios endpoint. Mapped to `OPENAI_API_KEY` in the bloom scenarios subprocess env before that step runs. | `null` |
 
 ### Realism model (Petri optional)
 
 | Parameter | Type | Description | Default |
 |---|---|---|---|
 | `realism_model` | string | Optional fourth model role for realism filtering | `auditor_model` |
-| `realism_base_url` | string | OpenAI-compatible endpoint for the realism model | `null` |
-| `realism_api_key` | string | API key for the realism endpoint | `null` |
 
 ### Bloom-specific
 
@@ -193,6 +172,10 @@ All configuration below is specified in the `parameters` object of each benchmar
 | Parameter | Type | Description | Default |
 |---|---|---|---|
 | `task` | string | Task spec override. Required for `inspect/custom`. Accepts a Python import path (`inspect_evals/mmlu`), file path (`./my_task.py@my_task`), or Petri task (`inspect_petri/audit`). | `null` |
+| `judge_model` | string | HLE / CyberSecEval collection grader model; connection uses the `judge` Secret pair | unset |
+| `grader_model` | string | StrongREJECT grader model; connection uses the `judge` Secret pair | unset |
+| `model_roles` | object | Named role to model ID, e.g. `{"grader": "deployed-grader"}`; connection uses that role's Secret pair | `{}` |
+| `model_args` | object | Framework generation settings; connection overrides are ignored | `{}` |
 | `sandbox` | string | Execution sandbox: `none`, `docker`, or `k8s`. Use `docker` for tasks that need code-execution isolation (for example `swe-bench`, `humaneval`) when Docker is available. | `none` |
 
 ### Common
@@ -220,4 +203,8 @@ Petri and Bloom modes do not use a sandbox.
 
 ### HuggingFace datasets
 
-Some inspect-evals benchmarks (for example `humaneval`, `mmlu`) download datasets from the HuggingFace Hub. The adapter reads an `hf-token` secret mounted at `/var/run/secrets/model/hf-token` and injects it as `HF_TOKEN` automatically. Mount the secret in your EvalHub provider configuration if gated datasets are required.
+Some inspect-evals benchmarks (for example `humaneval`, `mmlu`) download datasets
+from the HuggingFace Hub. Add `hf-token` to the model-auth Secret referenced by
+`model.auth.secret_ref`. It is passed through to `/var/run/secrets/model/hf-token`,
+and the adapter configures `HF_TOKEN` for the framework. See
+[Model Authentication](/guides/model-authentication/) for the mount layout.

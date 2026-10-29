@@ -8,6 +8,12 @@ Configuration reference for the LightEval adapter.
 
 Detailed configuration documentation is in progress.
 
+## Model authentication
+
+For OpenAI-compatible API backends, use `model.url` and the model-auth Secret;
+keep model URLs and API keys out of `parameters`. Follow the shared
+[Model Authentication guide](/guides/model-authentication/) for setup and client usage.
+
 ## Basic Configuration
 
 ```json

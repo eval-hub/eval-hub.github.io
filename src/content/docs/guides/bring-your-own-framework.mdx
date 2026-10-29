@@ -83,6 +83,7 @@ from evalhub.adapter import (
     JobStatusUpdate,
     EvaluationResult,
 )
+from evalhub.adapter.auth import resolve_model_credentials
 
 class MyAdapter(FrameworkAdapter):
     def run_benchmark_job(
@@ -97,7 +98,12 @@ class MyAdapter(FrameworkAdapter):
             JobStatusUpdate(status=JobStatus.RUNNING, phase=JobPhase.LOADING_DATA)
         )
         benchmark = load_benchmark(config.benchmark_id)
-        model = connect_to_model(config.model.url, config.model.name)
+        credentials = resolve_model_credentials()
+        model = connect_to_model(
+            config.model.url,
+            config.model.name,
+            api_key=credentials.api_key or "local",
+        )
 
         # --- Run evaluation ---
         callbacks.report_status(
@@ -109,7 +115,7 @@ class MyAdapter(FrameworkAdapter):
             benchmark,
             model,
             num_examples=config.num_examples,
-            **config.parameters,
+            max_tokens=config.parameters.get("max_tokens", 1024),
         )
 
         # --- Post-process ---
@@ -135,6 +141,16 @@ class MyAdapter(FrameworkAdapter):
 
         return results
 ```
+
+### Model connections and the model-auth Secret
+
+Keep model URLs and API keys out of `parameters`. The
+[Model Authentication developer guide](/guides/model-authentication/#writing-an-adapter)
+defines the Secret contents, projected files, SDK readers, and client setup for
+target, judge, embedding, and custom roles. Follow its
+[framework passthrough guidance](/guides/model-authentication/#framework-configuration-and-subprocesses)
+when mapping resolved connections into subprocesses or framework options.
+Select generation options explicitly in your adapter, as in the example above.
 
 ### Entrypoint script
 

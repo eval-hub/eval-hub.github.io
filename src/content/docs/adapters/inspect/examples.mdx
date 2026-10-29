@@ -1,171 +1,103 @@
 ---
 title: "Examples"
-description: "Worked deployment scenarios for the Inspect AI adapter"
+description: "Inspect AI evaluations with Secret-backed target, judge, auditor and scenario connections"
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+Examples use the `evalhub eval run --config` submission shape: `name`, `model`,
+and `benchmarks[]`. See [Configuration](../configuration/) for the migration and
+adapter image requirements, and [Model Authentication](/guides/model-authentication/)
+for the projected Secret files and sidecar routing contract.
 
-Configuration examples for common Inspect adapter deployments. Examples use the **`evalhub eval run --config`** YAML shape (`name` + `model` + `benchmarks[]`).
-
-For the full parameter list see [Configuration](configuration/). For benchmark IDs see [Benchmarks](benchmarks/).
-
-For shared judge/scorer connection and Secret setup, see [Using Judge and Scorer Models](/guides/judge-and-scorer-models/).
+**Do not put model connection URLs or API keys in `parameters`, including nested
+`model_args` or `model_roles` settings.** Those legacy connection fields are
+ignored; they cannot configure or override a Secret-backed connection.
 
 ## MaaS (OpenAI-compatible API key Secret)
 
-All roles on the same MaaS / LiteLLM gateway. Create a Secret with key `api-key`, then reference it — do not put the key in parameters:
+When every role shares one gateway and credential, only `api-key` is needed:
 
 ```bash
-kubectl create secret generic maas-creds \
-  -n <namespace> \
-  --from-literal=api-key="$MAAS_API_KEY" \
-  --dry-run=client -o yaml | kubectl apply -f -
+kubectl create secret generic maas-creds --namespace "$TENANT_NAMESPACE" \
+  --from-literal=api-key="$MAAS_API_KEY"
 ```
 
 ```yaml
 name: inspect-petri-maas-smoke
 model:
   url: https://maas.example.com/v1
-  name: microsoft-phi-4
+  name: target-model
   auth:
     secret_ref: maas-creds
 benchmarks:
   - id: inspect/petri-sycophancy
     provider_id: inspect
     parameters:
-      auditor_model: gpt-oss-20b
-      judge_model: deepseek-r1-distill-qwen-14b
+      auditor_model: auditor-model
+      judge_model: judge-model
       max_samples: 3
       max_turns: 10
 ```
 
-Standard inspect-evals smoke against the same gateway:
+Each model identifier must exist on the gateway. The adapter receives the
+sidecar URL and `api-key:ref`; the sidecar supplies the real gateway key.
+
+## Petri: separate target, auditor and judge endpoints
+
+Create one Secret in the evaluation's tenant namespace. These are placeholders;
+populate it using your secret-management process:
 
 ```yaml
-name: inspect-gsm8k-maas-smoke
+apiVersion: v1
+kind: Secret
+metadata:
+  name: inspect-model-auth
+  namespace: team-a
+type: Opaque
+stringData:
+  api-key: "<target-credential>"
+  auditor_api-key: "<auditor-credential>"
+  auditor_url: https://auditor.example/api/v1
+  judge_api-key: "<judge-credential>"
+  judge_url: https://judge.example/v1
+  realism_api-key: "<realism-credential>"
+  realism_url: https://realism.example/v1
+```
+
+The submission contains model identifiers and audit settings:
+
+```yaml
+name: inspect-petri-independent-roles
 model:
-  url: https://maas.example.com/v1
-  name: microsoft-phi-4
+  url: https://target.example/v1
+  name: target-model
   auth:
-    secret_ref: maas-creds
+    secret_ref: inspect-model-auth
 benchmarks:
-  - id: inspect/gsm8k
+  - id: inspect/petri-sycophancy
     provider_id: inspect
     parameters:
+      auditor_model: auditor-model
+      judge_model: judge-model
+      realism_model: realism-model
+      realism_filter: true
       max_samples: 3
-      log_level: info
+      max_turns: 10
 ```
 
-Submit:
+For example, the adapter sees `auditor_api-key:ref` and
+`http://localhost:8080/api/v1` for the auditor, and `judge_api-key:ref` and
+`http://localhost:8080/v1` for the judge. The reference chooses the upstream;
+the visible hostname alone cannot identify the role. To share an endpoint with
+a different credential, provide the role key and omit its URL. To reuse the
+primary connection, omit both entries for that role.
 
-```bash
-evalhub eval run --config inspect-petri-maas.yaml --wait
-evalhub eval results <job-id> --format json
-```
+Models served by different vendors can use this pattern through OpenAI-compatible
+gateways. Native Anthropic `x-api-key` clients are not supported for auxiliary
+Secret routing; setting `ANTHROPIC_API_KEY` does not configure an auditor or judge.
 
-## Petri: multi-provider deployments
+## Ollama through its OpenAI-compatible API
 
-<Tabs>
-<TabItem label="Same vLLM">
-
-All roles on the same vLLM instance, no authentication.
-
-```yaml
-name: inspect-petri-same-vllm
-model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
-benchmarks:
-  - id: inspect/petri-sycophancy
-    provider_id: inspect
-    parameters:
-      auditor_model: ibm-granite/granite-3.3-8b-instruct
-      judge_model: meta-llama/Llama-3.3-70B-Instruct
-      max_samples: 5
-```
-
-Environment: none required (vLLM does not require authentication by default).
-
-</TabItem>
-
-<TabItem label="vLLM + Anthropic">
-
-Target on vLLM; auditor and judge on Anthropic.
-
-```yaml
-name: inspect-petri-vllm-anthropic
-model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
-benchmarks:
-  - id: inspect/petri-sycophancy
-    provider_id: inspect
-    parameters:
-      auditor_model: claude-sonnet-4-6
-      judge_model: claude-opus-4-7
-      max_samples: 5
-```
-
-Environment: `ANTHROPIC_API_KEY=sk-ant-...` (or mount via Secret and adapter parameters as appropriate).
-
-The adapter routes the target to the OpenAI-compatible client (via `model.url`) and the auditor/judge to Anthropic (via `ANTHROPIC_API_KEY`).
-
-</TabItem>
-
-<TabItem label="Two vLLMs">
-
-Target on vLLM-A; judge on a different vLLM-B. Each instance uses an `EMPTY` placeholder key when the server requires a token even if authentication is not enforced.
-
-```yaml
-name: inspect-petri-two-vllm
-model:
-  url: http://vllm-a:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
-benchmarks:
-  - id: inspect/petri-sycophancy
-    provider_id: inspect
-    parameters:
-      auditor_model: ibm-granite/granite-3.3-8b-instruct
-      judge_model: meta-llama/Llama-3.3-70B-Instruct
-      judge_base_url: http://vllm-b:8080/v1
-      judge_api_key: EMPTY
-      max_samples: 5
-```
-
-Environment: `OPENAI_API_KEY=EMPTY` (for target and auditor on vLLM-A).
-
-</TabItem>
-
-<TabItem label="OpenRouter mix">
-
-Target on vLLM, auditor on OpenRouter, judge on Anthropic.
-
-```yaml
-name: inspect-petri-openrouter
-model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
-benchmarks:
-  - id: inspect/petri-sycophancy
-    provider_id: inspect
-    parameters:
-      auditor_model: meta-llama/llama-3.3-70b-instruct
-      auditor_base_url: https://openrouter.ai/api/v1
-      judge_model: claude-opus-4-7
-      max_samples: 5
-```
-
-Environment: OpenRouter credentials via `OPENAI_API_KEY` or a mounted Secret (do not put `auditor_api_key` in parameters); `ANTHROPIC_API_KEY=sk-ant-...` for the judge. Target vLLM uses `model.url` (unauthenticated or `EMPTY` as needed).
-
-</TabItem>
-</Tabs>
-
-## Petri: Ollama and Anthropic-only
-
-<Tabs>
-<TabItem label="Ollama">
-
-Ollama exposes an OpenAI-compatible API at `/v1`. Model names follow the Ollama library format (`granite3.3:8b`, `llama3.3`), not HuggingFace IDs.
+Ollama exposes `/v1`. Use a model ID present on that endpoint:
 
 ```yaml
 name: inspect-petri-ollama
@@ -176,194 +108,125 @@ benchmarks:
   - id: inspect/petri-sycophancy
     provider_id: inspect
     parameters:
-      auditor_model: llama3.3
-      judge_model: qwen3:32b
-      max_samples: 5
+      auditor_model: granite3.3:8b
+      judge_model: granite3.3:8b
+      max_samples: 3
 ```
 
-Environment: none required.
-
-</TabItem>
-
-<TabItem label="Anthropic only">
-
-All roles on Anthropic. No `model.url` needed.
-
-```yaml
-name: inspect-petri-anthropic
-model:
-  name: claude-haiku-4-5-20251001
-benchmarks:
-  - id: inspect/petri-sycophancy
-    provider_id: inspect
-    parameters:
-      auditor_model: claude-sonnet-4-6
-      judge_model: claude-opus-4-7
-      max_samples: 5
-```
-
-Environment: `ANTHROPIC_API_KEY=sk-ant-...`
-
-</TabItem>
-
-<TabItem label="Anthropic proxy">
-
-Route only the judge through a custom Anthropic proxy; other roles keep the standard configuration.
-
-```yaml
-name: inspect-petri-anthropic-proxy
-model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
-benchmarks:
-  - id: inspect/petri-sycophancy
-    provider_id: inspect
-    parameters:
-      auditor_model: claude-sonnet-4-6
-      judge_model: claude-opus-4-7
-      judge_anthropic_base_url: https://my-anthropic-proxy/v1
-      max_samples: 5
-```
-
-Environment: `ANTHROPIC_API_KEY` for the auditor and judge proxy (do not put `judge_anthropic_api_key` in parameters — use env or a Secret); `OPENAI_BASE_URL` set from `model.url` (for target).
-
-</TabItem>
-</Tabs>
+This example reuses one unauthenticated endpoint; no Secret is needed. For a
+separate authenticated Ollama role, add its role pair to the Secret as above.
+An explicit `ollama/` auxiliary model prefix selects Inspect's Ollama wrapper,
+which uses OpenAI-compatible `/v1` requests and Bearer auth. Detecting the
+upstream from port `11434` is unreliable after the sidecar rewrites the URL.
 
 ## Standard inspect-evals
 
-Run a single-model inspect-evals benchmark such as GSM8K:
-
 ```yaml
-name: inspect-gsm8k-001
+name: inspect-gsm8k-smoke
 model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
+  url: https://maas.example.com/v1
+  name: target-model
+  auth:
+    secret_ref: maas-creds
 benchmarks:
   - id: inspect/gsm8k
     provider_id: inspect
     parameters:
-      max_samples: 50
+      max_samples: 3
       log_level: info
 ```
 
-Environment: none for unauthenticated vLLM. For gated HuggingFace datasets, mount an `hf-token` secret (see [Configuration](configuration/#huggingface-datasets)).
+For gated Hugging Face datasets, add `hf-token` to the same model-auth Secret.
+For a custom task use `id: inspect/custom` and put its import path in
+`parameters.task`, for example `inspect_evals/mmlu`.
 
-Custom task example:
+## HLE, CyberSecEval and StrongREJECT graders
+
+For the HLE or CyberSecEval collection path, add `judge_api-key` / `judge_url` to
+the Secret. The collection supplies its task/scorer configuration, and the job
+selects the judge model:
 
 ```yaml
-name: inspect-custom-mmlu
+name: inspect-hle-judge
 model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
-benchmarks:
-  - id: inspect/custom
-    provider_id: inspect
-    parameters:
-      task: inspect_evals/mmlu
-      max_samples: 20
+  url: https://target.example/v1
+  name: target-model
+  auth:
+    secret_ref: inspect-model-auth
+collection:
+  id: knowledge-reasoning-v1
+  benchmarks:
+    - id: inspect/hle
+      provider_id: inspect
+      parameters:
+        judge_model: judge-model
+        num_examples: 1
 ```
+
+For CyberSecEval, use collection `trustworthiness-v1` with benchmark override
+`id: inspect/cyberseceval-2-pi`. For StrongREJECT, use an explicit benchmark
+`id: inspect/strong-reject` and `grader_model: judge-model`;
+it also reads the **`judge`** Secret pair.
+
+For standalone HLE's named grader or any arbitrary named role, the prefix is
+the role name instead. Add `grader_api-key` / `grader_url` to the Secret and use:
+
+```yaml
+parameters:
+  model_roles:
+    grader: grader-model
+  model_args:
+    temperature: 0.2
+```
+
+Do not include URLs or keys in `model_roles` or `model_args`. Legacy role
+dictionaries can retain a `model` name; their connection fields are ignored.
 
 ## Bloom behavioural suites
 
-<Tabs>
-<TabItem label="Built-in sycophancy">
+Add a scenario connection to the Petri Secret when generation needs a separate
+model endpoint:
 
 ```yaml
-name: inspect-bloom-sycophancy
-model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
-benchmarks:
-  - id: inspect/bloom-sycophancy
-    provider_id: inspect
-    parameters:
-      auditor_model: claude-sonnet-4-6
-      judge_model: claude-opus-4-7
-      max_samples: 5
+stringData:
+  # Add these entries alongside the target, auditor and judge entries.
+  scenarios_api-key: "<scenario-credential>"
+  scenarios_url: https://scenarios.example/v1
 ```
-
-Environment: `ANTHROPIC_API_KEY=sk-ant-...` when auditor/judge use Anthropic.
-
-</TabItem>
-
-<TabItem label="Custom template">
-
-Generate scenarios from a Bloom template:
 
 ```yaml
 name: inspect-bloom-custom
 model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
+  url: https://target.example/v1
+  name: target-model
+  auth:
+    secret_ref: inspect-model-auth
 benchmarks:
   - id: inspect/bloom-custom
     provider_id: inspect
     parameters:
       bloom_template: delusion_sycophancy
-      auditor_model: claude-sonnet-4-6
-      judge_model: claude-opus-4-7
-      scenarios_model: gpt-oss-20b
-      max_samples: 5
-```
-
-Or skip generation with a pre-built behaviour directory:
-
-```yaml
-parameters:
-  behavior_dir: /data/my-bloom-behavior
-  auditor_model: claude-sonnet-4-6
-  judge_model: claude-opus-4-7
-```
-
-</TabItem>
-</Tabs>
-
-:::note[Bloom scenarios credentials]
-The `bloom scenarios` step uses global `OPENAI_BASE_URL` / `OPENAI_API_KEY` only. Per-role endpoint overrides do not apply to that step.
-:::
-
-## Dish (research preview)
-
-Enable Dish scaffold testing via `task_args` on a Petri (or compatible) job:
-
-```yaml
-name: inspect-petri-dish
-model:
-  url: http://vllm:8080/v1
-  name: ibm-granite/granite-3.3-8b-instruct
-benchmarks:
-  - id: inspect/petri-sycophancy
-    provider_id: inspect
-    parameters:
-      auditor_model: claude-sonnet-4-6
-      judge_model: claude-opus-4-7
-      task_args:
-        dish_scaffold: claude-code
+      auditor_model: auditor-model
+      judge_model: judge-model
+      scenarios_model: scenario-model
       max_samples: 3
 ```
 
+The `bloom scenarios` subprocess receives `OPENAI_API_KEY` and `OPENAI_BASE_URL`
+from the `scenarios` Secret pair. These variables are adapter outputs; do not
+supply a separate runtime generation credential. With no scenario entries, that
+step reuses the primary connection, even if the auditor has a separate endpoint.
+Use `behavior_dir` to select a pre-built behavior directory and skip generation.
+
 ## Submit via SDK CLI
+
+Save one of the complete submission examples above to a YAML file:
 
 ```bash
 evalhub eval run --config inspect-petri.yaml --wait
-
-# After completion (or for a prior job id):
 evalhub eval status <job-id>
 evalhub eval results <job-id> --format json
 ```
 
-Inline equivalent:
-
-```bash
-evalhub eval run \
-  --name inspect-petri-sycophancy-001 \
-  --model-url "http://vllm:8080/v1" \
-  --model-name "ibm-granite/granite-3.3-8b-instruct" \
-  --provider inspect \
-  --benchmark inspect/petri-sycophancy \
-  --param auditor_model=claude-sonnet-4-6 \
-  --param judge_model=claude-opus-4-7 \
-  --param max_samples=5 \
-  --wait
-```
+Create or update the Secret before submission. Start a new evaluation after
+changing a Secret; an already-running sidecar caches the original values.
