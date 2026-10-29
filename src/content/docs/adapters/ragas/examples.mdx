@@ -16,6 +16,7 @@ This example walks through evaluating a RAG pipeline from dataset preparation to
 - An OpenAI-compatible model endpoint serving a judge model (e.g. vLLM, Ollama)
 - An embeddings endpoint (can be the same server if it supports `/v1/embeddings`)
 - The `eval-hub-sdk` CLI installed: `pip install eval-hub-sdk`
+- For S3 test data, create the `evalhub-s3-credentials` Secret in the evaluation job's namespace with the required keys documented in [Using Custom Data](/guides/custom-data/#how-it-works).
 
 ### Configure Model Connections
 
