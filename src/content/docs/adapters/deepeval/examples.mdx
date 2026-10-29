@@ -39,7 +39,8 @@ Evaluates whether a RAG pipeline's responses are supported by the retrieved cont
 <TabItem label="SDK CLI">
 
 ```bash
-evalhub job submit \
+evalhub eval run \
+  --name deepeval-faithfulness \
   --provider deepeval \
   --benchmark faithfulness \
   --model-name "gpt-4o" \
@@ -47,7 +48,9 @@ evalhub job submit \
   --param eval_model_name=gpt-4o \
   --param threshold=0.7 \
   --param dataset_format=csv \
-  --test-data-s3 s3://my-bucket/deepeval-datasets/faithfulness.csv
+  --test-data-s3-bucket my-bucket \
+  --test-data-s3-key deepeval-datasets/faithfulness.csv \
+  --test-data-s3-secret evalhub-s3-credentials
 ```
 
 </TabItem>
@@ -55,22 +58,35 @@ evalhub job submit \
 <TabItem label="Python SDK">
 
 ```python
-from evalhub import EvalHubClient
-
-client = EvalHubClient(base_url="http://localhost:8080")
-
-job = client.submit_job(
-    provider_id="deepeval",
-    benchmark_id="faithfulness",
-    model_name="gpt-4o",
-    model_url="https://api.openai.com/v1",
-    parameters={
-        "eval_model_name": "gpt-4o",
-        "threshold": 0.7,
-        "dataset_format": "csv",
-    },
-    test_data_ref={"s3": "s3://my-bucket/deepeval-datasets/faithfulness.csv"},
+from evalhub import SyncEvalHubClient
+from evalhub.models import (
+    BenchmarkConfig, JobSubmissionRequest, ModelConfig,
+    S3TestDataRef, TestDataRef,
 )
+
+client = SyncEvalHubClient(base_url="http://localhost:8080")
+
+job = client.jobs.submit(JobSubmissionRequest(
+    name="deepeval-faithfulness",
+    model=ModelConfig(
+        name="gpt-4o",
+        url="https://api.openai.com/v1",
+    ),
+    benchmarks=[BenchmarkConfig(
+        provider_id="deepeval",
+        id="faithfulness",
+        parameters={
+            "eval_model_name": "gpt-4o",
+            "threshold": 0.7,
+            "dataset_format": "csv",
+        },
+        test_data_ref=TestDataRef(s3=S3TestDataRef(
+            bucket="my-bucket",
+            key="deepeval-datasets/faithfulness.csv",
+            secret_ref="evalhub-s3-credentials",
+        )),
+    )],
+))
 
 print(f"Job submitted: {job.id}")
 ```
@@ -277,14 +293,17 @@ Track evaluation results in MLflow for comparison across model versions or promp
 **Submit the job:**
 
 ```bash
-evalhub job submit \
+evalhub eval run \
+  --name rag-pipeline-v2-faithfulness \
   --provider deepeval \
   --benchmark faithfulness \
-  --experiment-name rag-pipeline-v2-faithfulness \
+  --experiment rag-pipeline-v2-faithfulness \
   --model-name "mistral-7b-instruct" \
   --model-url "http://vllm-service:8000/v1" \
   --param eval_model_name=gpt-4o \
-  --test-data-s3 s3://my-bucket/deepeval-datasets/faithfulness.csv
+  --test-data-s3-bucket my-bucket \
+  --test-data-s3-key deepeval-datasets/faithfulness.csv \
+  --test-data-s3-secret evalhub-s3-credentials
 ```
 
 After the job completes, the run appears in MLflow under the `rag-pipeline-v2-faithfulness` experiment with the primary benchmark score, pass/fail status, and job metadata logged as metrics and parameters.

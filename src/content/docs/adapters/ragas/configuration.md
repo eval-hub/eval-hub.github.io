@@ -88,15 +88,17 @@ See the [Metrics reference](metrics/) for details on each metric.
 |-----------|------|-------------|---------|
 | `max_tokens` | integer | Maximum tokens for LLM completions | `null` (server default) |
 | `temperature` | number | Sampling temperature for LLM completions | `null` (adapter default) |
-| `judge_model` | string | Model used for LLM-based RAGAS metrics | Evaluated model |
-| `judge_url` | string | OpenAI-compatible judge endpoint | Evaluated model URL |
-| `judge_api_key` | string | API key for an external judge endpoint | `OPENAI_API_KEY` |
+| `judge_model` | string | Model used for LLM-based RAGAS metrics (`parameters.judge_model`) | Evaluated model (`model.name`) |
+| `judge_url` | string | Standalone/local judge endpoint override (`parameters.judge_url`); use the model authentication Secret in Kubernetes | Projected judge URL, or evaluated model URL (`model.url`) |
+| `judge_api_key` | string | Standalone/local judge credential override; use the model authentication Secret in Kubernetes | Resolved role credential |
 
 ### Separate Judge Model
 
 The evaluated model is used as the judge by default. For smaller models that
 struggle to return the structured JSON required by metrics such as
-`answer_relevancy`, configure a stronger OpenAI-compatible judge model:
+`answer_relevancy`, configure a stronger OpenAI-compatible judge model. In Kubernetes, put `judge_url` and `judge_api-key` in the Secret referenced by `model.auth.secret_ref`, and select `judge_model` in the benchmark parameters.
+
+For standalone/local runs, endpoint overrides can be supplied in parameters:
 
 ```json
 {
@@ -107,9 +109,9 @@ struggle to return the structured JSON required by metrics such as
 }
 ```
 
-For an external judge endpoint, provide the credential through
-`OPENAI_API_KEY` from a Kubernetes Secret or runtime environment. A
-`judge_api_key` parameter is also supported, but a real key should never be
+For a standalone external judge endpoint, provide the credential through
+`OPENAI_API_KEY` in the runtime environment. A
+`judge_api_key` parameter is also supported locally, but a real key should never be
 committed to a benchmark, JobSpec, or provider file. The adapter tries
 `judge_api_key` first, then `OPENAI_API_KEY`. The evaluated model's mounted
 credential is used only when the judge uses the evaluated model endpoint. If
@@ -121,10 +123,12 @@ an authentication error.
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `embedding_model` | string | Model name for embeddings | Same as `model.name` |
-| `embedding_url` | string | Base URL for embeddings endpoint | Same as `model.url` |
+| `embedding_url` | string | Standalone/local embedding endpoint override; use the model authentication Secret in Kubernetes | Projected embedding URL, or `model.url` |
+
+In Kubernetes, put `embedding_url` and `embedding_api-key` in the Secret referenced by `model.auth.secret_ref` (`--model-auth-secret` in the CLI). Keep `embedding_model` in the benchmark parameters. Each role-specific URL requires its matching API key; a nonempty dummy key can be used for an unauthenticated service. See [Configure Model Connections](examples/#configure-model-connections) for the Secret and CLI examples.
 
 :::caution[Embedding Model Selection]
-Several RAGAS metrics (notably `answer_relevancy` and `answer_similarity`) require embedding support. If your LLM endpoint does not serve embeddings, you must configure a separate `embedding_url` and `embedding_model`. A lightweight embedding model such as `all-MiniLM-L6-v2` or `nomic-embed-text` is recommended.
+Several RAGAS metrics (notably `answer_relevancy` and `answer_similarity`) require embedding support. If your LLM endpoint does not serve embeddings, configure a separate embedding connection in the model authentication Secret and select its deployed model with `embedding_model`.
 :::
 
 ### Data Configuration
@@ -209,6 +213,8 @@ The adapter reads runtime settings from environment variables:
 | `LOG_LEVEL` | Logging level | No | `INFO` |
 
 ## Complete Example
+
+This standalone/local JobSpec uses parameter endpoint overrides. For Kubernetes, configure the embedding connection in the model authentication Secret as described above.
 
 ```json
 {
