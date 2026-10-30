@@ -84,8 +84,9 @@ The `defaultCount` maps to Kubernetes resource **requests** and `maxCount` maps 
 <Tabs>
 <TabItem label="REST API">
 
-```json {8-10}
+```json {9-11}
 {
+  "name": "hardware-profile-eval",
   "model": {
     "url": "http://my-model:8000/v1",
     "name": "my-model"
@@ -109,6 +110,7 @@ The `defaultCount` maps to Kubernetes resource **requests** and `maxCount` maps 
 curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
   -H "Content-Type: application/json" \
   -d '{
+    "name": "hardware-profile-eval",
     "model": {
       "url": "http://my-model:8000/v1",
       "name": "my-model"
@@ -195,8 +197,9 @@ The evaluation job request also has a top-level `queue` field, but it is **depre
 <Tabs>
 <TabItem label="REST API">
 
-```json {8-22}
+```json {9-23}
 {
+  "name": "direct-hardware-eval",
   "model": {
     "url": "http://my-model:8000/v1",
     "name": "my-model"
@@ -231,6 +234,7 @@ The evaluation job request also has a top-level `queue` field, but it is **depre
 curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
   -H "Content-Type: application/json" \
   -d '{
+    "name": "direct-hardware-eval",
     "model": {
       "url": "http://my-model:8000/v1",
       "name": "my-model"
@@ -256,8 +260,9 @@ curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
 
 Set `hardware_config` at the top level of the job request to apply defaults to all benchmarks that don't specify their own `hardware_config`:
 
-```json {7-13,18}
+```json {8-14,19}
 {
+  "name": "hardware-fallback-eval",
   "model": {
     "url": "http://my-model:8000/v1",
     "name": "my-model"

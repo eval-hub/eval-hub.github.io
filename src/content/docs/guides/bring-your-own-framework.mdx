@@ -499,6 +499,7 @@ curl -s -X POST "${EVALHUB_URL}/api/v1/evaluations/jobs" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${TOKEN}" \
   -d '{
+  "name": "my-accuracy-eval",
   "model": {
     "url": "https://my-model-endpoint.example.com/v1",
     "name": "llama-3-8b"
@@ -525,6 +526,7 @@ from evalhub.models.api import ExperimentConfig
 
 with SyncEvalHubClient() as client:
     job = client.jobs.submit(JobSubmissionRequest(
+        name="my-accuracy-eval",
         model=ModelConfig(
             url="https://my-model-endpoint.example.com/v1",
             name="llama-3-8b",

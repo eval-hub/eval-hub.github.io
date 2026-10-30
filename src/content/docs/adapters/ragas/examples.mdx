@@ -189,24 +189,24 @@ EvalHub Evaluation Collections let you run benchmarks from multiple providers in
 
 ```yaml
 name: healthcare_rag_eval_v1
-description: Healthcare RAG pipeline evaluation: RAG quality + medical knowledge
-providers:
-  - provider_id: ragas
-    benchmarks:
-      - benchmark_id: ragas_rag_default
-        weight: 0.6
-        pass_criteria:
-          threshold: 0.7
-  - provider_id: lm_evaluation_harness
-    benchmarks:
-      - benchmark_id: medqa
-        weight: 0.2
-        pass_criteria:
-          threshold: 0.5
-      - benchmark_id: pubmedqa
-        weight: 0.2
-        pass_criteria:
-          threshold: 0.5
+description: "Healthcare RAG pipeline evaluation: RAG quality + medical knowledge"
+category: healthcare
+benchmarks:
+  - id: ragas_rag_default
+    provider_id: ragas
+    weight: 0.6
+    pass_criteria:
+      threshold: 0.7
+  - id: medqa
+    provider_id: lm_evaluation_harness
+    weight: 0.2
+    pass_criteria:
+      threshold: 0.5
+  - id: pubmedqa
+    provider_id: lm_evaluation_harness
+    weight: 0.2
+    pass_criteria:
+      threshold: 0.5
 ```
 
 ### Run the Collection

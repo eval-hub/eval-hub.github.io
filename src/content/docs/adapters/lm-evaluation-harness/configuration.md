@@ -52,6 +52,7 @@ set `parameters.tokenizer` explicitly to a tokenizer compatible with the served
 model. For example, for an endpoint serving Llama 3.1 8B Instruct:
 
 ```yaml
+name: tokenizer-override-eval
 model:
   name: my-served-llama
   url: http://model-endpoint:8080/v1
@@ -74,7 +75,7 @@ evalhub eval run \
   --model-url https://my-model-url/v1 \
   --model-name Qwen3.6-35B-A3B \
   --provider lm_evaluation_harness \
-  --secret-ref my-model-auth \
+  --model-auth-secret my-model-auth \
   --param tokenizer=Qwen/Qwen3.6-35B-A3B \
   -b winogender
 ```
@@ -92,7 +93,7 @@ to the model endpoint does not grant access to a gated Hugging Face repository.
 Use the existing [Hugging Face token Secret setup](/guides/bring-your-own-framework/#environment-variables)
 to add an `hf-token` key to your model authentication Secret (`my-model-auth`
 in both examples). Reference that Secret through `model.auth.secret_ref` in
-the job configuration or `--secret-ref` in the CLI. This makes the token available as
+the job configuration or `--model-auth-secret` in the CLI. This makes the token available as
 `HF_TOKEN` to the built-in adapter. See
 [Model Authentication](/guides/model-authentication/) for combining the Hugging
 Face token with endpoint credentials.
