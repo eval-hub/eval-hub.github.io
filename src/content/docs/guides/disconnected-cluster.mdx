@@ -9,7 +9,7 @@ This guide covers running LM Evaluation Harness and Inspect AI's BFCL benchmark 
 
 - **Model endpoint** (`model.url`) is reachable from inside the cluster — no public internet required.
 - **EvalHub job images** (adapter, init container, sidecar) are pullable from your internal registry.
-- For the S3 examples in this guide, **MinIO** is reachable from the job namespace. You can use another supported `test_data_ref` source; see [Using Custom Data](/guides/custom-data/).
+- For a fully disconnected run, use an S3-compatible store such as **MinIO** that is reachable from the job namespace, or a PVC that already contains the staged assets. Direct `test_data_ref.git` and `test_data_ref.hf` references are fetched by the init container when the job starts, so they still require connectivity to their source (and Git URLs must pass EvalHub's URL validation). See [Using Custom Data](/guides/custom-data/).
 - **No public internet from evaluation pods.** Pre-stage each selected benchmark's external datasets and support files in the layout its adapter expects. The model endpoint must be reachable from the job, and any asset store used by the init container must be reachable by that container.
 
 ## LM Evaluation Harness
@@ -80,11 +80,13 @@ On a connected machine, download the tokenizer files:
 pip install huggingface_hub
 ```
 
+Some Hugging Face repositories are gated. Accept the repository's terms and authenticate on this staging machine with an account that has read access (for example, use `hf auth login` or provide `HF_TOKEN` to the download process). The token is only needed to download the files: do not put it in the staging directory or upload it with the assets. A disconnected evaluation should consume the staged files without fetching them from Hugging Face.
+
 ```python
 import os
 from huggingface_hub import hf_hub_download
 
-repo_id = "meta-llama/Llama-3.1-8B-Instruct"
+repo_id = "meta-llama/Llama-3.2-1B-Instruct"
 out_dir = "./staging/tokenizer"
 os.makedirs(out_dir, exist_ok=True)
 
@@ -171,7 +173,7 @@ curl -X POST https://<eval-hub-host>/api/v1/evaluations/jobs \
   }'
 ```
 
-The init container syncs the entire `offline/` prefix to `/test_data/`, so all datasets and the tokenizer are available at their expected paths. Once the layout is detected, all offline-related environment variables (`HF_HOME`, `HF_DATASETS_OFFLINE`, `HF_HUB_OFFLINE`) are set automatically.
+The init container syncs the entire `offline/` prefix to `/test_data/`, so all datasets and the tokenizer are available at their expected paths. Once the layout is detected, the adapter sets its Hugging Face cache paths and offline variables automatically, including `HF_HOME`, `HF_HUB_CACHE`, `HF_DATASETS_CACHE`, `HF_HUB_OFFLINE`, `HF_DATASETS_OFFLINE`, `HF_EVALUATE_OFFLINE`, and `TRANSFORMERS_OFFLINE`.
 
 ### Multiple benchmarks
 
@@ -232,7 +234,15 @@ BFCL (`inspect/bfcl`) downloads its dataset and, for some categories, function i
 
 ### Stage BFCL assets
 
-Prepare the cache on a connected staging machine using the same `inspect-evals` version as the deployed Inspect adapter. Set `INSPECT_EVALS_CACHE_DIR` to an absolute writable path **before** starting Inspect; the package reads this variable at import time. Run the BFCL task with the same categories that the EvalHub job will use. If the job omits `task_args.categories`, use the task's defaults when warming the cache. For example:
+Prepare the cache on a connected staging machine using the same Inspect package versions as the deployed adapter. The current adapter pins `inspect-ai==0.3.278` and `inspect-evals==0.26.0`; verify the `constraints.txt` for the exact adapter image you will run, because these versions can change. For the current pins, create an isolated environment and install the matching packages:
+
+```bash
+python3 -m venv .venv-inspect-staging
+source .venv-inspect-staging/bin/activate
+python -m pip install "inspect-ai==0.3.278" "inspect-evals==0.26.0"
+```
+
+Set `INSPECT_EVALS_CACHE_DIR` to an absolute writable path **before** starting Inspect; the package reads this variable at import time. Run the BFCL task with the same categories that the EvalHub job will use. If the job omits `task_args.categories`, use the task's defaults when warming the cache. For example:
 
 ```bash
 export INSPECT_EVALS_CACHE_DIR="$PWD/staging/inspect-evals"
