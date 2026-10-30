@@ -64,10 +64,13 @@ Examples:
 | `arc_easy` | `allenai/ai2_arc` | `ARC-Easy` | `allenai--ai2_arc--ARC-Easy` |
 | `hellaswag` | `hellaswag` | - | `hellaswag` |
 | `blimp` | `blimp` | all subsets (67) | `blimp--<subset>` per subtask |
+| `crows_pairs_english` | `jannalu/crows_pairs_multilingual` | `english` | `jannalu--crows_pairs_multilingual--english` |
 
 > `blimp` runs as 67 separate sub-tasks, each backed by a different subset of the `blimp` HuggingFace dataset. Use the multi-subset snippet above (`get_dataset_config_names`) to download them all in one go.
 
-> The full list of benchmark → dataset mappings is in [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md).
+> The full list of benchmark → dataset mappings is in [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md). This follows the moving `incubation` branch, so verify each mapping against the task configuration in the exact adapter revision deployed in your cluster. For example, the RHOAI adapter configuration for [`crows_pairs_english`](https://github.com/red-hat-data-services/lm-evaluation-harness/blob/17ddf28fb3ac5042f0a726950418136483e6196c/lm_eval/tasks/crows_pairs/crows_pairs_english.yaml) uses `jannalu/crows_pairs_multilingual` with the `english` subset.
+
+> To stage that dataset, save it under `jannalu--crows_pairs_multilingual--english` (the dataset path with `/` replaced by `--`, followed by `--english`). If MinIO already contains `BigScienceBiasEval--crows_pairs_multilingual--english`, that is the old source mapping; restage it under the slug above. The adapter uses the Parquet-backed dataset and does not require `trust_remote_code`.
 
 ### Step 2: Pre-download Tokenizer
 
@@ -208,7 +211,7 @@ The dataset bundle was not found in MinIO or the slug does not match. The slug i
 
 **Wrong slug format**
 
-Check [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md) for the correct `dataset_path` and `dataset_name` for your benchmark:
+Use [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md) as a starting point, then verify `dataset_path` and `dataset_name` against the task configuration in the exact adapter revision deployed in your cluster. The linked mapping follows a moving branch and can differ from the downstream adapter. For `crows_pairs_english` in the RHOAI adapter revision linked above, the values are `jannalu/crows_pairs_multilingual` and `english`, producing the slug `jannalu--crows_pairs_multilingual--english`.
 
 - With subset: `dataset_path.replace("/", "--") + "--" + dataset_name` → `allenai--ai2_arc--ARC-Easy`
 - Without subset (Subset column is `-`): `dataset_path.replace("/", "--")` only → `hellaswag`
