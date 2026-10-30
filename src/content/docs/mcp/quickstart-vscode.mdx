@@ -12,7 +12,13 @@ Connect the EvalHub MCP server to VS Code with GitHub Copilot in under 5 steps.
 
 1. **Install the MCP server**
 
-   Download the binary, see [Install the MCP server](/mcp/installation/#install-the-mcp-server).
+   Follow [Install the MCP server](/mcp/installation/#install-the-mcp-server) to download the standalone binary, or install the Python SDK with MCP support:
+
+   ```bash
+   pip install "eval-hub-sdk[mcp]"
+   ```
+
+   The `mcp` extra installs the `evalhub-mcp` binary used by `evalhub mcp run`. Ensure both `evalhub` and `evalhub-mcp` are on the `PATH` available to VS Code. If using a virtual environment, activate it before launching VS Code.
 
 2. **Create a config file**
 
@@ -40,7 +46,7 @@ Connect the EvalHub MCP server to VS Code with GitHub Copilot in under 5 steps.
    }
    ```
 
-   If using the Python SDK instead of the standalone binary:
+   If using the Python SDK CLI:
 
    ```json
    {
