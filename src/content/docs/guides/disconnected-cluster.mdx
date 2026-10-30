@@ -9,7 +9,7 @@ This guide covers running LM Evaluation Harness and Inspect AI's BFCL benchmark 
 
 - **Model endpoint** (`model.url`) is reachable from inside the cluster — no public internet required.
 - **EvalHub job images** (adapter, init container, sidecar) are pullable from your internal registry.
-- For the S3 examples in this guide, **MinIO** is reachable from the job namespace. You can use another supported `test_data_ref` source; see [Using Custom Data](/guides/custom-data/).
+- For a fully disconnected run, use an S3-compatible store such as **MinIO** that is reachable from the job namespace, or a PVC that already contains the staged assets. Direct `test_data_ref.git` and `test_data_ref.hf` references are fetched by the init container when the job starts, so they still require connectivity to their source (and Git URLs must pass EvalHub's URL validation). See [Using Custom Data](/guides/custom-data/).
 - **No public internet from evaluation pods.** Pre-stage each selected benchmark's external datasets and support files in the layout its adapter expects. The model endpoint must be reachable from the job, and any asset store used by the init container must be reachable by that container.
 
 ## LM Evaluation Harness
@@ -24,10 +24,10 @@ For example, `/test_data/allenai--ai2_arc--ARC-Easy/dataset_dict.json` and `/tes
 
 ### Step 1: Pre-download Datasets
 
-Install the `datasets` library on the connected machine, matching the version used in the adapter image to avoid Arrow compatibility errors:
+Install the dataset libraries at the versions pinned by the deployed LM Evaluation Harness adapter. The adapter pins both `datasets==3.1.0` and `pyarrow==25.0.1`; matching both avoids dataset serialization and Arrow compatibility mismatches:
 
 ```bash
-pip install "datasets==3.1.0"
+pip install "datasets==3.1.0" "pyarrow==25.0.1"
 ```
 
 Download the dataset and save it as an Arrow bundle. The directory name must follow the slug format used by the offline loader:
@@ -64,10 +64,13 @@ Examples:
 | `arc_easy` | `allenai/ai2_arc` | `ARC-Easy` | `allenai--ai2_arc--ARC-Easy` |
 | `hellaswag` | `hellaswag` | - | `hellaswag` |
 | `blimp` | `blimp` | all subsets (67) | `blimp--<subset>` per subtask |
+| `crows_pairs_english` | `jannalu/crows_pairs_multilingual` | `english` | `jannalu--crows_pairs_multilingual--english` |
 
 > `blimp` runs as 67 separate sub-tasks, each backed by a different subset of the `blimp` HuggingFace dataset. Use the multi-subset snippet above (`get_dataset_config_names`) to download them all in one go.
 
-> The full list of benchmark → dataset mappings is in [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md).
+> The full list of benchmark → dataset mappings is in [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md). This follows the moving `incubation` branch, so verify each mapping against the task configuration in the exact adapter revision deployed in your cluster. For example, the RHOAI adapter configuration for [`crows_pairs_english`](https://github.com/red-hat-data-services/lm-evaluation-harness/blob/17ddf28fb3ac5042f0a726950418136483e6196c/lm_eval/tasks/crows_pairs/crows_pairs_english.yaml) uses `jannalu/crows_pairs_multilingual` with the `english` subset.
+
+> To stage that dataset, save it under `jannalu--crows_pairs_multilingual--english` (the dataset path with `/` replaced by `--`, followed by `--english`). If MinIO already contains `BigScienceBiasEval--crows_pairs_multilingual--english`, that is the old source mapping; restage it under the slug above. The adapter uses the Parquet-backed dataset and does not require `trust_remote_code`.
 
 ### Step 2: Pre-download Tokenizer
 
@@ -77,21 +80,24 @@ On a connected machine, download the tokenizer files:
 pip install huggingface_hub
 ```
 
+Some Hugging Face repositories are gated. Accept the repository's terms and authenticate on this staging machine with an account that has read access (for example, use `hf auth login` or provide `HF_TOKEN` to the download process). The token is only needed to download the files: do not put it in the staging directory or upload it with the assets. A disconnected evaluation should consume the staged files without fetching them from Hugging Face.
+
 ```python
 import os
 from huggingface_hub import hf_hub_download
 
-repo_id = "meta-llama/Llama-3.1-8B-Instruct"
+repo_id = "meta-llama/Llama-3.2-1B-Instruct"
+revision = "main"  # Replace with the exact tokenizer revision compatible with the served model.
 out_dir = "./staging/tokenizer"
 os.makedirs(out_dir, exist_ok=True)
 
 for filename in ["tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"]:
-    hf_hub_download(repo_id=repo_id, filename=filename, local_dir=out_dir)
+    hf_hub_download(repo_id=repo_id, revision=revision, filename=filename, local_dir=out_dir)
 ```
 
-Files are saved to `./staging/tokenizer/`. In the pod this maps to `/test_data/tokenizer`.
+Set `revision` to the tokenizer repository revision paired with the served model; use its full commit SHA for reproducible staging. Do not assume that the model endpoint name identifies this tokenizer revision. Files are saved to `./staging/tokenizer/`. In the pod this maps to `/test_data/tokenizer`.
 
-> Some models use a different tokenizer format and may need additional files — for example `tokenizer.model` (SentencePiece) or `vocab.json` + `merges.txt` (BPE). Adjust the file list to match your model's repository.
+> The list above is illustrative, not exhaustive. Stage every tokenizer, vocabulary, merge, and configuration file required by the exact tokenizer and revision you evaluate. Check the tokenizer repository and include files such as `tokenizer.model` (SentencePiece) or `vocab.json` and `merges.txt` (BPE) when applicable; the three common files above are not sufficient for every model.
 
 ### Step 3: Upload to MinIO
 
@@ -168,7 +174,7 @@ curl -X POST https://<eval-hub-host>/api/v1/evaluations/jobs \
   }'
 ```
 
-The init container syncs the entire `offline/` prefix to `/test_data/`, so all datasets and the tokenizer are available at their expected paths. Once the layout is detected, all offline-related environment variables (`HF_HOME`, `HF_DATASETS_OFFLINE`, `HF_HUB_OFFLINE`) are set automatically.
+The init container syncs the entire `offline/` prefix to `/test_data/`, so all datasets and the tokenizer are available at their expected paths. Once the layout is detected, the adapter sets its Hugging Face cache paths and offline variables automatically, including `HF_HOME`, `HF_HUB_CACHE`, `HF_DATASETS_CACHE`, `HF_HUB_OFFLINE`, `HF_DATASETS_OFFLINE`, `HF_EVALUATE_OFFLINE`, and `TRANSFORMERS_OFFLINE`.
 
 ### Multiple benchmarks
 
@@ -208,12 +214,12 @@ The dataset bundle was not found in MinIO or the slug does not match. The slug i
 
 **Wrong slug format**
 
-Check [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md) for the correct `dataset_path` and `dataset_name` for your benchmark:
+Use [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md) as a starting point, then verify `dataset_path` and `dataset_name` against the task configuration in the exact adapter revision deployed in your cluster. The linked mapping follows a moving branch and can differ from the downstream adapter. For `crows_pairs_english` in the RHOAI adapter revision linked above, the values are `jannalu/crows_pairs_multilingual` and `english`, producing the slug `jannalu--crows_pairs_multilingual--english`.
 
 - With subset: `dataset_path.replace("/", "--") + "--" + dataset_name` → `allenai--ai2_arc--ARC-Easy`
-- Without subset (Subset column is `-`): `dataset_path.replace("/", "--")` only → `hellaswag`
+- Without a subset configured by the deployed task: `dataset_path.replace("/", "--")` only → `hellaswag`
 
-Only drop the subset suffix when the Subset column in `docs/dataset-mapping.md` is explicitly `-`. If the benchmark has a subset (e.g. `arc_easy` uses `ARC-Easy`), omitting it will produce the wrong slug and the bundle will not be found.
+Omit the subset suffix only when the deployed task configuration has no dataset subset. The linked mapping is a reference and may differ from the downstream adapter; do not use a `-` in that moving mapping to override the deployed task configuration. If the task config defines a subset (for example, `arc_easy` uses `ARC-Easy`), include it in the slug or the bundle will not be found.
 
 **Offline mode not triggered**
 
@@ -229,19 +235,27 @@ BFCL (`inspect/bfcl`) downloads its dataset and, for some categories, function i
 
 ### Stage BFCL assets
 
-Prepare the cache on a connected staging machine using the same `inspect-evals` version as the deployed Inspect adapter. Set `INSPECT_EVALS_CACHE_DIR` to an absolute writable path **before** starting Inspect; the package reads this variable at import time. Run the BFCL task with the same categories that the EvalHub job will use. If the job omits `task_args.categories`, use the task's defaults when warming the cache. For example:
+Prepare the cache on a connected staging machine using the same Inspect package versions as the deployed adapter. The current adapter pins `inspect-ai==0.3.278` and `inspect-evals==0.26.0`; verify the `constraints.txt` for the exact adapter image you will run, because these versions can change. For the current pins, create an isolated environment and install the matching packages:
+
+```bash
+python3 -m venv .venv-inspect-staging
+source .venv-inspect-staging/bin/activate
+python -m pip install "inspect-ai==0.3.278" "inspect-evals==0.26.0"
+```
+
+Set `INSPECT_EVALS_CACHE_DIR` to an absolute writable path **before** starting Inspect; the package reads this variable at import time. Run the BFCL task with the same categories that the EvalHub job will use. If the job omits `task_args.categories`, use the task's defaults when warming the cache. For example:
 
 ```bash
 export INSPECT_EVALS_CACHE_DIR="$PWD/staging/inspect-evals"
 inspect eval inspect_evals/bfcl --model mockllm/model --limit 1
 
-# Or warm only the categories selected by the EvalHub job:
-inspect eval inspect_evals/bfcl --model mockllm/model --limit 1 -T "categories=['simple_python', 'multiple']"
+# Tool Use v1 has two inspect/bfcl entries; warm the union of their 13 categories:
+inspect eval inspect_evals/bfcl --model mockllm/model --limit 1 -T "categories=['simple_python', 'simple_java', 'simple_javascript', 'multiple', 'parallel', 'parallel_multiple', 'live_simple', 'live_multiple', 'live_parallel', 'live_parallel_multiple', 'irrelevance', 'live_irrelevance', 'live_relevance']"
 ```
 
 `--limit 1` limits the samples evaluated by the warm-up run; it does not limit the BFCL cache download. BFCL downloads its data and loads records for the requested categories during task setup, before Inspect applies the evaluation limit. Still stage and verify all assets required by every selected category.
 
-The resulting cache must contain a complete `BFCL/` tree for the selected categories. It includes their question files and applicable ground-truth files. Multi-turn and agentic categories also need the relevant files under `func_source_code/` and `multi_turn_func_doc/`. Copy the entire `BFCL/` directory rather than selecting files manually; the required files are determined by the category manifest in the pinned `inspect-evals` release.
+The resulting cache must contain the complete `BFCL/` tree required by the selected categories. **Always preserve the `simple_python` data file**, even when `simple_python` is not selected: Inspect-Evals uses it as a download sentinel, and omitting it causes a runtime GitHub download attempt. Also include every selected category's question file and applicable ground-truth file. Multi-turn and agentic categories need their corresponding files under `func_source_code/` and `multi_turn_func_doc/`. Copy the entire `BFCL/` directory rather than selecting files manually; the required paths are determined by the category manifest in the pinned `inspect-evals` release.
 
 For the MinIO workflow above, upload that directory under a prefix so the pod receives it at `/test_data/BFCL`:
 
@@ -265,6 +279,45 @@ Use that prefix in the BFCL benchmark's `test_data_ref`; create the MinIO Secret
       "key": "bfcl/",
       "secret_ref": "minio-credentials"
     }
+  }
+}
+```
+
+For a **curated Tool Use v1** job, attach `test_data_ref` to both repeated `inspect/bfcl` entries in the collection override. The [Tool Use v1 collection config](https://github.com/eval-hub/eval-hub/blob/main/config/collections/tool-use-v1.yaml) supplies two category lists (10 call-generation categories and 3 relevance categories); these overrides only point both entries at the staged cache:
+
+```json
+{
+  "name": "Tool Use v1 offline evaluation",
+  "model": {
+    "url": "https://my-model.apps.example.com/v1",
+    "name": "my-model"
+  },
+  "collection": {
+    "id": "tool-use-v1",
+    "benchmarks": [
+      {
+        "id": "inspect/bfcl",
+        "provider_id": "inspect",
+        "test_data_ref": {
+          "s3": {
+            "bucket": "mlpipeline",
+            "key": "bfcl/",
+            "secret_ref": "minio-credentials"
+          }
+        }
+      },
+      {
+        "id": "inspect/bfcl",
+        "provider_id": "inspect",
+        "test_data_ref": {
+          "s3": {
+            "bucket": "mlpipeline",
+            "key": "bfcl/",
+            "secret_ref": "minio-credentials"
+          }
+        }
+      }
+    ]
   }
 }
 ```
