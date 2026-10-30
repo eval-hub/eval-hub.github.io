@@ -1,9 +1,9 @@
 ---
 title: "Disconnected Cluster Evaluation"
-description: "Run LM Evaluation Harness and Inspect BFCL benchmarks on disconnected clusters with pre-staged assets."
+description: "Prepare benchmark assets and model dependencies for disconnected EvalHub evaluations."
 ---
 
-This guide covers running LM Evaluation Harness and Inspect AI's BFCL benchmark on disconnected clusters where evaluation pods cannot reach the public internet. Both use EvalHub's `test_data_ref` mechanism to make pre-staged assets available under `/test_data`; the framework-specific sections below describe the required layouts. See [Using Custom Data](/guides/custom-data/) for the supported asset sources and the general init-container behavior.
+This guide gives detailed staging instructions for LM Evaluation Harness and Inspect AI's BFCL benchmark, and summarizes offline dependencies for other benchmarks. Evaluation pods cannot reach the public internet; staged assets are made available under `/test_data` through EvalHub's `test_data_ref` mechanism. See [Using Custom Data](/guides/custom-data/) for supported asset sources and general init-container behavior.
 
 ## Prerequisites
 
@@ -11,6 +11,21 @@ This guide covers running LM Evaluation Harness and Inspect AI's BFCL benchmark 
 - **EvalHub job images** (adapter, init container, sidecar) are pullable from your internal registry.
 - For a fully disconnected run, use an S3-compatible store such as **MinIO** that is reachable from the job namespace, or a PVC that already contains the staged assets. Direct `test_data_ref.git` and `test_data_ref.hf` references are fetched by the init container when the job starts, so they still require connectivity to their source (and Git URLs must pass EvalHub's URL validation). See [Using Custom Data](/guides/custom-data/).
 - **No public internet from evaluation pods.** Pre-stage each selected benchmark's external datasets and support files in the layout its adapter expects. The model endpoint must be reachable from the job, and any asset store used by the init container must be reachable by that container.
+
+## Benchmark dependencies and offline support
+
+Offline support depends on the benchmark, adapter, and deployed image. Use the exact adapter image and framework version deployed in the cluster when preparing assets.
+
+| Benchmark / adapter | What to stage or make reachable | Offline notes |
+|---|---|---|
+| LM Evaluation Harness | Stage the exact dataset bundle and all tokenizer files compatible with the served model. | Hugging Face access, including gated-repository access, is needed on the connected staging machine only. Each benchmark that uses staged data needs its own `test_data_ref`. See [LM Evaluation Harness](#lm-evaluation-harness). |
+| Inspect / BFCL | Stage the complete `BFCL/` cache for every selected category, including the `simple_python` sentinel data file and category-specific support files. | The staged tree must appear at `/test_data/BFCL`. See [Inspect AI: BFCL](#inspect-ai-bfcl). |
+| Inspect / DocVQA | Stage the Hugging Face dataset/cache and DocVQA image assets. | The served model endpoint must be reachable from the job and accept image inputs. |
+| Inspect / CyberSecEval 2 Prompt Injection | Stage the pinned GitHub dataset cache in the layout expected by the deployed Inspect-Evals version. | Configure a reachable judge endpoint and credentials through the referenced Secret. Verify the pinned image consumes the staged cache; mounting files does not redirect an arbitrary runtime download. |
+| IFBench / FollowBench | Benchmark data is included in the supported adapter images. | Use images that contain these assets. If FollowBench is configured with a judge, its endpoint must be reachable in-cluster and its credentials configured. |
+| RULER / LightEval-backed benchmarks | No staged-data instructions are available for these adapters. | They do not currently consume EvalHub `test_data_ref` assets, so mirroring their files alone does not make these runs work offline. |
+
+> **Attach staged data to each benchmark.** Every benchmark that needs staged files must have its own `test_data_ref` in the job request (including each repeated benchmark entry in a collection). Uploading files to object storage alone does not make them available to a run. Choose a storage prefix that materializes the files under `/test_data` in the directory layout the adapter expects.
 
 ## LM Evaluation Harness
 
