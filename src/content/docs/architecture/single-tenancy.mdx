@@ -204,6 +204,10 @@ Before setting up single-tenancy, ensure you have:
    export TOKEN="$(oc create token team-a-user -n team-a --duration=1h)"
    ```
 
+   :::note
+   This token expires after one hour. The CLI does not automatically refresh stored tokens, so subsequent commands may return HTTP 401 after expiry. Generate a new token and update the active profile with `evalhub config set token "$TOKEN"`.
+   :::
+
    </TabItem>
 
    <TabItem label="OpenShift User">

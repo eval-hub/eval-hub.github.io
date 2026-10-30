@@ -216,12 +216,15 @@ kubectl create secret generic vllm-api-key -n team-a \
    ```
    </TabItem>
    <TabItem label="Python SDK">
-   ```python {13}
+   ```python {16}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -239,7 +242,6 @@ kubectl create secret generic vllm-api-key -n team-a \
                )
            ],
        ),
-       tenant="team-a",
    )
    ```
    </TabItem>
@@ -335,7 +337,10 @@ If the endpoint uses a custom CA for TLS only, create a secret with just `ca_cer
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -352,7 +357,6 @@ If the endpoint uses a custom CA for TLS only, create a secret with just `ca_cer
                )
            ],
        ),
-       tenant="team-a",
    )
    ```
    </TabItem>
@@ -418,12 +422,15 @@ kubectl create secret generic kfp-creds \
    ```
    </TabItem>
    <TabItem label="Python SDK">
-   ```python {13}
+   ```python {16}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -441,7 +448,6 @@ kubectl create secret generic kfp-creds \
                )
            ],
        ),
-       tenant="team-a",
    )
    ```
    </TabItem>
@@ -519,12 +525,15 @@ kubectl create secret generic multi-model-creds \
    ```
    </TabItem>
    <TabItem label="Python SDK">
-   ```python {13}
+   ```python {16}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -542,7 +551,6 @@ kubectl create secret generic multi-model-creds \
                )
            ],
        ),
-       tenant="team-a",
    )
    ```
    </TabItem>
