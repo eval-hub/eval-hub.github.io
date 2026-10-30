@@ -53,12 +53,12 @@ EvalHub recognizes the following secret keys: `api-key`, `*_api-key`, `*_sa_toke
 
 The adapter receives a projected volume combining the internal ref secret (when present) with passthrough keys (`hf-token`, `ca_cert`) from the user secret. The user-provided secret with real credential values is mounted only into the sidecar.
 
-You submit the real model URL in `model.url` when creating a job. EvalHub rewrites the in-pod configuration so the adapter always calls `http://localhost:8080` (the sidecar); the sidecar forwards to the real upstream URL.
+You submit the real model URL in `model.url` when creating a job. EvalHub rewrites its scheme and host to `http://localhost:8080` (the sidecar), preserving the original path, query, and fragment. For example, `https://my-model.example.com/v1` becomes `http://localhost:8080/v1`. The sidecar forwards requests to the real upstream URL.
 
 This means:
 - Real API keys and SA tokens are only ever seen by the sidecar, not the adapter
 - TLS to the model endpoint is handled by the sidecar using `ca_cert` from the secret
-- The adapter always calls `http://localhost:8080`, regardless of auth type
+- The adapter calls the sidecar using the rewritten model URL, including the original path, regardless of auth type
 
 This guide applies to evaluation jobs created by the Kubernetes runtime. Local runtime behavior may differ.
 
@@ -85,11 +85,13 @@ if creds.api_key:
     headers["Authorization"] = f"Bearer {creds.api_key}"
 
 resp = requests.post(
-    f"{config.model.url}/v1/chat/completions",
+    f"{str(config.model.url).rstrip('/')}/chat/completions",
     headers=headers,
     json={...},
 )
 ```
+
+This example uses an OpenAI-compatible API base URL ending in `/v1`, without a query or fragment. Append `/chat/completions` to that base after removing any trailing slash.
 
 The sidecar intercepts the request, resolves `api-key:ref` → real API key, and forwards to the model endpoint. If `api_key` is `None` (SA token-authenticated, RBAC-protected or open model), omit the Authorization header entirely — do not send a placeholder. The sidecar injects the pod SA token when no Authorization header is present or when an empty `Bearer` value is sent.
 
@@ -123,7 +125,7 @@ if kfp_token is None:
 
 - **Do not expect a real API key from the mount.** In Kubernetes jobs, `api-key` contains `api-key:ref` — a placeholder. The sidecar resolves the real value at request time.
 - **Do not send a placeholder Authorization header for SA token-authenticated, RBAC-protected or open models.** Omit the header (or send an empty `Bearer`) so the sidecar can inject the pod SA token. A non-empty, non-ref Authorization value is forwarded as-is and will bypass SA injection.
-- **Always use `config.model.url` from `JobSpec`; never hardcode the submitted URL.** Although you submit the real endpoint URL when creating a job, `config.model.url` is automatically rewritten to `http://localhost:8080` (the sidecar) inside the pod.
+- **Always use `config.model.url` from `JobSpec`; never hardcode the submitted URL.** Inside the pod, its scheme and host point to the sidecar at `http://localhost:8080`, while its original path, query, and fragment are preserved.
 
 ---
 
@@ -214,12 +216,15 @@ kubectl create secret generic vllm-api-key -n team-a \
    ```
    </TabItem>
    <TabItem label="Python SDK">
-   ```python {13}
+   ```python {16}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -237,7 +242,6 @@ kubectl create secret generic vllm-api-key -n team-a \
                )
            ],
        ),
-       headers={"X-Tenant": "team-a"},
    )
    ```
    </TabItem>
@@ -333,7 +337,10 @@ If the endpoint uses a custom CA for TLS only, create a secret with just `ca_cer
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -350,7 +357,6 @@ If the endpoint uses a custom CA for TLS only, create a secret with just `ca_cer
                )
            ],
        ),
-       headers={"X-Tenant": "team-a"},
    )
    ```
    </TabItem>
@@ -416,12 +422,15 @@ kubectl create secret generic kfp-creds \
    ```
    </TabItem>
    <TabItem label="Python SDK">
-   ```python {13}
+   ```python {16}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -439,7 +448,6 @@ kubectl create secret generic kfp-creds \
                )
            ],
        ),
-       headers={"X-Tenant": "team-a"},
    )
    ```
    </TabItem>
@@ -517,12 +525,15 @@ kubectl create secret generic multi-model-creds \
    ```
    </TabItem>
    <TabItem label="Python SDK">
-   ```python {13}
+   ```python {16}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -540,7 +551,6 @@ kubectl create secret generic multi-model-creds \
                )
            ],
        ),
-       headers={"X-Tenant": "team-a"},
    )
    ```
    </TabItem>

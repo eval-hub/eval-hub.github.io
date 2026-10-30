@@ -257,10 +257,11 @@ Upload a CLEAR-compatible trace as a `.json` file, such as [this sample trace](h
    </TabItem>
    <TabItem label="REST API">
 
-   ```bash {12-18}
+   ```bash {13-19}
    curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
      -H "Content-Type: application/json" \
      -d '{
+       "name": "custom-data-eval",
        "model": {
          "url": "http://your-model:8000/v1",
          "name": "my-model"
