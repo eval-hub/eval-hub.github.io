@@ -87,14 +87,15 @@ import os
 from huggingface_hub import hf_hub_download
 
 repo_id = "meta-llama/Llama-3.2-1B-Instruct"
+revision = "main"  # Replace with the exact tokenizer revision compatible with the served model.
 out_dir = "./staging/tokenizer"
 os.makedirs(out_dir, exist_ok=True)
 
 for filename in ["tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"]:
-    hf_hub_download(repo_id=repo_id, filename=filename, local_dir=out_dir)
+    hf_hub_download(repo_id=repo_id, revision=revision, filename=filename, local_dir=out_dir)
 ```
 
-Files are saved to `./staging/tokenizer/`. In the pod this maps to `/test_data/tokenizer`.
+Set `revision` to the tokenizer repository revision paired with the served model; use its full commit SHA for reproducible staging. Do not assume that the model endpoint name identifies this tokenizer revision. Files are saved to `./staging/tokenizer/`. In the pod this maps to `/test_data/tokenizer`.
 
 > The list above is illustrative, not exhaustive. Stage every tokenizer, vocabulary, merge, and configuration file required by the exact tokenizer and revision you evaluate. Check the tokenizer repository and include files such as `tokenizer.model` (SentencePiece) or `vocab.json` and `merges.txt` (BPE) when applicable; the three common files above are not sufficient for every model.
 
