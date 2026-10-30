@@ -1,24 +1,28 @@
 ---
 title: "Disconnected Cluster Evaluation"
-description: "Run lm-evaluation-harness benchmarks on air-gapped clusters by pre-staging datasets and tokenizers in MinIO."
+description: "Run LM Evaluation Harness and Inspect BFCL benchmarks on disconnected clusters with pre-staged assets."
 ---
 
-This guide covers running `lm_eval` benchmarks on air-gapped/disconnected clusters where the evaluation pod has no internet access. It builds on [Using Custom Data](/guides/custom-data/), which explains how EvalHub's test-data init container and `test_data_ref` work in general.
+This guide covers running LM Evaluation Harness and Inspect AI's BFCL benchmark on disconnected clusters where evaluation pods cannot reach the public internet. Both use EvalHub's `test_data_ref` mechanism to make pre-staged assets available under `/test_data`; the framework-specific sections below describe the required layouts. See [Using Custom Data](/guides/custom-data/) for the supported asset sources and the general init-container behavior.
 
 ## Prerequisites
 
 - **Model endpoint** (`model.url`) is reachable from inside the cluster — no public internet required.
 - **EvalHub job images** (adapter, init container, sidecar) are pullable from your internal registry.
-- **MinIO** is reachable from the job namespace.
-- **No HuggingFace access at runtime** — once offline mode is active, all datasets and the tokenizer must be pre-staged in MinIO. No downloads occur during evaluation.
+- For the S3 examples in this guide, **MinIO** is reachable from the job namespace. You can use another supported `test_data_ref` source; see [Using Custom Data](/guides/custom-data/).
+- **No public internet from evaluation pods.** Pre-stage each selected benchmark's external datasets and support files in the layout its adapter expects. The model endpoint must be reachable from the job, and any asset store used by the init container must be reachable by that container.
 
-## How It Works
+## LM Evaluation Harness
 
-`lm_eval` normally downloads datasets from HuggingFace at evaluation time. On a disconnected cluster this is not possible, so datasets and the tokenizer must be pre-downloaded on a connected machine and uploaded to MinIO before submitting jobs.
+### How it works
 
-The init container in the evaluation pod syncs the MinIO prefix to `/test_data`. Offline mode is auto-detected: `parameters.tokenizer` must be set to a path under `/test_data` (e.g. `/test_data/tokenizer`), and `/test_data` must exist after the init container completes. Dataset bundles are looked up at the same level — each benchmark's dataset is expected as a sibling directory containing a `dataset_dict.json` file (e.g., `/test_data/allenai--ai2_arc--ARC-Easy/dataset_dict.json` alongside `/test_data/tokenizer/`). When this layout is detected, all HuggingFace downloads are disabled automatically.
+`lm_eval` normally downloads datasets from Hugging Face at evaluation time. On a disconnected cluster, pre-stage the datasets and tokenizer on a connected machine and make them available to each evaluation pod under `/test_data`.
 
-## Step 1: Pre-download Datasets
+The init container syncs the configured `test_data_ref` source to `/test_data`. The adapter enables Hugging Face offline mode when it finds both a usable local tokenizer under `/test_data` and a staged dataset bundle containing `dataset_dict.json`. An explicit `parameters.tokenizer` path under `/test_data` is used when supplied. If `parameters.tokenizer` is omitted or blank, the adapter can use the conventional `/test_data/tokenizer` directory when a sibling dataset bundle is detected. An explicit tokenizer value takes precedence over that fallback.
+
+For example, `/test_data/allenai--ai2_arc--ARC-Easy/dataset_dict.json` and `/test_data/tokenizer/` are siblings. Keep the uploaded dataset and tokenizer files in this layout unless you set an explicit local tokenizer path.
+
+### Step 1: Pre-download Datasets
 
 Install the `datasets` library on the connected machine, matching the version used in the adapter image to avoid Arrow compatibility errors:
 
@@ -65,7 +69,7 @@ Examples:
 
 > The full list of benchmark → dataset mappings is in [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md).
 
-## Step 2: Pre-download Tokenizer
+### Step 2: Pre-download Tokenizer
 
 On a connected machine, download the tokenizer files:
 
@@ -89,7 +93,7 @@ Files are saved to `./staging/tokenizer/`. In the pod this maps to `/test_data/t
 
 > Some models use a different tokenizer format and may need additional files — for example `tokenizer.model` (SentencePiece) or `vocab.json` + `merges.txt` (BPE). Adjust the file list to match your model's repository.
 
-## Step 3: Upload to MinIO
+### Step 3: Upload to MinIO
 
 Port-forward MinIO and upload the entire `./staging/` directory using the AWS CLI:
 
@@ -118,7 +122,7 @@ s3://mlpipeline/offline/
   tokenizer/                    ← tokenizer files
 ```
 
-## Step 4: Create the MinIO Credentials Secret
+### Step 4: Create the MinIO Credentials Secret
 
 The init container uses a Kubernetes Secret to authenticate with MinIO. Create the Secret in the evaluation job namespace before submitting the job:
 
@@ -133,9 +137,9 @@ kubectl create secret generic minio-credentials \
 
 The `secret_ref` value in `test_data_ref.s3` must match this Secret name (`minio-credentials` in the example above). Without this Secret the init container fails before the evaluation runs. See [Using Custom Data](/guides/custom-data/) for the full list of required Secret keys.
 
-## Step 5: Submit an Evaluation Job
+### Step 5: Submit an Evaluation Job
 
-Set `parameters.tokenizer` to a path under `/test_data` — this is what triggers offline mode. Reference the MinIO prefix in `test_data_ref`:
+Upload the tokenizer directory as `tokenizer/` beside the dataset bundle, then reference the MinIO prefix with `test_data_ref`. With this conventional layout, `parameters.tokenizer` may be omitted or left blank; the adapter uses `/test_data/tokenizer` when it detects the staged dataset. Set `parameters.tokenizer` explicitly to a local path under `/test_data` only when you need a different tokenizer location:
 
 ```bash
 curl -X POST https://<eval-hub-host>/api/v1/evaluations/jobs \
@@ -152,9 +156,6 @@ curl -X POST https://<eval-hub-host>/api/v1/evaluations/jobs \
       {
         "id": "arc_easy",
         "provider_id": "lm_evaluation_harness",
-        "parameters": {
-          "tokenizer": "/test_data/tokenizer"
-        },
         "test_data_ref": {
           "s3": {
             "bucket": "mlpipeline",
@@ -171,7 +172,7 @@ The init container syncs the entire `offline/` prefix to `/test_data/`, so all d
 
 ### Multiple benchmarks
 
-EvalHub runs one Kubernetes Job per benchmark. Each benchmark therefore needs its own `test_data_ref`, but they can all point to the same MinIO prefix — upload once to `offline/` and reuse the same ref on every entry:
+EvalHub runs one Kubernetes Job per benchmark. Each benchmark therefore needs its own `test_data_ref`, but they can all point to the same MinIO prefix — upload once to `offline/` and reuse the same ref on every entry. If all benchmarks use the conventional staged tokenizer, omit `parameters.tokenizer`; set an explicit local path only for a benchmark that uses a different tokenizer:
 
 ```json
 {
@@ -184,20 +185,18 @@ EvalHub runs one Kubernetes Job per benchmark. Each benchmark therefore needs it
     {
       "id": "arc_easy",
       "provider_id": "lm_evaluation_harness",
-      "parameters": { "tokenizer": "/test_data/tokenizer" },
       "test_data_ref": { "s3": { "bucket": "mlpipeline", "key": "offline/", "secret_ref": "minio-credentials" } }
     },
     {
       "id": "hellaswag",
       "provider_id": "lm_evaluation_harness",
-      "parameters": { "tokenizer": "/test_data/tokenizer" },
       "test_data_ref": { "s3": { "bucket": "mlpipeline", "key": "offline/", "secret_ref": "minio-credentials" } }
     }
   ]
 }
 ```
 
-## Troubleshooting
+### Troubleshooting
 
 **Init container fails before evaluation starts**
 
@@ -218,8 +217,56 @@ Only drop the subset suffix when the Subset column in `docs/dataset-mapping.md` 
 
 **Offline mode not triggered**
 
-`parameters.tokenizer` must be set to a path under `/test_data` (e.g. `/test_data/tokenizer`), and `/test_data` must exist after the init container completes.
+Check that the init container populated `/test_data` with both the tokenizer files under `/test_data/tokenizer` and a dataset bundle beside it containing `dataset_dict.json`. If the tokenizer is stored elsewhere under `/test_data`, set `parameters.tokenizer` to that local path. A Hugging Face tokenizer ID is not a local staged path and does not enable offline mode.
 
 **Tokenizer not found**
 
-The path in `parameters.tokenizer` must match where the tokenizer was uploaded. If you used the default `./staging/tokenizer/` and the prefix `offline/`, the pod path is `/test_data/tokenizer`.
+For the default tokenizer, verify that the uploaded prefix contains the tokenizer files in `tokenizer/`; they should appear in the pod at `/test_data/tokenizer`. If you set `parameters.tokenizer`, verify that it names the corresponding local path under `/test_data`.
+
+## Inspect AI: BFCL
+
+BFCL (`inspect/bfcl`) downloads its dataset and, for some categories, function implementations and documentation from GitHub. The Hugging Face dataset and tokenizer layout in the previous section does not stage these files. For other Inspect benchmarks that use Hugging Face datasets, follow the Inspect adapter's [Hugging Face asset instructions](https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/inspect/README.md#huggingface-datasets).
+
+### Stage BFCL assets
+
+Prepare the cache on a connected staging machine using the same `inspect-evals` version as the deployed Inspect adapter. Set `INSPECT_EVALS_CACHE_DIR` to an absolute writable path **before** starting Inspect; the package reads this variable at import time. Run the BFCL task with the same categories that the EvalHub job will use. If the job omits `task_args.categories`, use the task's defaults when warming the cache. For example:
+
+```bash
+export INSPECT_EVALS_CACHE_DIR="$PWD/staging/inspect-evals"
+inspect eval inspect_evals/bfcl --model mockllm/model --limit 1
+
+# Or warm only the categories selected by the EvalHub job:
+inspect eval inspect_evals/bfcl --model mockllm/model --limit 1 -T "categories=['simple_python', 'multiple']"
+```
+
+`--limit 1` limits the samples evaluated by the warm-up run; it does not limit the BFCL cache download. BFCL downloads its data and loads records for the requested categories during task setup, before Inspect applies the evaluation limit. Still stage and verify all assets required by every selected category.
+
+The resulting cache must contain a complete `BFCL/` tree for the selected categories. It includes their question files and applicable ground-truth files. Multi-turn and agentic categories also need the relevant files under `func_source_code/` and `multi_turn_func_doc/`. Copy the entire `BFCL/` directory rather than selecting files manually; the required files are determined by the category manifest in the pinned `inspect-evals` release.
+
+For the MinIO workflow above, upload that directory under a prefix so the pod receives it at `/test_data/BFCL`:
+
+```bash
+aws --endpoint-url http://127.0.0.1:9000 s3 sync "$INSPECT_EVALS_CACHE_DIR/BFCL" s3://mlpipeline/bfcl/BFCL
+```
+
+Use that prefix in the BFCL benchmark's `test_data_ref`; create the MinIO Secret as described above. For example, when selecting categories explicitly:
+
+```json
+{
+  "id": "inspect/bfcl",
+  "provider_id": "inspect",
+  "parameters": {
+    "num_examples": 1,
+    "task_args": { "categories": ["simple_python", "multiple"] }
+  },
+  "test_data_ref": {
+    "s3": {
+      "bucket": "mlpipeline",
+      "key": "bfcl/",
+      "secret_ref": "minio-credentials"
+    }
+  }
+}
+```
+
+The adapter checks the staged data and runtime files needed by the selected categories. When they are complete, it points `INSPECT_EVALS_CACHE_DIR` to `/test_data` and skips the GitHub preflight. If required files are missing, the staged cache is not accepted; with the default `preflight: fail`, the job fails fast when GitHub is unreachable. BFCL categories with additional external-service or snapshot requirements need those dependencies staged or reachable separately; staging the BFCL data tree alone does not make every optional category air-gap compatible. See the [Inspect-Evals BFCL documentation](https://github.com/UKGovernmentBEIS/inspect_evals/tree/main/src/inspect_evals/bfcl) and the [Inspect adapter's disconnected-run notes](https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/inspect/README.md#huggingface-datasets).

@@ -31,7 +31,7 @@ the source of truth.
 | `batch_size` | Request batch size; defaults to `1` |
 | `num_concurrent` | Number of concurrent requests, capped by the adapter at `128` |
 | `timeout_seconds` | Request timeout in seconds; defaults to `300` |
-| `tokenizer` | Hugging Face tokenizer ID or local path used with the OpenAI-compatible endpoint; defaults to `model.name` when omitted |
+| `tokenizer` | Hugging Face tokenizer ID or local path used with the OpenAI-compatible endpoint; normally defaults to `model.name` when omitted or blank, except that disconnected-mode detection can select staged `/test_data/tokenizer` when the dataset bundle is detected (see [Disconnected Cluster Evaluation](/guides/disconnected-cluster/)) |
 | `random_seed` | Random seed used by LM Evaluation Harness; defaults to `42` |
 | `parameters` | Nested scalar generation parameters serialized as LM Evaluation Harness generation kwargs |
 
@@ -42,9 +42,13 @@ top-level keys are not automatically translated into task configuration.
 ## Tokenizer selection and authentication
 
 The adapter uses a Hugging Face tokenizer even when evaluating a model through
-an OpenAI-compatible endpoint. If `benchmarks[].parameters.tokenizer` is omitted,
-the adapter uses `model.name` as the Hugging Face tokenizer identifier.
-The example above uses
+an OpenAI-compatible endpoint. If `benchmarks[].parameters.tokenizer` is omitted or
+blank, the adapter normally uses `model.name` as the Hugging Face tokenizer identifier.
+When disconnected-mode detection finds a staged dataset bundle and the conventional
+`/test_data/tokenizer` directory, it uses that local tokenizer instead. An explicit
+`parameters.tokenizer` value takes precedence over this fallback. See
+[Disconnected Cluster Evaluation](/guides/disconnected-cluster/) for the required
+staged layout and detection conditions. The example above uses
 `meta-llama/Llama-3.1-8B-Instruct` for both the served model name and the tokenizer.
 
 If your endpoint uses a model alias that is not a Hugging Face repository ID,
