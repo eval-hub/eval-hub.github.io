@@ -239,6 +239,8 @@ inspect eval inspect_evals/bfcl --model mockllm/model --limit 1
 inspect eval inspect_evals/bfcl --model mockllm/model --limit 1 -T "categories=['simple_python', 'multiple']"
 ```
 
+`--limit 1` limits the samples evaluated by the warm-up run; it does not limit the BFCL cache download. BFCL downloads its data and loads records for the requested categories during task setup, before Inspect applies the evaluation limit. Still stage and verify all assets required by every selected category.
+
 The resulting cache must contain a complete `BFCL/` tree for the selected categories. It includes their question files and applicable ground-truth files. Multi-turn and agentic categories also need the relevant files under `func_source_code/` and `multi_turn_func_doc/`. Copy the entire `BFCL/` directory rather than selecting files manually; the required files are determined by the category manifest in the pinned `inspect-evals` release.
 
 For the MinIO workflow above, upload that directory under a prefix so the pod receives it at `/test_data/BFCL`:
