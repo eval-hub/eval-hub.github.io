@@ -24,10 +24,10 @@ For example, `/test_data/allenai--ai2_arc--ARC-Easy/dataset_dict.json` and `/tes
 
 ### Step 1: Pre-download Datasets
 
-Install the `datasets` library on the connected machine, matching the version used in the adapter image to avoid Arrow compatibility errors:
+Install the dataset libraries at the versions pinned by the deployed LM Evaluation Harness adapter. The adapter pins both `datasets==3.1.0` and `pyarrow==25.0.1`; matching both avoids dataset serialization and Arrow compatibility mismatches:
 
 ```bash
-pip install "datasets==3.1.0"
+pip install "datasets==3.1.0" "pyarrow==25.0.1"
 ```
 
 Download the dataset and save it as an Arrow bundle. The directory name must follow the slug format used by the offline loader:
@@ -94,7 +94,7 @@ for filename in ["tokenizer.json", "tokenizer_config.json", "special_tokens_map.
 
 Files are saved to `./staging/tokenizer/`. In the pod this maps to `/test_data/tokenizer`.
 
-> Some models use a different tokenizer format and may need additional files — for example `tokenizer.model` (SentencePiece) or `vocab.json` + `merges.txt` (BPE). Adjust the file list to match your model's repository.
+> The list above is illustrative, not exhaustive. Stage every tokenizer, vocabulary, merge, and configuration file required by the exact tokenizer and revision you evaluate. Check the tokenizer repository and include files such as `tokenizer.model` (SentencePiece) or `vocab.json` and `merges.txt` (BPE) when applicable; the three common files above are not sufficient for every model.
 
 ### Step 3: Upload to MinIO
 
@@ -214,9 +214,9 @@ The dataset bundle was not found in MinIO or the slug does not match. The slug i
 Use [`docs/dataset-mapping.md`](https://github.com/opendatahub-io/lm-evaluation-harness/blob/incubation/docs/dataset-mapping.md) as a starting point, then verify `dataset_path` and `dataset_name` against the task configuration in the exact adapter revision deployed in your cluster. The linked mapping follows a moving branch and can differ from the downstream adapter. For `crows_pairs_english` in the RHOAI adapter revision linked above, the values are `jannalu/crows_pairs_multilingual` and `english`, producing the slug `jannalu--crows_pairs_multilingual--english`.
 
 - With subset: `dataset_path.replace("/", "--") + "--" + dataset_name` → `allenai--ai2_arc--ARC-Easy`
-- Without subset (Subset column is `-`): `dataset_path.replace("/", "--")` only → `hellaswag`
+- Without a subset configured by the deployed task: `dataset_path.replace("/", "--")` only → `hellaswag`
 
-Only drop the subset suffix when the Subset column in `docs/dataset-mapping.md` is explicitly `-`. If the benchmark has a subset (e.g. `arc_easy` uses `ARC-Easy`), omitting it will produce the wrong slug and the bundle will not be found.
+Omit the subset suffix only when the deployed task configuration has no dataset subset. The linked mapping is a reference and may differ from the downstream adapter; do not use a `-` in that moving mapping to override the deployed task configuration. If the task config defines a subset (for example, `arc_easy` uses `ARC-Easy`), include it in the slug or the bundle will not be found.
 
 **Offline mode not triggered**
 
@@ -238,13 +238,13 @@ Prepare the cache on a connected staging machine using the same `inspect-evals` 
 export INSPECT_EVALS_CACHE_DIR="$PWD/staging/inspect-evals"
 inspect eval inspect_evals/bfcl --model mockllm/model --limit 1
 
-# Or warm only the categories selected by the EvalHub job:
-inspect eval inspect_evals/bfcl --model mockllm/model --limit 1 -T "categories=['simple_python', 'multiple']"
+# Tool Use v1 has two inspect/bfcl entries; warm the union of their 13 categories:
+inspect eval inspect_evals/bfcl --model mockllm/model --limit 1 -T "categories=['simple_python', 'simple_java', 'simple_javascript', 'multiple', 'parallel', 'parallel_multiple', 'live_simple', 'live_multiple', 'live_parallel', 'live_parallel_multiple', 'irrelevance', 'live_irrelevance', 'live_relevance']"
 ```
 
 `--limit 1` limits the samples evaluated by the warm-up run; it does not limit the BFCL cache download. BFCL downloads its data and loads records for the requested categories during task setup, before Inspect applies the evaluation limit. Still stage and verify all assets required by every selected category.
 
-The resulting cache must contain a complete `BFCL/` tree for the selected categories. It includes their question files and applicable ground-truth files. Multi-turn and agentic categories also need the relevant files under `func_source_code/` and `multi_turn_func_doc/`. Copy the entire `BFCL/` directory rather than selecting files manually; the required files are determined by the category manifest in the pinned `inspect-evals` release.
+The resulting cache must contain the complete `BFCL/` tree required by the selected categories. **Always preserve the `simple_python` data file**, even when `simple_python` is not selected: Inspect-Evals uses it as a download sentinel, and omitting it causes a runtime GitHub download attempt. Also include every selected category's question file and applicable ground-truth file. Multi-turn and agentic categories need their corresponding files under `func_source_code/` and `multi_turn_func_doc/`. Copy the entire `BFCL/` directory rather than selecting files manually; the required paths are determined by the category manifest in the pinned `inspect-evals` release.
 
 For the MinIO workflow above, upload that directory under a prefix so the pod receives it at `/test_data/BFCL`:
 
@@ -268,6 +268,45 @@ Use that prefix in the BFCL benchmark's `test_data_ref`; create the MinIO Secret
       "key": "bfcl/",
       "secret_ref": "minio-credentials"
     }
+  }
+}
+```
+
+For a **curated Tool Use v1** job, attach `test_data_ref` to both repeated `inspect/bfcl` entries in the collection override. The [Tool Use v1 collection config](https://github.com/eval-hub/eval-hub/blob/main/config/collections/tool-use-v1.yaml) supplies two category lists (10 call-generation categories and 3 relevance categories); these overrides only point both entries at the staged cache:
+
+```json
+{
+  "name": "Tool Use v1 offline evaluation",
+  "model": {
+    "url": "https://my-model.apps.example.com/v1",
+    "name": "my-model"
+  },
+  "collection": {
+    "id": "tool-use-v1",
+    "benchmarks": [
+      {
+        "id": "inspect/bfcl",
+        "provider_id": "inspect",
+        "test_data_ref": {
+          "s3": {
+            "bucket": "mlpipeline",
+            "key": "bfcl/",
+            "secret_ref": "minio-credentials"
+          }
+        }
+      },
+      {
+        "id": "inspect/bfcl",
+        "provider_id": "inspect",
+        "test_data_ref": {
+          "s3": {
+            "bucket": "mlpipeline",
+            "key": "bfcl/",
+            "secret_ref": "minio-credentials"
+          }
+        }
+      }
+    ]
   }
 }
 ```
