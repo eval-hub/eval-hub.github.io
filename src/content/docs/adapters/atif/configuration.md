@@ -44,6 +44,20 @@ The ATIF adapter uses a standardised `JobSpec` structure:
 In local mode `model.url` is used directly and `model.auth.secret_ref` provides credentials (see below). In Kubernetes the adapter talks to the runtime sidecar instead, and the sidecar owns upstream authentication.
 :::
 
+## Model-auth Secret
+
+Use the shared [Secret setup](/guides/model-authentication/#scenario-4-multi-model-secrets);
+judge URLs and API keys do not belong in `parameters`.
+
+- `model.name` selects the judge, independently of the agent model recorded in
+  trajectory data. An optional `judge_api-key` / `judge_url` pair selects its connection.
+- Legacy `judge_url` / `judge_api_key` parameters and `EVALHUB_JUDGE_PROXY_URL`
+  are ignored.
+- Direct local execution uses ATIF's bounded auth-directory reads and symlink
+  restrictions, described under [Judge Routing and Authentication](#judge-routing-and-authentication).
+
+See the shared [migration and image requirements](/guides/model-authentication/#migration-from-inline-connection-parameters).
+
 ## Scoring Parameters
 
 | Parameter | Type | Default | Description |
@@ -105,14 +119,15 @@ HTTP 429/5xx and transport timeouts are retried with exponential backoff. Other 
 
 ### Kubernetes
 
-The adapter sends judge requests to the runtime sidecar (`http://localhost:8080` by default, overridden by `EVALHUB_JUDGE_PROXY_URL`). With `model.auth` configured it sends only a redacted `Bearer` placeholder; the sidecar owns upstream authentication and TLS. The adapter does not read cluster credential files.
+ATIF follows the shared [sidecar mount and credential-reference contract](/guides/model-authentication/#what-is-mounted-in-each-container).
 
 ### Local
 
-In local mode the adapter calls `model.url` directly:
+In direct local mode the adapter uses `judge_url` from the auth directory when
+present, otherwise `model.url`:
 
 - `model.auth.secret_ref` must be an absolute `file:///` directory URL
-- The directory must contain an `api-key` file; an optional `ca_cert` file enables custom CA verification
+- Use `api-key` for the primary credential, or `judge_api-key` / `judge_url` for a separate judge; an optional `ca_cert` file enables custom CA verification
 - The directory must be a regular directory with no symlinks anywhere in its path
 
 ```json
@@ -161,7 +176,6 @@ The adapter reads runtime settings from environment variables:
 |----------|-------------|----------|---------|
 | `EVALHUB_MODE` | Execution mode (`k8s` or `local`) | No | `k8s` |
 | `EVALHUB_JOB_SPEC_PATH` | Path to job spec JSON | Yes (local mode) | `/meta/job.json` (k8s) |
-| `EVALHUB_JUDGE_PROXY_URL` | Sidecar judge proxy URL (k8s) | No | `http://localhost:8080` |
 | `TEST_DATA_S3_BUCKET` | S3 bucket for source URI reconstruction | No | unset |
 | `TEST_DATA_S3_KEY` | S3 prefix for source URI reconstruction | No | unset |
 

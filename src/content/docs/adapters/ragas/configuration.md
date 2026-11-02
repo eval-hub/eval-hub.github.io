@@ -89,46 +89,56 @@ See the [Metrics reference](metrics/) for details on each metric.
 | `max_tokens` | integer | Maximum tokens for LLM completions | `null` (server default) |
 | `temperature` | number | Sampling temperature for LLM completions | `null` (adapter default) |
 | `judge_model` | string | Model used for LLM-based RAGAS metrics (`parameters.judge_model`) | Evaluated model (`model.name`) |
-| `judge_url` | string | Standalone/local judge endpoint override (`parameters.judge_url`); use the model authentication Secret in Kubernetes | Projected judge URL, or evaluated model URL (`model.url`) |
-| `judge_api_key` | string | Standalone/local judge credential override; use the model authentication Secret in Kubernetes | Resolved role credential |
 
 ### Separate Judge Model
 
 The evaluated model is used as the judge by default. For smaller models that
 struggle to return the structured JSON required by metrics such as
-`answer_relevancy`, configure a stronger OpenAI-compatible judge model. In Kubernetes, put `judge_url` and `judge_api-key` in the Secret referenced by `model.auth.secret_ref`, and select `judge_model` in the benchmark parameters.
-
-For standalone/local runs, endpoint overrides can be supplied in parameters:
+`answer_relevancy`, configure a stronger OpenAI-compatible judge model. Select
+`judge_model` in the benchmark parameters:
 
 ```json
 {
   "parameters": {
-    "judge_model": "gpt-4o-mini",
-    "judge_url": "https://api.openai.com/v1"
+    "judge_model": "judge-model"
   }
 }
 ```
 
-For a standalone external judge endpoint, provide the credential through
-`OPENAI_API_KEY` in the runtime environment. A
-`judge_api_key` parameter is also supported locally, but a real key should never be
-committed to a benchmark, JobSpec, or provider file. The adapter tries
-`judge_api_key` first, then `OPENAI_API_KEY`. The evaluated model's mounted
-credential is used only when the judge uses the evaluated model endpoint. If
-no credential is available for an external judge, the request will fail with
-an authentication error.
+Configure the judge endpoint and key in the model-auth Secret, independently of
+the model identifier.
+
+### Model-auth Secret
+
+Use the shared [multi-model Secret example](/guides/model-authentication/#scenario-4-multi-model-secrets),
+naming it `ragas-model-auth` for the examples on this site. Connection URLs and
+API keys do not belong in Kubernetes API payload `parameters`.
+
+| Model selection | Secret connection |
+|---|---|
+| `judge_model` | `judge_api-key` / `judge_url` |
+| `embedding_model` | `embedding_api-key` / `embedding_url` |
+
+Ragas retains standalone local-development `judge_url`, `judge_api_key`, and
+`embedding_url` overrides. In Kubernetes, raw external URL or real API-key
+overrides are rejected; use the Secret-based configuration. Prefer the shared
+[local auth-directory setup](/guides/model-authentication/#local-auth-directories)
+for direct local execution as well.
 
 ### Embedding Configuration
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `embedding_model` | string | Model name for embeddings | Same as `model.name` |
-| `embedding_url` | string | Standalone/local embedding endpoint override; use the model authentication Secret in Kubernetes | Projected embedding URL, or `model.url` |
-
-In Kubernetes, put `embedding_url` and `embedding_api-key` in the Secret referenced by `model.auth.secret_ref` (`--model-auth-secret` in the CLI). Keep `embedding_model` in the benchmark parameters. Each role-specific URL requires its matching API key; a nonempty dummy key can be used for an unauthenticated service. See [Configure Model Connections](examples/#configure-model-connections) for the Secret and CLI examples.
 
 :::caution[Embedding Model Selection]
-Several RAGAS metrics (notably `answer_relevancy` and `answer_similarity`) require embedding support. If your LLM endpoint does not serve embeddings, configure a separate embedding connection in the model authentication Secret and select its deployed model with `embedding_model`.
+Several RAGAS metrics (notably `answer_relevancy` and `answer_similarity`) require
+embedding support. If the chat endpoint does not serve `/v1/embeddings`, put a
+separate `embedding_url` and `embedding_api-key` in the Secret and select the
+embedding model with `parameters.embedding_model`. A chat model is not an
+embedding model merely because its endpoint serves chat completions. Verify the
+selected embedding endpoint implements the required API; otherwise the job can
+fail with a 404 on its embedding request.
 :::
 
 ### Data Configuration
@@ -214,7 +224,9 @@ The adapter reads runtime settings from environment variables:
 
 ## Complete Example
 
-This standalone/local JobSpec uses parameter endpoint overrides. For Kubernetes, configure the embedding connection in the model authentication Secret as described above.
+This adapter JobSpec uses the model-auth Secret described above. For a complete
+API submission, including the dataset reference, see the
+[worked example](/adapters/ragas/examples/#submit-a-ragas-evaluation-job).
 
 ```json
 {
@@ -223,8 +235,9 @@ This standalone/local JobSpec uses parameter endpoint overrides. For Kubernetes,
   "benchmark_id": "ragas_rag_default",
   "benchmark_index": 0,
   "model": {
-    "url": "http://127.0.0.1:8000",
-    "name": "Qwen/Qwen2.5-1.5B-Instruct"
+    "url": "https://target.example/v1",
+    "name": "target-model",
+    "auth": {"secret_ref": "ragas-model-auth"}
   },
   "num_examples": 5,
   "parameters": {
@@ -235,7 +248,6 @@ This standalone/local JobSpec uses parameter endpoint overrides. For Kubernetes,
       "context_recall"
     ],
     "embedding_model": "all-MiniLM-L6-v2",
-    "embedding_url": "http://127.0.0.1:8001",
     "max_tokens": 512,
     "temperature": 0.1
   },

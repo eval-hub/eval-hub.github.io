@@ -3,8 +3,15 @@ title: "Examples"
 description: "Worked examples for evaluating LLM outputs with the DeepEval adapter"
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Steps } from '@astrojs/starlight/components';
+
+## Model-auth Secret for these examples
+
+Create `deepeval-model-auth` using the shared
+[Secret example](/guides/model-authentication/#scenario-4-multi-model-secrets) and
+DeepEval's [judge mapping](/adapters/deepeval/configuration/#model-auth-secret).
+Keep URLs and API keys out of `parameters`; the submissions below reference
+the Secret by name.
 
 ## Faithfulness Evaluation
 
@@ -35,64 +42,47 @@ Evaluates whether a RAG pipeline's responses are supported by the retrieved cont
 
 ### Submit a Faithfulness Evaluation Job
 
-<Tabs>
-<TabItem label="SDK CLI">
+Save this API request as `deepeval.json`. Create the model-auth Secret and the
+separate dataset S3 credential Secret in the tenant namespace first; see
+[Using Custom Data](/guides/custom-data/).
+
+```json
+{
+  "name": "deepeval-secret-routing",
+  "model": {
+    "url": "https://target.example/v1",
+    "name": "target-model",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
+  },
+  "benchmarks": [
+    {
+      "id": "faithfulness",
+      "provider_id": "deepeval",
+      "parameters": {
+        "eval_model_name": "judge-model",
+        "threshold": 0.7,
+        "dataset_format": "csv"
+      },
+      "test_data_ref": {
+        "s3": {
+          "bucket": "my-bucket",
+          "key": "deepeval-datasets/faithfulness.csv",
+          "secret_ref": "dataset-s3-credentials"
+        }
+      }
+    }
+  ]
+}
+```
 
 ```bash
-evalhub eval run \
-  --name deepeval-faithfulness \
-  --provider deepeval \
-  --benchmark faithfulness \
-  --model-name "gpt-4o" \
-  --model-url "https://api.openai.com/v1" \
-  --param eval_model_name=gpt-4o \
-  --param threshold=0.7 \
-  --param dataset_format=csv \
-  --test-data-s3-bucket my-bucket \
-  --test-data-s3-key deepeval-datasets/faithfulness.csv \
-  --test-data-s3-secret evalhub-s3-credentials
+evalhub eval run --config deepeval.json --wait
 ```
 
-</TabItem>
-
-<TabItem label="Python SDK">
-
-```python
-from evalhub import SyncEvalHubClient
-from evalhub.models import (
-    BenchmarkConfig, JobSubmissionRequest, ModelConfig,
-    S3TestDataRef, TestDataRef,
-)
-
-client = SyncEvalHubClient(base_url="http://localhost:8080")
-
-job = client.jobs.submit(JobSubmissionRequest(
-    name="deepeval-faithfulness",
-    model=ModelConfig(
-        name="gpt-4o",
-        url="https://api.openai.com/v1",
-    ),
-    benchmarks=[BenchmarkConfig(
-        provider_id="deepeval",
-        id="faithfulness",
-        parameters={
-            "eval_model_name": "gpt-4o",
-            "threshold": 0.7,
-            "dataset_format": "csv",
-        },
-        test_data_ref=TestDataRef(s3=S3TestDataRef(
-            bucket="my-bucket",
-            key="deepeval-datasets/faithfulness.csv",
-            secret_ref="evalhub-s3-credentials",
-        )),
-    )],
-))
-
-print(f"Job submitted: {job.id}")
-```
-
-</TabItem>
-</Tabs>
+Submit the same JSON body with the [Python SDK](/reference/sdk-client/) or
+[REST API](/reference/server-api/) if preferred.
 
 ### Retrieve Results
 
@@ -145,11 +135,13 @@ Detects hallucinated content that is not grounded in the provided context.
   "benchmark_id": "hallucination",
   "model": {
     "url": "http://vllm-service:8000/v1",
-    "name": "mistral-7b-instruct"
+    "name": "mistral-7b-instruct",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.5,
     "dataset_format": "csv"
   }
@@ -179,11 +171,13 @@ Tests whether a chatbot maintains its assigned persona throughout a conversation
   "benchmark_id": "role-adherence",
   "model": {
     "url": "http://vllm-service:8000/v1",
-    "name": "llama-3-8b-instruct"
+    "name": "llama-3-8b-instruct",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.6,
     "dataset_format": "jsonl",
     "chatbot_role": "friendly and professional customer support agent for a software company"
@@ -217,11 +211,13 @@ Evaluates whether the chatbot addresses all user needs across a multi-turn suppo
   "benchmark_id": "conversation-completeness",
   "model": {
     "url": "http://vllm-service:8000/v1",
-    "name": "llama-3-8b-instruct"
+    "name": "llama-3-8b-instruct",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.6,
     "dataset_format": "jsonl"
   }
@@ -255,7 +251,8 @@ cp /path/to/my_dataset.csv test_data/data.csv
 # Configure the job spec (edit meta/job.json or set EVALHUB_JOB_SPEC_PATH)
 export EVALHUB_MODE=local
 export EVALHUB_JOB_SPEC_PATH=meta/job.json
-export OPENAI_API_KEY=your-api-key
+# Configure model.auth.secret_ref as file:///absolute/path/to/model-auth.
+# That directory contains api-key and optional judge_api-key / judge_url files.
 
 # Run
 python main.py
@@ -279,11 +276,13 @@ Track evaluation results in MLflow for comparison across model versions or promp
   "experiment_name": "rag-pipeline-v2-faithfulness",
   "model": {
     "url": "http://vllm-service:8000/v1",
-    "name": "mistral-7b-instruct"
+    "name": "mistral-7b-instruct",
+    "auth": {
+      "secret_ref": "deepeval-model-auth"
+    }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.7,
     "dataset_format": "csv"
   }
@@ -300,6 +299,7 @@ evalhub eval run \
   --experiment rag-pipeline-v2-faithfulness \
   --model-name "mistral-7b-instruct" \
   --model-url "http://vllm-service:8000/v1" \
+  --model-auth-secret deepeval-model-auth \
   --param eval_model_name=gpt-4o \
   --test-data-s3-bucket my-bucket \
   --test-data-s3-key deepeval-datasets/faithfulness.csv \
