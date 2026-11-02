@@ -599,6 +599,7 @@ Develop and test custom EvalHub providers on OpenShift.
    # Create evaluation request
    cat > eval-request.json <<EOF
    {
+     "name": "test-deployment-eval",
      "model": {
        "url": "http://vllm-server.models.svc.cluster.local:8000/v1",
        "name": "Qwen/Qwen3.5-397B-A17B"

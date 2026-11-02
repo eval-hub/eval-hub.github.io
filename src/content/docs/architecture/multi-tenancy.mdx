@@ -264,8 +264,10 @@ Before setting up multi-tenancy, ensure you have:
    **Get the EvalHub route:**
 
    ```bash
-   EVALHUB_URL=$(oc get route evalhub -n opendatahub -o jsonpath='{.spec.host}')
+   export EVALHUB_URL="https://$(oc get route evalhub -n opendatahub -o jsonpath='{.spec.host}')"
    ```
+
+   If the EvalHub server uses a certificate signed by a private CA, pass `ca_bundle_path="/path/to/ca.pem"` when constructing `SyncEvalHubClient`. For development, the Python SDK also accepts `insecure=True`, and the CLI supports `evalhub config set insecure true`; these settings disable TLS certificate verification. Restore CLI verification with `evalhub config set insecure false`. The CLI does not currently expose the SDK's `ca_bundle_path` setting. See the [SDK client reference](/reference/sdk-client/) for connection options.
 
    **Get a token:**
 
@@ -273,8 +275,12 @@ Before setting up multi-tenancy, ensure you have:
    <TabItem label="ServiceAccount">
 
    ```bash
-   TOKEN=$(oc create token team-a-user -n team-a --duration=1h)
+   export TOKEN="$(oc create token team-a-user -n team-a --duration=1h)"
    ```
+
+   :::note
+   This token expires after one hour. The CLI does not automatically refresh stored tokens, so subsequent commands may return HTTP 401 after expiry. Generate a new token and update the active profile with `evalhub config set token "$TOKEN"`.
+   :::
 
    The TokenReview will resolve this to `system:serviceaccount:team-a:team-a-user`.
 
@@ -286,7 +292,7 @@ Before setting up multi-tenancy, ensure you have:
    # Log in as the user first (if not already)
    oc login --username=alice --password=<password>
 
-   TOKEN=$(oc whoami -t)
+   export TOKEN="$(oc whoami -t)"
    ```
 
    The TokenReview will resolve this to `alice` (the plain OpenShift username).
@@ -303,7 +309,7 @@ Before setting up multi-tenancy, ensure you have:
    # Log in as a user who is a member of the group
    oc login --username=alice --password=<password>
 
-   TOKEN=$(oc whoami -t)
+   export TOKEN="$(oc whoami -t)"
    ```
 
    The TokenReview resolves this to `alice`, and the SAR check matches the `kind: Group` RoleBinding because the token includes group membership claims. The flow is identical to the User case — the only difference is which RoleBinding subject kind is matched.
@@ -316,17 +322,25 @@ Before setting up multi-tenancy, ensure you have:
    <Tabs syncKey="interface">
    <TabItem label="CLI">
 
+   Store the server URL, token, and tenant in the active CLI configuration profile. The CLI sends the configured tenant in the `X-Tenant` header. The exported `EVALHUB_URL` above includes the `https://` scheme and can also be used by the Python SDK.
+
    ```bash
-   evalhub providers list --token $TOKEN --tenant team-a
+   evalhub config set base_url "${EVALHUB_URL}"
+   evalhub config set token "$TOKEN"
+   evalhub config set tenant team-a
+   evalhub providers list
    ```
 
    </TabItem>
    <TabItem label="Python SDK">
 
    ```python
+   import os
+   from evalhub import SyncEvalHubClient
+
    team_a = SyncEvalHubClient(
        base_url=os.environ["EVALHUB_URL"],
-       auth_token=TOKEN,
+       auth_token=os.environ["TOKEN"],
        tenant="team-a"
    )
    providers = team_a.providers.list()
@@ -339,7 +353,7 @@ Before setting up multi-tenancy, ensure you have:
    curl -sS -k \
      -H "Authorization: Bearer $TOKEN" \
      -H "X-Tenant: team-a" \
-     "https://$EVALHUB_URL/api/v1/evaluations/providers" | jq .
+     "$EVALHUB_URL/api/v1/evaluations/providers" | jq .
    ```
 
    </TabItem>
@@ -352,8 +366,6 @@ Before setting up multi-tenancy, ensure you have:
 
    ```bash
    evalhub eval run \
-     --token $TOKEN \
-     --tenant team-a \
      --name mmlu-eval \
      --model-url http://vllm-server.team-a.svc.cluster.local:8000/v1 \
      --model-name meta-llama/Llama-3.2-1B-Instruct \
@@ -365,6 +377,8 @@ Before setting up multi-tenancy, ensure you have:
    <TabItem label="Python SDK">
 
    ```python
+   from evalhub.models.api import BenchmarkConfig, JobSubmissionRequest, ModelConfig
+
    job = team_a.jobs.submit(JobSubmissionRequest(
        name="mmlu-eval",
        model=ModelConfig(
@@ -386,6 +400,7 @@ Before setting up multi-tenancy, ensure you have:
      -H "X-Tenant: team-a" \
      -H "Content-Type: application/json" \
      -d '{
+       "name": "mmlu-eval",
        "model": {
          "url": "http://vllm-server.team-a.svc.cluster.local:8000/v1",
          "name": "meta-llama/Llama-3.2-1B-Instruct"
@@ -397,7 +412,7 @@ Before setting up multi-tenancy, ensure you have:
          }
        ]
      }' \
-     "https://$EVALHUB_URL/api/v1/evaluations/jobs" | jq .
+     "$EVALHUB_URL/api/v1/evaluations/jobs" | jq .
    ```
 
    </TabItem>
@@ -411,18 +426,25 @@ Before setting up multi-tenancy, ensure you have:
    <TabItem label="CLI">
 
    ```bash
+   evalhub config set tenant team-b
    # This will return an error — no access to team-b
-   evalhub eval status --token $TOKEN --tenant team-b
+   evalhub eval status
+
+   # Restore the active profile's tenant for subsequent commands
+   evalhub config set tenant team-a
    ```
 
    </TabItem>
    <TabItem label="Python SDK">
 
    ```python
+   import os
+   from evalhub import SyncEvalHubClient
+
    # This will raise an HTTP 403 error
    team_b = SyncEvalHubClient(
        base_url=os.environ["EVALHUB_URL"],
-       auth_token=TOKEN,
+       auth_token=os.environ["TOKEN"],
        tenant="team-b"
    )
    team_b.jobs.list()  # 403 Forbidden
@@ -436,7 +458,7 @@ Before setting up multi-tenancy, ensure you have:
    curl -sS -k -X GET \
      -H "Authorization: Bearer $TOKEN" \
      -H "X-Tenant: team-b" \
-     "https://$EVALHUB_URL/api/v1/evaluations/jobs"
+     "$EVALHUB_URL/api/v1/evaluations/jobs"
    ```
 
    </TabItem>

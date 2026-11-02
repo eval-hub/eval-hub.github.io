@@ -126,12 +126,12 @@ Run the evaluation using IDs discovered in Phase 1. Read `hints` before construc
    Or submit a collection for a comprehensive assessment:
 
    ```python
-   from evalhub.models.api import CollectionConfig, JobSubmissionRequest, ModelConfig
+   from evalhub.models.api import CollectionRef, JobSubmissionRequest, ModelConfig
 
    job = client.jobs.submit(JobSubmissionRequest(
        name="edd-safety-suite",
        model=ModelConfig(url="http://vllm:8000/v1", name="mistral-7b-instruct"),
-       collection=CollectionConfig(id="safety-and-fairness-v1"),
+       collection=CollectionRef(id="safety-and-fairness-v1"),
    ))
    ```
 

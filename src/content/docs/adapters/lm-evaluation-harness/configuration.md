@@ -37,7 +37,7 @@ the source of truth.
 | `batch_size` | Request batch size; defaults to `1` |
 | `num_concurrent` | Number of concurrent requests, capped by the adapter at `128` |
 | `timeout_seconds` | Request timeout in seconds; defaults to `300` |
-| `tokenizer` | Hugging Face tokenizer ID or local path used with the OpenAI-compatible endpoint; defaults to `model.name` when omitted |
+| `tokenizer` | Hugging Face tokenizer ID or local path used with the OpenAI-compatible endpoint; normally defaults to `model.name` when omitted or blank, except that disconnected-mode detection can select staged `/test_data/tokenizer` when the dataset bundle is detected (see [Disconnected Cluster Evaluation](/guides/disconnected-cluster/)) |
 | `random_seed` | Random seed used by LM Evaluation Harness; defaults to `42` |
 | `parameters` | Nested scalar generation parameters serialized as LM Evaluation Harness generation kwargs |
 
@@ -48,9 +48,13 @@ top-level keys are not automatically translated into task configuration.
 ## Tokenizer selection and authentication
 
 The adapter uses a Hugging Face tokenizer even when evaluating a model through
-an OpenAI-compatible endpoint. If `benchmarks[].parameters.tokenizer` is omitted,
-the adapter uses `model.name` as the Hugging Face tokenizer identifier.
-The example above uses
+an OpenAI-compatible endpoint. If `benchmarks[].parameters.tokenizer` is omitted or
+blank, the adapter normally uses `model.name` as the Hugging Face tokenizer identifier.
+When disconnected-mode detection finds a staged dataset bundle and the conventional
+`/test_data/tokenizer` directory, it uses that local tokenizer instead. An explicit
+`parameters.tokenizer` value takes precedence over this fallback. See
+[Disconnected Cluster Evaluation](/guides/disconnected-cluster/) for the required
+staged layout and detection conditions. The example above uses
 `meta-llama/Llama-3.1-8B-Instruct` for both the served model name and the tokenizer.
 
 If your endpoint uses a model alias that is not a Hugging Face repository ID,
@@ -58,6 +62,7 @@ set `parameters.tokenizer` explicitly to a tokenizer compatible with the served
 model. For example, for an endpoint serving Llama 3.1 8B Instruct:
 
 ```yaml
+name: tokenizer-override-eval
 model:
   name: my-served-llama
   url: http://model-endpoint:8080/v1
@@ -80,7 +85,7 @@ evalhub eval run \
   --model-url https://my-model-url/v1 \
   --model-name Qwen3.6-35B-A3B \
   --provider lm_evaluation_harness \
-  --secret-ref my-model-auth \
+  --model-auth-secret my-model-auth \
   --param tokenizer=Qwen/Qwen3.6-35B-A3B \
   -b winogender
 ```
@@ -98,7 +103,7 @@ to the model endpoint does not grant access to a gated Hugging Face repository.
 Use the existing [Hugging Face token Secret setup](/guides/bring-your-own-framework/#environment-variables)
 to add an `hf-token` key to your model authentication Secret (`my-model-auth`
 in both examples). Reference that Secret through `model.auth.secret_ref` in
-the job configuration or `--secret-ref` in the CLI. This makes the token available as
+the job configuration or `--model-auth-secret` in the CLI. This makes the token available as
 `HF_TOKEN` to the built-in adapter. See
 [Model Authentication](/guides/model-authentication/) for combining the Hugging
 Face token with endpoint credentials.

@@ -192,7 +192,7 @@ Before setting up single-tenancy, ensure you have:
    **Get the EvalHub route:**
 
    ```bash
-   EVALHUB_URL=$(oc get route evalhub -n team-a -o jsonpath='{.spec.host}')
+   export EVALHUB_URL="https://$(oc get route evalhub -n team-a -o jsonpath='{.spec.host}')"
    ```
 
    **Get a token:**
@@ -201,8 +201,12 @@ Before setting up single-tenancy, ensure you have:
    <TabItem label="ServiceAccount">
 
    ```bash
-   TOKEN=$(oc create token team-a-user -n team-a --duration=1h)
+   export TOKEN="$(oc create token team-a-user -n team-a --duration=1h)"
    ```
+
+   :::note
+   This token expires after one hour. The CLI does not automatically refresh stored tokens, so subsequent commands may return HTTP 401 after expiry. Generate a new token and update the active profile with `evalhub config set token "$TOKEN"`.
+   :::
 
    </TabItem>
 
@@ -210,7 +214,7 @@ Before setting up single-tenancy, ensure you have:
 
    ```bash
    oc login --username=alice --password=<password>
-   TOKEN=$(oc whoami -t)
+   export TOKEN="$(oc whoami -t)"
    ```
 
    </TabItem>
@@ -219,7 +223,7 @@ Before setting up single-tenancy, ensure you have:
 
    ```bash
    oc login --username=alice --password=<password>
-   TOKEN=$(oc whoami -t)
+   export TOKEN="$(oc whoami -t)"
    ```
 
    </TabItem>
@@ -231,16 +235,22 @@ Before setting up single-tenancy, ensure you have:
    <TabItem label="CLI">
 
    ```bash
-   evalhub providers list --token $TOKEN --tenant team-a
+   evalhub config set base_url "$EVALHUB_URL"
+   evalhub config set token "$TOKEN"
+   evalhub config set tenant team-a
+   evalhub providers list
    ```
 
    </TabItem>
    <TabItem label="Python SDK">
 
    ```python
+   import os
+   from evalhub import SyncEvalHubClient
+
    client = SyncEvalHubClient(
        base_url=os.environ["EVALHUB_URL"],
-       auth_token=TOKEN,
+       auth_token=os.environ["TOKEN"],
        tenant="team-a"
    )
    providers = client.providers.list()
@@ -253,7 +263,7 @@ Before setting up single-tenancy, ensure you have:
    curl -sS -k \
      -H "Authorization: Bearer $TOKEN" \
      -H "X-Tenant: team-a" \
-     "https://$EVALHUB_URL/api/v1/evaluations/providers" | jq .
+     "$EVALHUB_URL/api/v1/evaluations/providers" | jq .
    ```
 
    </TabItem>
@@ -266,8 +276,6 @@ Before setting up single-tenancy, ensure you have:
 
    ```bash
    evalhub eval run \
-     --token $TOKEN \
-     --tenant team-a \
      --name mmlu-eval \
      --model-url http://vllm-server.team-a.svc.cluster.local:8000/v1 \
      --model-name meta-llama/Llama-3.2-1B-Instruct \
@@ -279,6 +287,8 @@ Before setting up single-tenancy, ensure you have:
    <TabItem label="Python SDK">
 
    ```python
+   from evalhub.models.api import BenchmarkConfig, JobSubmissionRequest, ModelConfig
+
    job = client.jobs.submit(JobSubmissionRequest(
        name="mmlu-eval",
        model=ModelConfig(
@@ -300,6 +310,7 @@ Before setting up single-tenancy, ensure you have:
      -H "X-Tenant: team-a" \
      -H "Content-Type: application/json" \
      -d '{
+       "name": "mmlu-eval",
        "model": {
          "url": "http://vllm-server.team-a.svc.cluster.local:8000/v1",
          "name": "meta-llama/Llama-3.2-1B-Instruct"
@@ -311,7 +322,7 @@ Before setting up single-tenancy, ensure you have:
          }
        ]
      }' \
-     "https://$EVALHUB_URL/api/v1/evaluations/jobs" | jq .
+     "$EVALHUB_URL/api/v1/evaluations/jobs" | jq .
    ```
 
    </TabItem>

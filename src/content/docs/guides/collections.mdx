@@ -374,8 +374,9 @@ The server applies the collection's weight, primary score, or pass criteria for 
 
 When submitting a collection-based job, you can override `test_data_ref` and `hardware_config` for specific benchmarks by including them in `collection.benchmarks`. You can also add new `parameters` keys that are not already defined in the collection. However, parameter keys that the collection already defines with non-empty values cannot be overridden — the collection's values take precedence. The overrides are matched by `id` and `provider_id`. Weight, primary score, and pass criteria always come from the stored collection definition and cannot be overridden at run time.
 
-```json {7-15}
+```json {8-16}
 {
+  "name": "collection-parameter-override-eval",
   "model": { "url": "http://my-model:8000/v1", "name": "llama3" },
   "collection": {
     "id": "safety-and-fairness-v1",
@@ -396,8 +397,9 @@ When submitting a collection-based job, you can override `test_data_ref` and `ha
 
 Set `pass_criteria` at the job level to override the collection's threshold for this run:
 
-```json {3}
+```json {4}
 {
+  "name": "collection-threshold-override-eval",
   "model": { "url": "http://my-model:8000/v1", "name": "llama3" },
   "pass_criteria": { "threshold": 0.9 },
   "collection": {

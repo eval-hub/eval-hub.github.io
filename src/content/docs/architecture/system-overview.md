@@ -41,15 +41,18 @@ Benchmarks are specific evaluation tasks within a provider. Examples: `mmlu` (lm
 Curated sets of benchmarks with weighted scoring, enabling domain-specific evaluation with a single API call.
 
 ```yaml
-collection_id: healthcare_safety_v1
+name: healthcare_safety_v1
+category: healthcare
 benchmarks:
-  - benchmark_id: mmlu_medical
+  - id: mmlu_medical
     provider_id: lm_evaluation_harness
     weight: 2.0
-  - benchmark_id: toxicity
+  - id: toxicity
     provider_id: garak
     weight: 1.0
 ```
+
+When submitting a job, reference the registered collection using `collection: {id: <collection-id>}`.
 
 ### Jobs
 
@@ -64,8 +67,8 @@ Containerised applications implementing the `FrameworkAdapter` interface from th
 All adapters implement the `FrameworkAdapter` interface from the SDK:
 
 ```python
-from evalhub.adapter import FrameworkAdapter, JobSpec, JobResults, JobCallbacks
-from evalhub.adapter.models import JobStatusUpdate, JobStatus, JobPhase, MessageInfo, OCIArtifactSpec
+from evalhub.adapter import FrameworkAdapter, JobSpec, JobResults, JobCallbacks, JobStatus
+from evalhub.adapter.models import JobStatusUpdate, JobPhase, MessageInfo, OCIArtifactSpec
 
 class MyAdapter(FrameworkAdapter):
     def run_benchmark_job(

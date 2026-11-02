@@ -55,7 +55,11 @@ EvalHub recognizes the following secret keys: `api-key`, `*_api-key`, `*_sa_toke
 
 The adapter receives a projected volume combining the internal ref secret (when present) with passthrough keys (`hf-token`, `ca_cert`) from the user secret. The user-provided secret with real credential values is mounted only into the sidecar.
 
-You submit the real model URL in `model.url` when creating a job. EvalHub rewrites the adapter's `JobSpec.model.url` to the sidecar, preserving its path in the same way. Auxiliary URLs are read from the projected Secret files, not inserted into `parameters`.
+You submit the real model URL in `model.url` when creating a job. EvalHub rewrites
+its scheme and host to `http://localhost:8080` in the adapter's `JobSpec.model.url`,
+preserving the original path, query, and fragment. For example,
+`https://my-model.example.com/v1` becomes `http://localhost:8080/v1`. Auxiliary
+URLs are read from the projected Secret files, not inserted into `parameters`.
 
 ### What is mounted in each container
 
@@ -79,7 +83,7 @@ variables; the adapter must read them using the SDK.
 This means:
 - Real API keys and SA tokens are only ever seen by the sidecar, not the adapter
 - TLS to the model endpoint is handled by the sidecar using `ca_cert` from the secret
-- The adapter calls the sidecar URL supplied by EvalHub, including its API path
+- The adapter calls the rewritten sidecar URL, including its original API path, regardless of auth type
 
 This guide applies to evaluation jobs created by the Kubernetes runtime. Local runtime behavior may differ.
 
@@ -143,14 +147,15 @@ if creds.api_key:
     headers["Authorization"] = f"Bearer {creds.api_key}"
 
 resp = requests.post(
-    f"{config.model.url.rstrip('/')}/chat/completions",
+    f"{str(config.model.url).rstrip('/')}/chat/completions",
     headers=headers,
     json={...},
 )
 ```
 
-This example assumes the submitted base URL already includes `/v1`. The sidecar
-resolves `api-key:ref` to the real API key and forwards the request. If `api_key`
+This example uses an OpenAI-compatible API base URL ending in `/v1`, without a
+query or fragment. Append `/chat/completions` after removing any trailing slash.
+The sidecar resolves `api-key:ref` to the real API key and forwards the request. If `api_key`
 is `None`, an HTTP client can omit Authorization. The sidecar injects its pod SA
 token for requests without a credential reference. OpenAI SDK clients require a
 non-empty `api_key`; `local` can satisfy that client requirement when no Secret
@@ -352,12 +357,15 @@ kubectl create secret generic vllm-api-key -n team-a \
    ```
    </TabItem>
    <TabItem label="Python SDK">
-   ```python {13}
+   ```python {16}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -375,7 +383,6 @@ kubectl create secret generic vllm-api-key -n team-a \
                )
            ],
        ),
-       headers={"X-Tenant": "team-a"},
    )
    ```
    </TabItem>
@@ -471,7 +478,10 @@ If the endpoint uses a custom CA for TLS only, create a secret with just `ca_cer
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -488,7 +498,6 @@ If the endpoint uses a custom CA for TLS only, create a secret with just `ca_cer
                )
            ],
        ),
-       headers={"X-Tenant": "team-a"},
    )
    ```
    </TabItem>
@@ -554,12 +563,15 @@ kubectl create secret generic kfp-creds \
    ```
    </TabItem>
    <TabItem label="Python SDK">
-   ```python {13}
+   ```python {16}
    import os
    from evalhub import SyncEvalHubClient
    from evalhub.models.api import ModelConfig, BenchmarkConfig, JobSubmissionRequest
 
-   client = SyncEvalHubClient(base_url=os.environ.get("HOST", "http://localhost:8080"))
+   client = SyncEvalHubClient(
+       base_url=os.environ.get("HOST", "http://localhost:8080"),
+       tenant="team-a",
+   )
 
    job = client.jobs.submit(
        JobSubmissionRequest(
@@ -577,7 +589,6 @@ kubectl create secret generic kfp-creds \
                )
            ],
        ),
-       headers={"X-Tenant": "team-a"},
    )
    ```
    </TabItem>
