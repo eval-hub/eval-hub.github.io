@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EvalHub — MCP EDD Workflow</title>
+<link rel="stylesheet" href="https://noyitz.github.io/flowstory/templates/style.css">
+</head>
+<body>
+<button class="fs-theme-toggle" id="fs-theme">&#9790;</button>
+<div class="fs-brand" id="fs-brand"></div>
+<div class="fs-title" id="fs-title"></div>
+<div class="fs-panel">
+  <div class="fs-flow-bar">
+    <select id="fs-flow-select"></select>
+    <button class="fs-start" id="fs-play">&#9654; Start</button>
+    <button id="fs-speed">1x</button>
+    <button id="fs-loop" style="border-color:#79c0ff;color:#79c0ff">&#8635; Loop</button>
+    <button class="fs-reset" id="fs-reset">Reset</button>
+  </div>
+  <div class="fs-steps" id="fs-steps">
+    <div class="fs-steps-title">Flow Steps <span style="font-weight:400;font-size:11px;color:var(--fs-text-dim)">· click to jump</span></div>
+    <div id="fs-steps-container"></div>
+  </div>
+  <div class="fs-inspector" id="fs-inspector">
+    <div class="fs-inspector-title" id="fs-inspector-title" style="color:var(--fs-accent)">Request</div>
+    <div id="fs-inspector-content"></div>
+  </div>
+</div>
+<div id="fs-highlight-box" style="display:none;position:fixed;z-index:350;border-radius:10px;pointer-events:none"></div>
+<div id="fs-overlay" style="display:none;position:fixed;top:0;left:0;right:380px;bottom:0;z-index:300;background:rgba(0,0,0,0.6)">
+  <div id="fs-overlay-card" style="position:absolute;background:#161b22ee;border:1px solid #30363d;border-radius:14px;max-width:420px;padding:22px 26px;box-shadow:0 12px 40px rgba(0,0,0,0.5)">
+    <button id="fs-overlay-close" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#8b949e;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px">&#10005;</button>
+    <div id="fs-overlay-accent" style="width:4px;height:24px;border-radius:2px;position:absolute;left:0;top:22px"></div>
+    <h2 id="fs-overlay-title" style="margin:0 0 6px;font-size:18px;color:#c9d1d9;font-family:system-ui"></h2>
+    <p id="fs-overlay-desc" style="margin:0 0 14px;font-size:13px;color:#8b949e;line-height:1.5;font-family:system-ui"></p>
+    <div id="fs-overlay-details" style="font-size:12px;font-family:'SF Mono',Menlo,monospace"></div>
+    <button id="fs-overlay-resume" style="margin-top:14px;padding:7px 20px;border:1px solid #3fb950;border-radius:8px;background:transparent;color:#3fb950;font-size:13px;cursor:pointer;font-family:system-ui">&#9654; Resume Flow</button>
+  </div>
+</div>
+<div class="fs-legend" id="fs-legend"></div>
+<canvas id="fs-canvas"></canvas>
+<script type="module">
+import { FlowStory } from 'https://noyitz.github.io/flowstory/src/index.js';
+
+const diagram = {
+  "meta": {
+    "title": "EvalHub — MCP EDD Workflow",
+    "brand": "EvalHub"
+  },
+  "canvas": {
+    "width": 1250,
+    "height": 750
+  },
+  "nodes": {
+    "agent": {
+      "x": -20,
+      "y": 380,
+      "w": 110,
+      "h": 50,
+      "label": "AI Agent",
+      "type": "icon",
+      "tooltip": {
+        "title": "AI Agent",
+        "desc": "An AI assistant (e.g., Claude, GPT) that drives the Evaluation-Driven Development workflow via MCP tool calls, resource reads, and prompt invocations.",
+        "details": [
+          {
+            "label": "Role",
+            "value": "EDD Orchestrator"
+          },
+          {
+            "label": "Protocol",
+            "value": "MCP (stdio / HTTP)"
+          },
+          {
+            "label": "Capabilities",
+            "value": "Tool calls, Resource reads, Prompt invocations"
+          }
+        ]
+      }
+    },
+    "mcp_service": {
+      "x": 160,
+      "y": 260,
+      "w": 240,
+      "h": 270,
+      "label": "MCP Service",
+      "color": "#d2a8ff",
+      "fontSize": 14,
+      "type": "container",
+      "tooltip": {
+        "title": "EvalHub MCP Service",
+        "desc": "The MCP deployment with kube-rbac-proxy sidecar for authentication/authorization and the MCP server exposing eval-hub capabilities to AI agents.",
+        "details": [
+          {
+            "label": "Containers",
+            "value": "kube-rbac-proxy + evalhub-mcp"
+          },
+          {
+            "label": "Service Port",
+            "value": "3001"
+          }
+        ]
+      }
+    },
+    "mcp_rbac_proxy": {
+      "x": 180,
+      "y": 290,
+      "w": 200,
+      "h": 50,
+      "label": "kube-rbac-proxy",
+      "sublabel": "AuthN / AuthZ",
+      "color": "#f0883e",
+      "fontSize": 13,
+      "inner": true,
+      "tooltip": {
+        "title": "kube-rbac-proxy (MCP)",
+        "desc": "Sidecar performing Kubernetes TokenReview and SubjectAccessReview on all incoming MCP requests before forwarding to the MCP server.",
+        "details": [
+          {
+            "label": "AuthN",
+            "value": "TokenReview"
+          },
+          {
+            "label": "AuthZ",
+            "value": "SubjectAccessReview"
+          },
+          {
+            "label": "Forwards to",
+            "value": "localhost:3001 (MCP)"
+          }
+        ]
+      }
+    },
+    "mcp": {
+      "x": 180,
+      "y": 380,
+      "w": 200,
+      "h": 75,
+      "label": "MCP Server",
+      "sublabel": "evalhub-mcp :3001",
+      "color": "#d2a8ff",
+      "fontSize": 15,
+      "inner": true,
+      "tooltip": {
+        "title": "EvalHub MCP Server",
+        "desc": "Exposes EvalHub capabilities as AI-consumable MCP tools, resources, and prompts.",
+        "details": [
+          {
+            "label": "Tools",
+            "value": "submit_evaluation, get_job_status, cancel_job"
+          },
+          {
+            "label": "Resources",
+            "value": "evalhub://providers, benchmarks, collections, jobs"
+          },
+          {
+            "label": "Prompts",
+            "value": "edd_workflow, evaluate_model, compare_runs"
+          },
+          {
+            "label": "Transport",
+            "value": "stdio or HTTP"
+          },
+          {
+            "label": "Port",
+            "value": "3001 (localhost)"
+          }
+        ]
+      }
+    },
+    "evalhub_service": {
+      "x": 460,
+      "y": 260,
+      "w": 240,
+      "h": 290,
+      "label": "EvalHub Service",
+      "color": "#58a6ff",
+      "fontSize": 14,
+      "type": "container",
+      "tooltip": {
+        "title": "EvalHub Service",
+        "desc": "The EvalHub deployment with kube-rbac-proxy sidecar for authentication/authorization and the core REST API server.",
+        "details": [
+          {
+            "label": "Containers",
+            "value": "kube-rbac-proxy + eval-hub API"
+          },
+          {
+            "label": "Service Port",
+            "value": "8080"
+          }
+        ]
+      }
+    },
+    "api": {
+      "x": 480,
+      "y": 360,
+      "w": 200,
+      "h": 65,
+      "label": "EvalHub API",
+      "sublabel": "REST :8080",
+      "color": "#58a6ff",
+      "fontSize": 15,
+      "inner": true,
+      "tooltip": {
+        "title": "EvalHub REST API",
+        "desc": "Core backend API managing evaluation jobs, providers, benchmarks, and collections via REST endpoints.",
+        "details": [
+          {
+            "label": "Port",
+            "value": "8080 (localhost)"
+          },
+          {
+            "label": "Endpoints",
+            "value": "POST /jobs, GET /jobs/:id, DELETE /jobs/:id"
+          },
+          {
+            "label": "Storage",
+            "value": "PostgreSQL"
+          },
+          {
+            "label": "Tracking",
+            "value": "MLflow"
+          }
+        ]
+      }
+    },
+    "postgres": {
+      "x": 510,
+      "y": 590,
+      "w": 160,
+      "h": 65,
+      "label": "PostgreSQL",
+      "sublabel": "Job Storage",
+      "color": "#3fb950",
+      "fontSize": 15,
+      "tooltip": {
+        "title": "PostgreSQL Database",
+        "desc": "Persistent storage for evaluation jobs, benchmark definitions, provider configs, and run history.",
+        "details": [
+          {
+            "label": "Tables",
+            "value": "jobs, benchmarks, providers, collections"
+          },
+          {
+            "label": "Role",
+            "value": "Job state persistence"
+          }
+        ]
+      }
+    },
+    "infra": {
+      "x": 750,
+      "y": 300,
+      "w": 220,
+      "h": 160,
+      "label": "Eval Infrastructure",
+      "sublabel": "Kubernetes",
+      "color": "#8b949e",
+      "fontSize": 16,
+      "type": "container",
+      "tooltip": {
+        "title": "Evaluation Infrastructure",
+        "desc": "Kubernetes-based evaluation runtime. Spins up pods to execute benchmark evaluations against model endpoints.",
+        "details": [
+          {
+            "label": "Runtime",
+            "value": "Kubernetes"
+          },
+          {
+            "label": "Execution",
+            "value": "Eval Pods per job"
+          },
+          {
+            "label": "Scaling",
+            "value": "Horizontal pod autoscaling"
+          }
+        ]
+      }
+    },
+    "evalpod": {
+      "x": 780,
+      "y": 355,
+      "w": 160,
+      "h": 65,
+      "label": "Eval Pod",
+      "sublabel": "Benchmark Runner",
+      "color": "#f0883e",
+      "fontSize": 14,
+      "inner": true
+    },
+    "mlflow": {
+      "x": 1020,
+      "y": 355,
+      "w": 160,
+      "h": 65,
+      "label": "MLflow",
+      "sublabel": "Experiment Tracking",
+      "color": "#f0883e",
+      "fontSize": 15,
+      "tooltip": {
+        "title": "MLflow Tracking",
+        "desc": "Records evaluation metrics, parameters, and artifacts for each run. Enables comparison across iterations of the EDD cycle.",
+        "details": [
+          {
+            "label": "Tracks",
+            "value": "Metrics, params, artifacts"
+          },
+          {
+            "label": "Role",
+            "value": "Experiment tracking & comparison"
+          }
+        ]
+      }
+    },
+    "k8s_api": {
+      "x": 340,
+      "y": 110,
+      "w": 180,
+      "h": 60,
+      "label": "Kubernetes API",
+      "sublabel": "Control Plane",
+      "color": "#8b949e",
+      "fontSize": 15,
+      "tooltip": {
+        "title": "Kubernetes API Server",
+        "desc": "K8s control plane used by kube-rbac-proxy for TokenReview (authentication) and SubjectAccessReview (authorization) checks.",
+        "details": [
+          {
+            "label": "AuthN",
+            "value": "TokenReview API"
+          },
+          {
+            "label": "AuthZ",
+            "value": "SubjectAccessReview API"
+          },
+          {
+            "label": "Port",
+            "value": "6443"
+          }
+        ]
+      }
+    },
+    "rbac_proxy": {
+      "x": 480,
+      "y": 290,
+      "w": 200,
+      "h": 50,
+      "label": "kube-rbac-proxy",
+      "sublabel": "AuthN / AuthZ",
+      "color": "#f0883e",
+      "fontSize": 13,
+      "inner": true,
+      "tooltip": {
+        "title": "kube-rbac-proxy (EvalHub)",
+        "desc": "Sidecar performing Kubernetes TokenReview and SubjectAccessReview on all incoming requests before forwarding to the EvalHub API.",
+        "details": [
+          {
+            "label": "AuthN",
+            "value": "TokenReview"
+          },
+          {
+            "label": "AuthZ",
+            "value": "SubjectAccessReview"
+          },
+          {
+            "label": "Forwards to",
+            "value": "localhost:8080 (API)"
+          }
+        ]
+      }
+    },
+    "runtime": {
+      "x": 480,
+      "y": 450,
+      "w": 200,
+      "h": 50,
+      "label": "Runtime",
+      "sublabel": "Job Orchestrator",
+      "color": "#d2a8ff",
+      "fontSize": 14,
+      "inner": true,
+      "tooltip": {
+        "title": "Runtime",
+        "desc": "Job orchestration layer that creates Kubernetes resources for evaluation jobs.",
+        "details": [
+          {
+            "label": "Creates",
+            "value": "K8s Job + ConfigMap + Pod"
+          },
+          {
+            "label": "Auth",
+            "value": "ServiceAccount RBAC to K8s API"
+          }
+        ]
+      }
+    }
+  },
+  "flows": {
+    "edd_workflow": {
+      "label": "EDD Workflow",
+      "steps": [
+        {
+          "text": "1. DEFINE: Agent invokes edd_workflow prompt",
+          "mode": "arrow",
+          "from": "agent",
+          "to": "mcp_rbac_proxy",
+          "color": "#d2a8ff",
+          "glow": "mcp_service",
+          "fromRight": true,
+          "toLeft": true,
+          "inspector": {
+            "title": "MCP Prompt — edd_workflow",
+            "body": "{\n  \"method\": \"prompts/get\",\n  \"params\": {\n    \"name\": \"edd_workflow\",\n    \"arguments\": {\n      \"application_type\": \"RAG\"\n    }\n  }\n}"
+          },
+          "num": 1
+        },
+        {
+          "text": "2. MCP kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "MCP RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i <verb> \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 2
+        },
+        {
+          "text": "3. RBAC proxy forwards to MCP Server",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "mcp",
+          "color": "#d2a8ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Forward to MCP Server",
+            "body": "Authenticated request forwarded\nto MCP Server on localhost:3001.\n\nPrompt: edd_workflow\nApplication type: RAG"
+          },
+          "num": 3
+        },
+        {
+          "text": "4. MCP returns EDD guidance (Define-Measure-Iterate-Compare)",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "agent",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "EDD Guidance Response",
+            "body": "{\n  \"messages\": [{\n    \"role\": \"assistant\",\n    \"content\": \"EDD Workflow for RAG:\\n1. DEFINE: Select benchmarks...\\n2. MEASURE: Submit evaluation...\\n3. ITERATE: Analyze & adjust...\\n4. COMPARE: Cross-run analysis\"\n  }]\n}"
+          },
+          "num": 4
+        },
+        {
+          "text": "5. DEFINE: Agent reads evalhub://providers",
+          "mode": "arrow",
+          "from": "agent",
+          "to": "mcp_rbac_proxy",
+          "color": "#58a6ff",
+          "glow": "mcp_service",
+          "fromRight": true,
+          "toLeft": true,
+          "inspector": {
+            "title": "MCP Resource Read",
+            "body": "{\n  \"method\": \"resources/read\",\n  \"params\": {\n    \"uri\": \"evalhub://providers\"\n  }\n}"
+          },
+          "num": 5
+        },
+        {
+          "text": "6. MCP kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "MCP RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i <verb> \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 6
+        },
+        {
+          "text": "7. RBAC proxy forwards to MCP Server",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "mcp",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Forward to MCP Server",
+            "body": "Authenticated request forwarded\nto MCP Server on localhost:3001."
+          },
+          "num": 7
+        },
+        {
+          "text": "8. MCP Server calls EvalHub for providers",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "rbac_proxy",
+          "color": "#58a6ff",
+          "glow": "evalhub_service",
+          "inspector": {
+            "title": "REST API Call — providers",
+            "body": "GET /api/v1/providers\nAuthorization: Bearer <token>\n\nMCP Server fetches providers\nfrom EvalHub API via kube-rbac-proxy."
+          },
+          "num": 8
+        },
+        {
+          "text": "9. EvalHub kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "EvalHub RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i get \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 9
+        },
+        {
+          "text": "10. kube-rbac-proxy forwards to EvalHub API",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "api",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "RBAC Proxy Forward",
+            "body": "Authenticated request forwarded\nto EvalHub API on localhost:8080.\n\nGET /api/v1/providers"
+          },
+          "num": 10
+        },
+        {
+          "text": "11. EvalHub API queries PostgreSQL for providers",
+          "mode": "arrow",
+          "from": "api",
+          "to": "postgres",
+          "color": "#58a6ff",
+          "inspector": {
+            "title": "Database Query — providers",
+            "body": "SELECT * FROM providers"
+          },
+          "num": 11
+        },
+        {
+          "text": "12. PostgreSQL returns providers data",
+          "mode": "arrow",
+          "from": "postgres",
+          "to": "api",
+          "color": "#3fb950",
+          "fromTop": true,
+          "toBottom": true,
+          "inspector": {
+            "title": "Database Response — providers",
+            "body": "PostgreSQL returns providers\ndata to the EvalHub API."
+          },
+          "num": 12
+        },
+        {
+          "text": "13. EvalHub API returns providers to MCP",
+          "mode": "arrow",
+          "from": "api",
+          "to": "mcp",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Providers Response",
+            "body": "HTTP 200 OK\n\nEvalHub API returns providers\ndata to the MCP Server."
+          },
+          "num": 13
+        },
+        {
+          "text": "14. MCP returns provider list to Agent",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "agent",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Provider List Response",
+            "body": "{\n  \"contents\": [{\n    \"uri\": \"evalhub://providers\",\n    \"text\": \"[{\\\"name\\\": \\\"openai\\\", ...}, {\\\"name\\\": \\\"anthropic\\\", ...}]\"\n  }]\n}"
+          },
+          "num": 14
+        },
+        {
+          "text": "15. DEFINE: Agent reads evalhub://benchmarks",
+          "mode": "arrow",
+          "from": "agent",
+          "to": "mcp_rbac_proxy",
+          "color": "#58a6ff",
+          "glow": "mcp_service",
+          "fromRight": true,
+          "toLeft": true,
+          "inspector": {
+            "title": "MCP Resource Read",
+            "body": "{\n  \"method\": \"resources/read\",\n  \"params\": {\n    \"uri\": \"evalhub://benchmarks?labels=rag,retrieval\"\n  }\n}"
+          },
+          "num": 15
+        },
+        {
+          "text": "16. MCP kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "MCP RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i <verb> \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 16
+        },
+        {
+          "text": "17. RBAC proxy forwards to MCP Server",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "mcp",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Forward to MCP Server",
+            "body": "Authenticated request forwarded\nto MCP Server on localhost:3001."
+          },
+          "num": 17
+        },
+        {
+          "text": "18. MCP Server calls EvalHub for benchmarks",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "rbac_proxy",
+          "color": "#58a6ff",
+          "glow": "evalhub_service",
+          "inspector": {
+            "title": "REST API Call — benchmarks",
+            "body": "GET /api/v1/benchmarks?labels=rag,retrieval\nAuthorization: Bearer <token>\n\nMCP Server fetches benchmarks\nfrom EvalHub API via kube-rbac-proxy."
+          },
+          "num": 18
+        },
+        {
+          "text": "19. EvalHub kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "EvalHub RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i get \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 19
+        },
+        {
+          "text": "20. kube-rbac-proxy forwards to EvalHub API",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "api",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "RBAC Proxy Forward",
+            "body": "Authenticated request forwarded\nto EvalHub API on localhost:8080.\n\nGET /api/v1/benchmarks?labels=rag,retrieval"
+          },
+          "num": 20
+        },
+        {
+          "text": "21. EvalHub API queries PostgreSQL for benchmarks",
+          "mode": "arrow",
+          "from": "api",
+          "to": "postgres",
+          "color": "#58a6ff",
+          "inspector": {
+            "title": "Database Query — benchmarks",
+            "body": "SELECT * FROM benchmarks\nWHERE labels @> '{rag,retrieval}'"
+          },
+          "num": 21
+        },
+        {
+          "text": "22. PostgreSQL returns benchmarks data",
+          "mode": "arrow",
+          "from": "postgres",
+          "to": "api",
+          "color": "#3fb950",
+          "fromTop": true,
+          "toBottom": true,
+          "inspector": {
+            "title": "Database Response — benchmarks",
+            "body": "PostgreSQL returns benchmarks\ndata to the EvalHub API."
+          },
+          "num": 22
+        },
+        {
+          "text": "23. EvalHub API returns benchmarks to MCP",
+          "mode": "arrow",
+          "from": "api",
+          "to": "mcp",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Benchmarks Response",
+            "body": "HTTP 200 OK\n\nEvalHub API returns benchmarks\ndata to the MCP Server."
+          },
+          "num": 23
+        },
+        {
+          "text": "24. MCP returns benchmark list to Agent",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "agent",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Benchmark List Response",
+            "body": "{\n  \"contents\": [{\n    \"uri\": \"evalhub://benchmarks\",\n    \"text\": \"[{\\\"name\\\": \\\"rag-faithfulness\\\", ...}, {\\\"name\\\": \\\"rag-relevance\\\", ...}]\"\n  }]\n}"
+          },
+          "num": 24
+        },
+        {
+          "text": "25. MEASURE: Agent calls submit_evaluation tool",
+          "mode": "arrow",
+          "from": "agent",
+          "to": "mcp_rbac_proxy",
+          "color": "#f0883e",
+          "glow": "mcp_service",
+          "fromRight": true,
+          "toLeft": true,
+          "inspector": {
+            "title": "MCP Tool Call — submit_evaluation",
+            "body": "{\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"submit_evaluation\",\n    \"arguments\": {\n      \"model_endpoint\": \"https://api.example.com/v1/chat\",\n      \"benchmarks\": [\"rag-faithfulness\", \"rag-relevance\"],\n      \"experiment\": {\n        \"name\": \"rag-v2-iteration-1\"\n      }\n    }\n  }\n}"
+          },
+          "num": 25
+        },
+        {
+          "text": "26. MCP kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "MCP RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i <verb> \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 26
+        },
+        {
+          "text": "27. RBAC proxy forwards to MCP Server",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "mcp",
+          "color": "#f0883e",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Forward to MCP Server",
+            "body": "Authenticated request forwarded\nto MCP Server on localhost:3001."
+          },
+          "num": 27
+        },
+        {
+          "text": "28. MCP Server calls EvalHub to submit job",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "rbac_proxy",
+          "color": "#58a6ff",
+          "glow": "evalhub_service",
+          "inspector": {
+            "title": "REST API Call — Submit Job",
+            "body": "POST /api/v1/jobs\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"model_endpoint\": \"https://api.example.com/v1/chat\",\n  \"benchmarks\": [\"rag-faithfulness\", \"rag-relevance\"],\n  \"experiment\": {\n    \"name\": \"rag-v2-iteration-1\",\n    \"temperature\": 0.3\n  }\n}"
+          },
+          "num": 28
+        },
+        {
+          "text": "29. EvalHub kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "EvalHub RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview:\n   oc auth can-i create \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Also checks mlflow.kubeflow.org/experiments.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 29
+        },
+        {
+          "text": "30. kube-rbac-proxy forwards to EvalHub API",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "api",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "RBAC Proxy Forward",
+            "body": "Authenticated request forwarded\nto EvalHub API on localhost:8080."
+          },
+          "num": 30
+        },
+        {
+          "text": "31. API stores job in PostgreSQL",
+          "mode": "arrow",
+          "from": "api",
+          "to": "postgres",
+          "color": "#58a6ff",
+          "inspector": {
+            "title": "Database Insert",
+            "body": "INSERT INTO jobs (\n  id, status, model_endpoint,\n  benchmarks, experiment_config\n) VALUES (\n  'job-abc123', 'PENDING',\n  'https://api.example.com/v1/chat',\n  '{\"rag-faithfulness\",\"rag-relevance\"}',\n  '{...}'\n);"
+          },
+          "num": 31
+        },
+        {
+          "text": "32. API dispatches to Runtime",
+          "mode": "arrow",
+          "from": "api",
+          "to": "runtime",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Dispatch to Runtime",
+            "body": "EvalHub API dispatches the job\nto the Runtime layer for K8s\nresource creation."
+          },
+          "num": 32
+        },
+        {
+          "text": "33. Runtime creates eval pod via K8s API",
+          "mode": "arrow",
+          "from": "runtime",
+          "to": "k8s_api",
+          "color": "#58a6ff",
+          "inspector": {
+            "title": "Create Kubernetes Resources",
+            "body": "Runtime calls Kubernetes API to create\nK8s Job with eval pod spec:\n- Init container (data download)\n- Eval adapter (benchmark runner)\n- Sidecar proxy (KEP-753)"
+          },
+          "num": 33
+        },
+        {
+          "text": "34. K8s API creates Eval Pod",
+          "mode": "arrow",
+          "from": "k8s_api",
+          "to": "evalpod",
+          "color": "#58a6ff",
+          "inspector": {
+            "title": "Pod Scheduling",
+            "body": "Kubernetes scheduler places the\neval pod on a suitable node."
+          },
+          "num": 34
+        },
+        {
+          "text": "35. API confirms job created to MCP",
+          "mode": "arrow",
+          "from": "api",
+          "to": "mcp",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Job Created Response",
+            "body": "HTTP 202 Accepted\n\n{\n  \"id\": \"job-abc123\",\n  \"status\": \"PENDING\",\n  \"benchmarks\": [\"rag-faithfulness\", \"rag-relevance\"],\n  \"created_at\": \"2026-06-04T10:30:00Z\"\n}"
+          },
+          "num": 35
+        },
+        {
+          "text": "36. MCP returns job ID to Agent",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "agent",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Tool Result",
+            "body": "{\n  \"content\": [{\n    \"type\": \"text\",\n    \"text\": \"{\\\"job_id\\\": \\\"job-abc123\\\", \\\"status\\\": \\\"PENDING\\\"}\"\n  }]\n}"
+          },
+          "num": 36
+        },
+        {
+          "text": "37. MEASURE: Agent polls get_job_status",
+          "mode": "arrow",
+          "from": "agent",
+          "to": "mcp_rbac_proxy",
+          "color": "#58a6ff",
+          "glow": "mcp_service",
+          "fromRight": true,
+          "toLeft": true,
+          "inspector": {
+            "title": "MCP Tool Call — get_job_status",
+            "body": "{\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"get_job_status\",\n    \"arguments\": { \"job_id\": \"job-abc123\" }\n  }\n}"
+          },
+          "num": 37
+        },
+        {
+          "text": "38. MCP kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "MCP RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i <verb> \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 38
+        },
+        {
+          "text": "39. RBAC proxy forwards to MCP Server",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "mcp",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Forward to MCP Server",
+            "body": "Authenticated request forwarded\nto MCP Server on localhost:3001."
+          },
+          "num": 39
+        },
+        {
+          "text": "40. MCP Server calls EvalHub for job status",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "rbac_proxy",
+          "color": "#58a6ff",
+          "glow": "evalhub_service",
+          "inspector": {
+            "title": "REST API Call — Job Status",
+            "body": "GET /api/v1/jobs/job-abc123\nAuthorization: Bearer <token>\n\nMCP Server queries job status\nfrom EvalHub API."
+          },
+          "num": 40
+        },
+        {
+          "text": "41. EvalHub kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "EvalHub RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview:\n   oc auth can-i get \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>"
+          },
+          "num": 41
+        },
+        {
+          "text": "42. kube-rbac-proxy forwards to EvalHub API",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "api",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "RBAC Proxy Forward",
+            "body": "GET /api/v1/jobs/job-abc123"
+          },
+          "num": 42
+        },
+        {
+          "text": "43. EvalHub API queries PostgreSQL for job status",
+          "mode": "arrow",
+          "from": "api",
+          "to": "postgres",
+          "color": "#58a6ff",
+          "inspector": {
+            "title": "Database Query — job status",
+            "body": "SELECT id, status, scores,\n       created_at, completed_at\nFROM jobs WHERE id = 'job-abc123'"
+          },
+          "num": 43
+        },
+        {
+          "text": "44. PostgreSQL returns job status data",
+          "mode": "arrow",
+          "from": "postgres",
+          "to": "api",
+          "color": "#3fb950",
+          "fromTop": true,
+          "toBottom": true,
+          "inspector": {
+            "title": "Database Response — job status",
+            "body": "PostgreSQL returns job status\ndata to the EvalHub API."
+          },
+          "num": 44
+        },
+        {
+          "text": "45. EvalHub API returns job status to MCP",
+          "mode": "arrow",
+          "from": "api",
+          "to": "mcp",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Job Status Response",
+            "body": "{\n  \"id\": \"job-abc123\",\n  \"status\": \"COMPLETED\",\n  \"scores\": {\n    \"rag-faithfulness\": 0.847,\n    \"rag-relevance\": 0.912\n  }\n}"
+          },
+          "num": 45
+        },
+        {
+          "text": "46. MCP returns progress to Agent",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "agent",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Tool Result — Job Status",
+            "body": "{\n  \"content\": [{\n    \"type\": \"text\",\n    \"text\": \"{\\\"job_id\\\": \\\"job-abc123\\\", \\\"status\\\": \\\"COMPLETED\\\", \\\"scores\\\": {\\\"rag-faithfulness\\\": 0.847, \\\"rag-relevance\\\": 0.912}}\"\n  }]\n}"
+          },
+          "num": 46
+        },
+        {
+          "text": "47. ITERATE: Agent analyzes results",
+          "mode": "lightup",
+          "target": "agent",
+          "badge": 47,
+          "inspector": {
+            "title": "Agent Analysis — ITERATE Phase",
+            "body": "Agent reasoning:\n- rag-faithfulness: 0.847 (below 0.90 target)\n- rag-relevance: 0.912 (meets target)\n\nDecision: Adjust retrieval context\nwindow and re-evaluate.\n\nNext: Compare with previous runs."
+          },
+          "num": 47
+        },
+        {
+          "text": "48. COMPARE: Agent invokes compare_runs prompt",
+          "mode": "arrow",
+          "from": "agent",
+          "to": "mcp_rbac_proxy",
+          "color": "#d2a8ff",
+          "glow": "mcp_service",
+          "fromRight": true,
+          "toLeft": true,
+          "inspector": {
+            "title": "MCP Prompt — compare_runs",
+            "body": "{\n  \"method\": \"prompts/get\",\n  \"params\": {\n    \"name\": \"compare_runs\",\n    \"arguments\": {\n      \"job_ids\": [\"job-abc123\", \"job-xyz789\"]\n    }\n  }\n}"
+          },
+          "num": 48
+        },
+        {
+          "text": "49. MCP kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "MCP RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i <verb> \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 49
+        },
+        {
+          "text": "50. RBAC proxy forwards to MCP Server",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "mcp",
+          "color": "#d2a8ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Forward to MCP Server",
+            "body": "Authenticated request forwarded\nto MCP Server on localhost:3001."
+          },
+          "num": 50
+        },
+        {
+          "text": "51. MCP Server calls EvalHub for run comparison data",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "rbac_proxy",
+          "color": "#58a6ff",
+          "glow": "evalhub_service",
+          "inspector": {
+            "title": "REST API Call — run comparison data",
+            "body": "GET /api/v1/jobs?ids=job-abc123,job-xyz789\nAuthorization: Bearer <token>\n\nMCP Server fetches run comparison data\nfrom EvalHub API via kube-rbac-proxy."
+          },
+          "num": 51
+        },
+        {
+          "text": "52. EvalHub kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "inspector": {
+            "title": "EvalHub RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i get \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          },
+          "num": 52
+        },
+        {
+          "text": "53. kube-rbac-proxy forwards to EvalHub API",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "api",
+          "color": "#58a6ff",
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "RBAC Proxy Forward",
+            "body": "Authenticated request forwarded\nto EvalHub API on localhost:8080.\n\nGET /api/v1/jobs?ids=job-abc123,job-xyz789"
+          },
+          "num": 53
+        },
+        {
+          "text": "54. EvalHub API queries PostgreSQL for run comparison",
+          "mode": "arrow",
+          "from": "api",
+          "to": "postgres",
+          "color": "#58a6ff",
+          "inspector": {
+            "title": "Database Query — run comparison",
+            "body": "SELECT id, status, scores,\n       experiment_config\nFROM jobs\nWHERE id IN ('job-abc123', 'job-xyz789')"
+          },
+          "num": 54
+        },
+        {
+          "text": "55. PostgreSQL returns run comparison data",
+          "mode": "arrow",
+          "from": "postgres",
+          "to": "api",
+          "color": "#3fb950",
+          "fromTop": true,
+          "toBottom": true,
+          "inspector": {
+            "title": "Database Response — run comparison",
+            "body": "PostgreSQL returns run comparison\ndata to the EvalHub API."
+          },
+          "num": 55
+        },
+        {
+          "text": "56. EvalHub API returns run comparison data to MCP",
+          "mode": "arrow",
+          "from": "api",
+          "to": "mcp",
+          "color": "#3fb950",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Run Comparison Data Response",
+            "body": "HTTP 200 OK\n\nEvalHub API returns run comparison data\ndata to the MCP Server."
+          },
+          "num": 56
+        },
+        {
+          "text": "57. MCP returns comparison guidance to Agent",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "agent",
+          "color": "#d2a8ff",
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Comparison Response",
+            "body": "Run Comparison:\n\njob-abc123 (iteration-1):\n  faithfulness: 0.847\n  relevance: 0.912\n\njob-xyz789 (baseline):\n  faithfulness: 0.792\n  relevance: 0.881\n\nDelta: +6.9% faithfulness, +3.5% relevance\nRecommendation: Continue iterating."
+          },
+          "num": 57
+        }
+      ]
+    },
+    "submit_monitor": {
+      "label": "Submit & Monitor",
+      "steps": [
+        {
+          "text": "1. Agent calls submit_evaluation tool",
+          "mode": "arrow",
+          "from": "agent",
+          "to": "mcp_rbac_proxy",
+          "glow": "mcp_service",
+          "color": "#58a6ff",
+          "num": 1,
+          "fromRight": true,
+          "toLeft": true,
+          "inspector": {
+            "title": "MCP Tool Call — submit_evaluation",
+            "body": "{\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"submit_evaluation\",\n    \"arguments\": {\n      \"model_endpoint\": \"https://api.example.com/v1/chat\",\n      \"collection\": \"safety-suite\",\n      \"experiment\": {\n        \"name\": \"safety-check-v3\"\n      }\n    }\n  }\n}"
+          }
+        },
+        {
+          "text": "2. MCP kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "num": 2,
+          "inspector": {
+            "title": "MCP RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i create \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          }
+        },
+        {
+          "text": "3. RBAC proxy forwards to MCP Server",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "mcp",
+          "color": "#58a6ff",
+          "num": 3,
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Forward to MCP Server",
+            "body": "Authenticated request forwarded\nto MCP Server on localhost:3001."
+          }
+        },
+        {
+          "text": "4. MCP Server calls EvalHub kube-rbac-proxy",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "rbac_proxy",
+          "color": "#58a6ff",
+          "num": 4,
+          "glow": "evalhub_service",
+          "inspector": {
+            "title": "REST API Call — Submit Job",
+            "body": "POST /api/v1/jobs\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"model_endpoint\": \"https://api.example.com/v1/chat\",\n  \"collection\": \"safety-suite\",\n  \"experiment\": { \"name\": \"safety-check-v3\" }\n}"
+          }
+        },
+        {
+          "text": "5. EvalHub kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "num": 5,
+          "inspector": {
+            "title": "EvalHub RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i create \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Namespace from X-Tenant header.\n   Decisions cached (allow: 5m, deny: 30s)"
+          }
+        },
+        {
+          "text": "6. kube-rbac-proxy forwards to EvalHub API",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "api",
+          "color": "#58a6ff",
+          "num": 6,
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "RBAC Proxy Forward",
+            "body": "Authenticated request forwarded\nto EvalHub API on localhost:8080\nwith X-Forwarded-User header."
+          }
+        },
+        {
+          "text": "7. API creates job",
+          "mode": "lightup",
+          "target": "api",
+          "badge": 7,
+          "inspector": {
+            "title": "Job Creation",
+            "body": "EvalHub API processes request:\n- Validates model endpoint\n- Resolves collection to benchmarks\n- Creates job record in PostgreSQL\n- Returns job ID: job-def456\n- Status: PENDING"
+          },
+          "num": 7
+        },
+        {
+          "text": "8. API dispatches to Runtime",
+          "mode": "arrow",
+          "from": "api",
+          "to": "runtime",
+          "color": "#58a6ff",
+          "num": 8,
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Dispatch to Runtime",
+            "body": "EvalHub API dispatches the job\nto the Runtime layer for K8s\nresource creation."
+          }
+        },
+        {
+          "text": "9. Runtime creates eval pod via K8s API",
+          "mode": "arrow",
+          "from": "runtime",
+          "to": "k8s_api",
+          "color": "#58a6ff",
+          "num": 9,
+          "inspector": {
+            "title": "Create Kubernetes Resources",
+            "body": "Runtime calls Kubernetes API to create\nK8s Job with eval pod spec:\n- Init container (data download)\n- Eval adapter (benchmark runner)\n- Sidecar proxy (KEP-753)"
+          }
+        },
+        {
+          "text": "10. K8s API creates Eval Pod",
+          "mode": "arrow",
+          "from": "k8s_api",
+          "to": "evalpod",
+          "color": "#58a6ff",
+          "num": 10,
+          "inspector": {
+            "title": "Pod Scheduling",
+            "body": "Kubernetes scheduler places the\neval pod on a suitable node.\n\nPod starts init container first,\nthen eval adapter + sidecar."
+          }
+        },
+        {
+          "text": "11. API confirms job created to MCP",
+          "mode": "arrow",
+          "from": "api",
+          "to": "mcp",
+          "color": "#3fb950",
+          "num": 11,
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Job Created Response",
+            "body": "HTTP 202 Accepted\n\n{\n  \"id\": \"job-def456\",\n  \"status\": \"PENDING\",\n  \"collection\": \"safety-suite\"\n}"
+          }
+        },
+        {
+          "text": "12. MCP returns job ID to Agent",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "agent",
+          "color": "#3fb950",
+          "num": 12,
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Tool Result",
+            "body": "{\n  \"content\": [{\n    \"type\": \"text\",\n    \"text\": \"{\\\"job_id\\\": \\\"job-def456\\\", \\\"status\\\": \\\"PENDING\\\"}\"\n  }]\n}"
+          }
+        },
+        {
+          "text": "13. Results logged to MLflow",
+          "mode": "arrow",
+          "from": "evalpod",
+          "to": "mlflow",
+          "color": "#3fb950",
+          "num": 13,
+          "inspector": {
+            "title": "MLflow Logging",
+            "body": "Experiment: safety-check-v3\nRun ID: run-789xyz\n\nMetrics logged:\n  toxicity_score: 0.023\n  bias_score: 0.045\n  jailbreak_resistance: 0.967\n  content_safety: 0.991\n\nArtifacts: detailed_report.json"
+          }
+        },
+        {
+          "text": "14. Agent polls get_job_status",
+          "mode": "arrow",
+          "from": "agent",
+          "to": "mcp_rbac_proxy",
+          "glow": "mcp_service",
+          "color": "#58a6ff",
+          "num": 14,
+          "fromRight": true,
+          "toLeft": true,
+          "yOff": 15,
+          "inspector": {
+            "title": "MCP Tool Call — get_job_status",
+            "body": "{\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"get_job_status\",\n    \"arguments\": {\n      \"job_id\": \"job-def456\"\n    }\n  }\n}"
+          }
+        },
+        {
+          "text": "15. MCP kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "num": 15,
+          "inspector": {
+            "title": "MCP RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview (namespace-scoped):\n   oc auth can-i get \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>\n\n   Decisions cached (allow: 5m, deny: 30s)"
+          }
+        },
+        {
+          "text": "16. RBAC proxy forwards to MCP Server",
+          "mode": "arrow",
+          "from": "mcp_rbac_proxy",
+          "to": "mcp",
+          "color": "#58a6ff",
+          "num": 16,
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "Forward to MCP Server",
+            "body": "Authenticated request forwarded\nto MCP Server on localhost:3001."
+          }
+        },
+        {
+          "text": "17. MCP Server calls EvalHub for job status",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "rbac_proxy",
+          "color": "#58a6ff",
+          "num": 17,
+          "glow": "evalhub_service",
+          "inspector": {
+            "title": "REST API Call — Job Status",
+            "body": "GET /api/v1/jobs/job-def456\nAuthorization: Bearer <token>\n\nMCP Server queries job status\nfrom EvalHub API via kube-rbac-proxy."
+          }
+        },
+        {
+          "text": "18. EvalHub kube-rbac-proxy calls K8s API (TokenReview + SAR)",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "k8s_api",
+          "color": "#f0883e",
+          "num": 18,
+          "inspector": {
+            "title": "EvalHub RBAC Proxy — SAR Check via K8s API",
+            "body": "kube-rbac-proxy calls Kubernetes API:\n\n1. TokenReview: Validates bearer token\n\n2. SubjectAccessReview:\n   oc auth can-i get \\\n     evaluations.trustyai.opendatahub.io \\\n     -n <namespace>"
+          }
+        },
+        {
+          "text": "19. kube-rbac-proxy forwards to EvalHub API",
+          "mode": "arrow",
+          "from": "rbac_proxy",
+          "to": "api",
+          "color": "#58a6ff",
+          "num": 19,
+          "fromBottom": true,
+          "toTop": true,
+          "inspector": {
+            "title": "RBAC Proxy Forward",
+            "body": "GET /api/v1/jobs/job-def456"
+          }
+        },
+        {
+          "text": "20. EvalHub API returns job status to MCP",
+          "mode": "arrow",
+          "from": "api",
+          "to": "mcp",
+          "color": "#3fb950",
+          "num": 20,
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Job Status Response",
+            "body": "{\n  \"id\": \"job-def456\",\n  \"status\": \"COMPLETED\",\n  \"scores\": {\n    \"toxicity\": 0.023,\n    \"bias\": 0.045,\n    \"jailbreak_resistance\": 0.967,\n    \"content_safety\": 0.991\n  }\n}"
+          }
+        },
+        {
+          "text": "21. MCP returns final results to Agent",
+          "mode": "arrow",
+          "from": "mcp",
+          "to": "agent",
+          "color": "#3fb950",
+          "num": 21,
+          "fromLeft": true,
+          "toRight": true,
+          "inspector": {
+            "title": "Final Results",
+            "body": "{\n  \"content\": [{\n    \"type\": \"text\",\n    \"text\": \"{\\\"job_id\\\": \\\"job-def456\\\", \\\"status\\\": \\\"COMPLETED\\\", \\\"scores\\\": {\\\"toxicity\\\": 0.023, \\\"bias\\\": 0.045, \\\"jailbreak_resistance\\\": 0.967, \\\"content_safety\\\": 0.991}}\"\n  }]\n}"
+          }
+        }
+      ]
+    }
+  },
+  "legend": [
+    {
+      "label": "MCP Tool Call",
+      "color": "#58a6ff"
+    },
+    {
+      "label": "Response",
+      "color": "#3fb950"
+    },
+    {
+      "label": "Evaluation / Auth",
+      "color": "#f0883e"
+    },
+    {
+      "label": "MCP Prompt",
+      "color": "#d2a8ff"
+    }
+  ],
+  "flowOrder": [
+    "edd_workflow",
+    "submit_monitor"
+  ],
+  "defaultFlow": "edd_workflow"
+};
+
+const viz = new FlowStory(document.getElementById('fs-canvas'), {
+  stepsContainer: document.getElementById('fs-steps-container'),
+  inspectorTitle: document.getElementById('fs-inspector-title'),
+  inspectorContent: document.getElementById('fs-inspector-content'),
+  overlay: document.getElementById('fs-overlay'),
+  overlayCard: document.getElementById('fs-overlay-card'),
+  overlayTitle: document.getElementById('fs-overlay-title'),
+  overlayDesc: document.getElementById('fs-overlay-desc'),
+  overlayDetails: document.getElementById('fs-overlay-details'),
+  overlayAccent: document.getElementById('fs-overlay-accent'),
+  overlayClose: document.getElementById('fs-overlay-close'),
+  overlayResume: document.getElementById('fs-overlay-resume'),
+  highlightBox: document.getElementById('fs-highlight-box'),
+  brand: document.getElementById('fs-brand'),
+  title: document.getElementById('fs-title'),
+  legend: document.getElementById('fs-legend'),
+  flowSelect: document.getElementById('fs-flow-select'),
+  playBtn: document.getElementById('fs-play'),
+  speedBtn: document.getElementById('fs-speed'),
+  loopBtn: document.getElementById('fs-loop'),
+  resetBtn: document.getElementById('fs-reset'),
+  themeBtn: document.getElementById('fs-theme'),
+});
+window.__flowstory = viz;
+await viz.load(diagram);
+viz.state.loopMode = true;
+viz.play();
+</script>
+</body>
+</html>
