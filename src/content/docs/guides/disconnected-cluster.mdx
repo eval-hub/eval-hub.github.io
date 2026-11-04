@@ -19,7 +19,7 @@ Each S3 prefix below is an example of a **narrow bundle for one benchmark entry*
 
 | Collection | Benchmark / provider | Example `test_data_ref.s3.key` | Required files under `/test_data` |
 |---|---|---|---|
-| Coding v1 | `lcb:codegeneration_v6` / LightEval | `disconnected/coding-v1/lcb-codegeneration-v6/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; stage a tokenizer only if the selected model/task configuration uses one |
+| Coding v1 | `lcb:codegeneration_v6` / LightEval | `disconnected/coding-v1/lcb-codegeneration-v6/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; NLTK `nltk_data/tokenizers/punkt/` and `punkt_tab/`; stage a model tokenizer only if the selected model/task configuration uses one |
 | Document Understanding v1 | `common-words-extraction` / RULER | `disconnected/document-understanding-v1/common-words-extraction/` | `english_words.json`; complete HF tokenizer at `tokenizer/` |
 | Document Understanding v1 | `frequency-words-extraction` / RULER | `disconnected/document-understanding-v1/frequency-words-extraction/` | Complete HF tokenizer at `tokenizer/`; no task dataset file for the curated defaults |
 | Document Understanding v1 | `qa-squad` / RULER | `disconnected/document-understanding-v1/qa-squad/` | `squad.json`; complete HF tokenizer at `tokenizer/` |
@@ -32,9 +32,9 @@ Each S3 prefix below is an example of a **narrow bundle for one benchmark entry*
 | Instruction and Output Reliability v1 | `ifbench` / IFBench | No data prefix required | Dataset is included in the supported adapter image; target endpoint must be reachable |
 | Instruction and Output Reliability v1 | `jsonschema_bench_easy` / LM Evaluation Harness | `disconnected/instruction-output-v1/jsonschema-bench-easy/` | `epfl-dlab--JSONSchemaBench--Github_easy/` Arrow bundle and `tokenizer/` |
 | Instruction and Output Reliability v1 | `followbench` / FollowBench | No data prefix required | Dataset is included in the supported adapter image; target and configured judge endpoints must be reachable |
-| Knowledge and Reasoning v1 | `gpqa:diamond` / LightEval | `disconnected/knowledge-reasoning-v1/gpqa-diamond/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; stage a tokenizer only if the selected model/task configuration uses one |
+| Knowledge and Reasoning v1 | `gpqa:diamond` / LightEval | `disconnected/knowledge-reasoning-v1/gpqa-diamond/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; NLTK `nltk_data/tokenizers/punkt/` and `punkt_tab/`; stage a model tokenizer only if the selected model/task configuration uses one |
 | Knowledge and Reasoning v1 | `inspect/hle` / Inspect | `disconnected/knowledge-reasoning-v1/inspect-hle/` | Pinned HLE Hugging Face cache, including dataset and referenced Hub/Xet files; preserve cache layout |
-| Knowledge and Reasoning v1 | `math_500` / LightEval | `disconnected/knowledge-reasoning-v1/math-500/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; stage a tokenizer only if the selected model/task configuration uses one |
+| Knowledge and Reasoning v1 | `math_500` / LightEval | `disconnected/knowledge-reasoning-v1/math-500/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; NLTK `nltk_data/tokenizers/punkt/` and `punkt_tab/`; stage a model tokenizer only if the selected model/task configuration uses one |
 | Multimodal v1 | `inspect/docvqa` / Inspect | `disconnected/multimodal-v1/inspect-docvqa/` | Pinned DocVQA Hugging Face cache, including the image data and all referenced Hub/Xet files; preserve cache layout |
 | Safety and Ethical Principles v1 | `toxigen` / LM Evaluation Harness | `disconnected/safety-ethical-principles-v1/toxigen/` | `skg--toxigen-data--annotated/` Arrow bundle and `tokenizer/` |
 | Safety and Ethical Principles v1 | `ethics_cm` / LM Evaluation Harness | `disconnected/safety-ethical-principles-v1/ethics-cm/` | `EleutherAI--hendrycks_ethics--commonsense/` Arrow bundle and `tokenizer/` |
@@ -314,7 +314,9 @@ For the default tokenizer, verify that the uploaded prefix contains the tokenize
 
 The disconnected LightEval adapter uses the Hugging Face cache and dataset cache staged by the selected benchmark's `test_data_ref`. It also imports `tinyBenchmarks.pkl` eagerly while loading LightEval task definitions, so this file must be present even when the selected task does not use TinyBenchmarks.
 
-For each LightEval benchmark in the matrix, prepare a separate bundle using the same LightEval adapter image and task configuration as the deployed job. Preserve the cache layout produced by Hugging Face:
+Use a LightEval adapter image that provides `ensure_nltk_offline_resources`. The staging example below imports this function before loading task definitions. If the import fails, the image does not contain staged NLTK support; update the adapter image and repeat the staging step.
+
+For each LightEval benchmark in the matrix, prepare a separate bundle using the same LightEval adapter image and task configuration as the deployed job. The image does not download NLTK data during its build, and a disconnected job does not download it at runtime. Every LightEval bundle must therefore include NLTK `punkt` and `punkt_tab`, even when the benchmark itself does not tokenize sentences. The task registry imports IFEval, which uses those resources. Preserve the cache layout produced by Hugging Face:
 
 ```text
 /test_data/
@@ -322,12 +324,18 @@ For each LightEval benchmark in the matrix, prepare a separate bundle using the 
   hub/                         # selected task's Hub snapshots and metadata
   lighteval/
     tinyBenchmarks.pkl         # pinned registry asset
-  tokenizer/                   # only when the selected model/task configuration uses a local tokenizer
+  nltk_data/
+    tokenizers/
+      punkt/
+        english.pickle         # complete punkt package, not an empty directory
+      punkt_tab/
+        english/               # complete English punkt_tab files
+  tokenizer/                   # optional model tokenizer; distinct from NLTK data
 ```
 
-The adapter sets its Hugging Face cache variables to the staged paths and disables Hub downloads. It mirrors the read-only datasets cache metadata into a writable job cache; keep the staged source intact. Do not include caches for unrelated tasks in the benchmark prefix. The LCB v6, GPQA Diamond, and MATH-500 endpoint jobs in this matrix use the task-specific datasets and `tinyBenchmarks.pkl`; they do not require a separate tokenizer bundle unless the selected model/task configuration uses a local tokenizer. GPQA Diamond may require accepted gated-repository terms and an authenticated token while staging. The token must not be placed in the bundle or the evaluation pod.
+The adapter sets its Hugging Face cache variables to the staged paths and disables Hub downloads. It also selects the staged NLTK path and validates it before importing the task registry, using only the staged files rather than an image-level fallback. It mirrors the read-only datasets cache metadata into a writable job cache; keep the staged source intact. Do not include caches for unrelated tasks in the benchmark prefix. The LCB v6, GPQA Diamond, and MATH-500 endpoint jobs in this matrix use the task-specific datasets, `tinyBenchmarks.pkl`, and NLTK data; they do not require a separate model tokenizer unless the selected model/task configuration uses one. GPQA Diamond may require accepted gated-repository terms and an authenticated token while staging. The token must not be placed in the bundle or the evaluation pod.
 
-To prepare one task cache, use a connected environment with the same LightEval adapter image and task registry as the deployed job. Put the pinned `tinyBenchmarks.pkl` file at the package's task-registry location before loading task definitions, then run the following from the adapter's application directory. Repeat with a fresh bundle directory and the exact task ID for each LightEval benchmark:
+To prepare one task cache, use a connected environment with the same LightEval adapter image and task registry as the deployed job. Download NLTK data into the bundle **before** importing task definitions. Put the pinned `tinyBenchmarks.pkl` file at the package's task-registry location before loading task definitions, then run the following from the adapter's application directory. Repeat with a fresh bundle directory and the exact task ID for each LightEval benchmark:
 
 ```bash
 TASK_NAME=gpqa:diamond
@@ -340,13 +348,18 @@ curl -fsSL \
 HF_HOME="$BUNDLE" \
 HF_HUB_CACHE="$BUNDLE/hub" \
 HF_DATASETS_CACHE="$BUNDLE/datasets" \
+NLTK_DATA="$BUNDLE/nltk_data" \
 TASK_NAME="$TASK_NAME" \
 python - <<'PY'
 import os
 
-from _hf_offline import ensure_lighteval_registry_assets
+import nltk
+from _hf_offline import ensure_lighteval_registry_assets, ensure_nltk_offline_resources
 
 root = os.environ["HF_HOME"]
+for resource in ("punkt", "punkt_tab"):
+    nltk.download(resource, download_dir=os.environ["NLTK_DATA"], raise_on_error=True)
+ensure_nltk_offline_resources(root)
 ensure_lighteval_registry_assets(root)
 
 from datasets import load_dataset
@@ -370,7 +383,7 @@ print(f"Staged {task_name}: {task.hf_repo}/{task.hf_subset or 'default'}")
 PY
 ```
 
-Authenticate to gated Hugging Face repositories before this step. Do not print `HF_TOKEN`; keep it in the connected staging shell or a protected staging Secret, and never upload it with the bundle. Upload only the resulting `hub/`, `datasets/`, and `lighteval/tinyBenchmarks.pkl` paths under the benchmark's prefix.
+Authenticate to gated Hugging Face repositories before this step. Do not print `HF_TOKEN`; keep it in the connected staging shell or a protected staging Secret, and never upload it with the bundle. Upload the resulting `hub/`, `datasets/`, `lighteval/tinyBenchmarks.pkl`, and complete `nltk_data/tokenizers/punkt/` and `punkt_tab/` directories under **each** LightEval benchmark's prefix. Include `tokenizer/` only if the model/task configuration requires a local model tokenizer. The adapter sets `NLTK_DATA` automatically when it finds the staged directory in `/test_data`.
 
 Use the `test_data_ref` prefix from the matrix on each LightEval benchmark entry. For example:
 
@@ -389,6 +402,8 @@ Use the `test_data_ref` prefix from the matrix on each LightEval benchmark entry
 ```
 
 `tinyBenchmarks.pkl` is an auxiliary framework asset, not a dataset that can be omitted based on the selected benchmark. Include the exact file required by the LightEval version in the deployed adapter image. If it is missing, LightEval may try to fetch it during import despite Hugging Face offline flags.
+
+If `punkt` or `punkt_tab` is missing, empty, or incomplete, the adapter fails before loading the LightEval task registry with an error naming `/test_data/nltk_data/tokenizers`. Verify that `punkt/english.pickle` is non-empty and that `punkt_tab/english/` contains the files from the same NLTK version used in the deployed image. An empty directory does not satisfy this check, even if NLTK data happens to exist elsewhere in the image. Re-stage the affected benchmark bundle and rerun its job; the disconnected evaluation pod will not attempt a download.
 
 ## RULER
 
