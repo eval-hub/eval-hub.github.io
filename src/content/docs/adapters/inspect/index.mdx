@@ -19,7 +19,7 @@ Dish (research-preview scaffold testing) is available through `task_args` pass-t
 
 ### Key Features
 
-- **Multi-role model routing**: Target, auditor, judge, scenarios, and realism roles can each use a different OpenAI-compatible or Anthropic endpoint
+- **Multi-role model routing**: Target, auditor, judge, scenarios, and realism roles can each use a different OpenAI-compatible endpoint through Secret-backed sidecar routing
 - **Alignment auditing**: Petri seed libraries and Bloom scenario generation with 38-dimension judge scoring
 - **Broad benchmark coverage**: 75 benchmarks spanning Petri audits, Bloom suites, and inspect-evals (safety, cyber, coding, math, knowledge, agents)
 - **Custom tasks**: `inspect/custom` runs any Inspect AI task via the `task` parameter
@@ -41,12 +41,24 @@ The adapter follows the eval-hub framework adapter pattern:
 
 1. **JobSpec loading**: Job configuration auto-loaded from `/meta/job.json` (or `EVALHUB_JOB_SPEC_PATH` in local mode)
 2. **Mode detection**: `benchmark_id` prefix selects Petri, Bloom, or Standard execution
-3. **Model / credential routing**: Builds role model specs from `model.url`, global env vars, and per-role overrides
+3. **Model / credential routing**: Reads role connections from the model-auth Secret and builds model specs using projected sidecar URLs and credential references
 4. **Bloom prepare** (Bloom only): Runs `bloom init` and `bloom scenarios` unless a pre-built `behavior_dir` is supplied
 5. **Inspect execution**: Invokes `inspect eval` with the resolved task, models, and parameters
 6. **Result mapping**: Parses Inspect logs into `EvaluationResult` metrics and an aggregate score
 7. **Callback-based communication**: Progress and results are reported to the eval-hub sidecar
 8. **Artifact persistence**: Logs and summaries can be pushed as OCI artifacts
+
+## Model connection migration
+
+**Do not put model URLs or API keys in API payload `parameters`.** Keep the
+primary URL in `model.url`, use `model.auth.secret_ref`, and configure auxiliary
+connections with `<role>_api-key` / `<role>_url` pairs in that Secret. Legacy
+connection parameters are ignored by the migrated adapter, including nested
+framework overrides; model selection and generation settings remain parameters.
+For existing Inspect deployments, update the adapter image and matching provider
+catalog together. See [Configuration](/adapters/inspect/configuration/#migration-for-existing-inspect-jobs)
+for role mappings, compatibility behavior, protocol limits, and image availability,
+and [Examples](/adapters/inspect/examples/) for complete submissions.
 
 ## Quick Start
 

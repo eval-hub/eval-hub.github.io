@@ -3,6 +3,12 @@ title: "LM Evaluation Harness Configuration"
 description: "Configure LM Evaluation Harness benchmarks in EvalHub"
 ---
 
+## Model authentication
+
+For OpenAI-compatible API backends, use `model.url` and the model-auth Secret;
+keep model URLs and API keys out of `parameters`. Follow the shared
+[Model Authentication guide](/guides/model-authentication/) for setup and client usage.
+
 ## Evaluation job example
 
 ```yaml
