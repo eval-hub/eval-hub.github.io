@@ -3,29 +3,101 @@ title: "Disconnected Cluster Evaluation"
 description: "Prepare benchmark assets and model dependencies for disconnected EvalHub evaluations."
 ---
 
-This guide gives detailed staging instructions for LM Evaluation Harness and Inspect AI's BFCL benchmark, and summarizes offline dependencies for other benchmarks. Evaluation pods cannot reach the public internet; staged assets are made available under `/test_data` through EvalHub's `test_data_ref` mechanism. See [Using Custom Data](/guides/custom-data/) for supported asset sources and general init-container behavior.
+This guide explains how to stage benchmark data for disconnected evaluation. EvalHub's init container copies each benchmark's `test_data_ref` bundle to `/test_data`; the adapter then reads files from the paths its framework expects. The instructions cover the nine curated collections and 24 benchmark entries in the matrix below. They do not imply that every curated collection or every benchmark supported by an adapter works offline.
 
 ## Prerequisites
 
-- **Model endpoint** (`model.url`) is reachable from inside the cluster — no public internet required.
-- **EvalHub job images** (adapter, init container, sidecar) are pullable from your internal registry.
-- For a fully disconnected run, use an S3-compatible store such as **MinIO** that is reachable from the job namespace, or a PVC that already contains the staged assets. Direct `test_data_ref.git` and `test_data_ref.hf` references are fetched by the init container when the job starts, so they still require connectivity to their source (and Git URLs must pass EvalHub's URL validation). See [Using Custom Data](/guides/custom-data/).
-- **No public internet from evaluation pods.** Pre-stage each selected benchmark's external datasets and support files in the layout its adapter expects. The model endpoint must be reachable from the job, and any asset store used by the init container must be reachable by that container.
+- **Target and judge endpoints** must be reachable from the evaluation namespace. Disconnected evaluation still sends inference requests to these services.
+- **Adapter, init-container, and sidecar images** must be available from a registry reachable by the cluster.
+- **Staged assets** must be reachable by the init container from the job namespace. Use an internal S3-compatible store such as MinIO, or a PVC that already contains the files.
+- **Stage assets while connected.** The staging workstation or preparation environment may need Internet access and Hugging Face access. The evaluation pod itself does not need public Internet.
+- A `test_data_ref.hf` or `test_data_ref.git` source is fetched when the job starts. It is not an offline source unless the referenced service is reachable inside the cluster. Use S3/PVC for a disconnected cluster.
 
-## Benchmark dependencies and offline support
+## Curated benchmark asset matrix
 
-Offline support depends on the benchmark, adapter, and deployed image. Use the exact adapter image and framework version deployed in the cluster when preparing assets.
+Each S3 prefix below is an example of a **narrow bundle for one benchmark entry**. Place the listed paths at the root of that prefix; EvalHub mounts that root at `/test_data`. The table uses the current curated collection configs and the disconnected asset preparation used by the integration test.
 
-| Benchmark / adapter | What to stage or make reachable | Offline notes |
-|---|---|---|
-| LM Evaluation Harness | Stage the exact dataset bundle and all tokenizer files compatible with the served model. | Hugging Face access, including gated-repository access, is needed on the connected staging machine only. Each benchmark that uses staged data needs its own `test_data_ref`. See [LM Evaluation Harness](#lm-evaluation-harness). |
-| Inspect / BFCL | Stage the complete `BFCL/` cache for every selected category, including the `simple_python` sentinel data file and category-specific support files. | The staged tree must appear at `/test_data/BFCL`. See [Inspect AI: BFCL](#inspect-ai-bfcl). |
-| Inspect / DocVQA | Stage the Hugging Face dataset/cache and DocVQA image assets. | The served model endpoint must be reachable from the job and accept image inputs. |
-| Inspect / CyberSecEval 2 Prompt Injection | Stage the pinned GitHub dataset cache in the layout expected by the deployed Inspect-Evals version. | Configure a reachable judge endpoint and credentials through the referenced Secret. Verify the pinned image consumes the staged cache; mounting files does not redirect an arbitrary runtime download. |
-| IFBench / FollowBench | Benchmark data is included in the supported adapter images. | Use images that contain these assets. If FollowBench is configured with a judge, its endpoint must be reachable in-cluster and its credentials configured. |
-| RULER / LightEval-backed benchmarks | No staged-data instructions are available for these adapters. | They do not currently consume EvalHub `test_data_ref` assets, so mirroring their files alone does not make these runs work offline. |
+| Collection | Benchmark / provider | Example `test_data_ref.s3.key` | Required files under `/test_data` |
+|---|---|---|---|
+| Coding v1 | `lcb:codegeneration_v6` / LightEval | `disconnected/coding-v1/lcb-codegeneration-v6/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; stage a tokenizer only if the selected model/task configuration uses one |
+| Document Understanding v1 | `common-words-extraction` / RULER | `disconnected/document-understanding-v1/common-words-extraction/` | `english_words.json`; complete HF tokenizer at `tokenizer/` |
+| Document Understanding v1 | `frequency-words-extraction` / RULER | `disconnected/document-understanding-v1/frequency-words-extraction/` | Complete HF tokenizer at `tokenizer/`; no task dataset file for the curated defaults |
+| Document Understanding v1 | `qa-squad` / RULER | `disconnected/document-understanding-v1/qa-squad/` | `squad.json`; complete HF tokenizer at `tokenizer/` |
+| Document Understanding v1 | `qa-hotpotqa` / RULER | `disconnected/document-understanding-v1/qa-hotpotqa/` | `hotpotqa.json`; complete HF tokenizer at `tokenizer/` |
+| Document Understanding v1 | `niah-single-essay` / RULER | `disconnected/document-understanding-v1/niah-single-essay/` | `PaulGrahamEssays.json`; complete HF tokenizer at `tokenizer/` |
+| Document Understanding v1 | `variable-tracking` / RULER | `disconnected/document-understanding-v1/variable-tracking/` | Complete HF tokenizer at `tokenizer/`; no task dataset file for the curated defaults |
+| Fairness and Bias v1 | `winogender` / LM Evaluation Harness | `disconnected/fairness-bias-v1/winogender/` | `oskarvanderwal--winogender--all/` Arrow bundle and `tokenizer/` |
+| Fairness and Bias v1 | `crows_pairs_english` / LM Evaluation Harness | `disconnected/fairness-bias-v1/crows-pairs-english/` | `jannalu--crows_pairs_multilingual--english/` Arrow bundle and `tokenizer/` |
+| Fairness and Bias v1 | `bbq` / LM Evaluation Harness | `disconnected/fairness-bias-v1/bbq/` | `oskarvanderwal--bbq--All/` Arrow bundle and `tokenizer/` |
+| Instruction and Output Reliability v1 | `ifbench` / IFBench | No data prefix required | Dataset is included in the supported adapter image; target endpoint must be reachable |
+| Instruction and Output Reliability v1 | `jsonschema_bench_easy` / LM Evaluation Harness | `disconnected/instruction-output-v1/jsonschema-bench-easy/` | `epfl-dlab--JSONSchemaBench--Github_easy/` Arrow bundle and `tokenizer/` |
+| Instruction and Output Reliability v1 | `followbench` / FollowBench | No data prefix required | Dataset is included in the supported adapter image; target and configured judge endpoints must be reachable |
+| Knowledge and Reasoning v1 | `gpqa:diamond` / LightEval | `disconnected/knowledge-reasoning-v1/gpqa-diamond/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; stage a tokenizer only if the selected model/task configuration uses one |
+| Knowledge and Reasoning v1 | `inspect/hle` / Inspect | `disconnected/knowledge-reasoning-v1/inspect-hle/` | Pinned HLE Hugging Face cache, including dataset and referenced Hub/Xet files; preserve cache layout |
+| Knowledge and Reasoning v1 | `math_500` / LightEval | `disconnected/knowledge-reasoning-v1/math-500/` | Task-specific Hugging Face `datasets/` and `hub/` caches; `lighteval/tinyBenchmarks.pkl`; stage a tokenizer only if the selected model/task configuration uses one |
+| Multimodal v1 | `inspect/docvqa` / Inspect | `disconnected/multimodal-v1/inspect-docvqa/` | Pinned DocVQA Hugging Face cache, including the image data and all referenced Hub/Xet files; preserve cache layout |
+| Safety and Ethical Principles v1 | `toxigen` / LM Evaluation Harness | `disconnected/safety-ethical-principles-v1/toxigen/` | `skg--toxigen-data--annotated/` Arrow bundle and `tokenizer/` |
+| Safety and Ethical Principles v1 | `ethics_cm` / LM Evaluation Harness | `disconnected/safety-ethical-principles-v1/ethics-cm/` | `EleutherAI--hendrycks_ethics--commonsense/` Arrow bundle and `tokenizer/` |
+| Safety and Ethical Principles v1 | `bigbench_hhh_alignment_multiple_choice` / LM Evaluation Harness | `disconnected/safety-ethical-principles-v1/bigbench-hhh/` | `hails--bigbench--hhh_alignment_zero_shot/` Arrow bundle and `tokenizer/` |
+| Tool Use v1 | First `inspect/bfcl` entry / Inspect | `disconnected/tool-use-v1/bfcl/` | Complete `BFCL/` cache for the selected categories, including the `simple_python` sentinel and category support files |
+| Tool Use v1 | Second `inspect/bfcl` entry / Inspect | `disconnected/tool-use-v1/bfcl/` | Same complete `BFCL/` cache; this repeated entry still needs its own `test_data_ref` |
+| Trustworthiness v1 | `inspect/cyberseceval-2-pi` / Inspect | `disconnected/trustworthiness-v1/cyberseceval-2-pi/` | Pinned dataset at `cyberseceval_2/prompt_injection_9b05e90e7a57333d006555420f7289cb.json` |
+| Trustworthiness v1 | `truthfulqa_mc1` / LM Evaluation Harness | `disconnected/trustworthiness-v1/truthfulqa-mc1/` | `truthfulqa--truthful_qa--multiple_choice/` Arrow bundle and `tokenizer/` |
 
-> **Attach staged data to each benchmark.** Every benchmark that needs staged files must have its own `test_data_ref` in the job request (including each repeated benchmark entry in a collection). Uploading files to object storage alone does not make them available to a run. Choose a storage prefix that materializes the files under `/test_data` in the directory layout the adapter expects.
+The matrix's collection membership and category lists can change. Confirm them against the collection configuration deployed in your cluster. For example, Tool Use v1 has two separate BFCL entries; both require their own `test_data_ref`, even when they point to the same S3 prefix.
+
+### Per-benchmark references and narrow prefixes
+
+`test_data_ref` belongs on each benchmark object, not on the collection or job as a whole. Upload a benchmark's bundle under its own prefix and reference that prefix from that benchmark. Avoid attaching a single large prefix containing every collection's assets to every benchmark: the init container would copy unrelated files into each job's `/test_data` volume.
+
+Example reference:
+
+```json
+{
+  "test_data_ref": {
+    "s3": {
+      "bucket": "mlpipeline",
+      "key": "disconnected/fairness-bias-v1/winogender/",
+      "secret_ref": "minio-credentials"
+    }
+  }
+}
+```
+
+A bundle with the LM Evaluation Harness layout above would contain:
+
+```text
+s3://mlpipeline/disconnected/fairness-bias-v1/winogender/
+  oskarvanderwal--winogender--all/
+    dataset_dict.json
+    ...
+  tokenizer/
+    tokenizer.json
+    tokenizer_config.json
+    ...
+```
+
+For each benchmark, include only its dataset/cache and the tokenizer or other support files that benchmark requires. The path after the S3 prefix becomes the same path under `/test_data`. Uploading files to object storage is not sufficient: each data-backed benchmark entry must reference its own staged source.
+
+### Connected staging versus disconnected evaluation
+
+Prepare the assets from a connected staging machine or an approved connected preparation environment. Gated Hugging Face credentials are needed only while downloading gated files such as HLE or GPQA; do not put access tokens in job parameters, the uploaded bundle, or MinIO credentials. Once the assets are staged, the evaluation pod must run without public Internet access. It must still be able to reach the configured target model, judge model (if any), and internal asset store used by the init container.
+
+### Target and judge connectivity
+
+Asset staging does not provide an inference endpoint. The target configured by `model.url` must resolve and accept requests from the job through the sidecar. For HLE, CyberSecEval 2 Prompt Injection, and FollowBench, configure the judge model name in the benchmark's `parameters.judge_model`. The target and judge can share the target connection; when a distinct judge connection is required, configure its credential and optional endpoint in the Secret referenced by `model.auth.secret_ref` (`judge_api-key` and, when needed, `judge_url`). Do not put credentials in `parameters` or the dataset bundle. See [Judge and scorer models](/guides/judge-and-scorer-models/) for the Secret format and routing behavior.
+
+### Adapter image versions
+
+Offline behavior is implemented in adapter images as well as in EvalHub's `test_data_ref` plumbing. These instructions assume the deployment uses adapter images built with the staged-asset changes for [Inspect/CyberSecEval 2](https://github.com/eval-hub/eval-hub-contrib/pull/289), [LightEval](https://github.com/eval-hub/eval-hub-contrib/pull/290), and [RULER](https://github.com/eval-hub/eval-hub-contrib/pull/291). The full 24-case Kind integration workflow is covered by [EvalHub PR #1239](https://github.com/eval-hub/eval-hub/pull/1239); that PR adds test coverage, not runtime behavior to the service image. These PRs do not define a single immutable adapter image tag: the release/deployment selects provider image references, which can differ between environments. Check the provider image reference in the installed operator configuration and verify the running pod's `imageID`. The EvalHub service image version alone does not establish adapter support.
+
+For a running evaluation pod, inspect the image reference and resolved digest with:
+
+```bash
+kubectl -n <job-namespace> get pods \
+  -l 'app=evalhub,component=evaluation-job' \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .status.containerStatuses[*]}{.name}{"="}{.image}{" ("}{.imageID}{") "}{end}{"\n"}{end}'
+```
 
 ## LM Evaluation Harness
 
@@ -52,17 +124,19 @@ from datasets import load_dataset, get_dataset_config_names
 
 # Single subset  (e.g. arc_easy)
 dataset = load_dataset("allenai/ai2_arc", "ARC-Easy")
-dataset.save_to_disk("staging/allenai--ai2_arc--ARC-Easy")
-#                              ^^^ slug: dataset_path.replace("/","--") + "--" + subset
+dataset.save_to_disk("staging/arc_easy/allenai--ai2_arc--ARC-Easy")
+#                            ^^^^^^^^^^ one bundle directory per benchmark
+#                                        ^^^ slug: dataset_path.replace("/","--") + "--" + subset
 
 # No subset  (e.g. hellaswag)
 dataset = load_dataset("hellaswag")
-dataset.save_to_disk("staging/hellaswag")
-#                              ^^^ slug: dataset_path.replace("/","--")
+dataset.save_to_disk("staging/hellaswag/hellaswag")
+#                               ^^^^^^^^^ one bundle directory per benchmark
+#                                         ^^^ slug: dataset_path.replace("/","--")
 
 # Multiple subsets  (e.g. blimp has 67 subsets — download all at once)
 for subset in get_dataset_config_names("blimp"):
-    load_dataset("blimp", subset).save_to_disk(f"staging/blimp--{subset}")
+    load_dataset("blimp", subset).save_to_disk(f"staging/blimp/blimp--{subset}")
 ```
 
 The slug rule in one line:
@@ -103,45 +177,49 @@ from huggingface_hub import hf_hub_download
 
 repo_id = "meta-llama/Llama-3.2-1B-Instruct"
 revision = "main"  # Replace with the exact tokenizer revision compatible with the served model.
-out_dir = "./staging/tokenizer"
+out_dir = "./staging/arc_easy/tokenizer"
 os.makedirs(out_dir, exist_ok=True)
 
 for filename in ["tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"]:
     hf_hub_download(repo_id=repo_id, revision=revision, filename=filename, local_dir=out_dir)
 ```
 
-Set `revision` to the tokenizer repository revision paired with the served model; use its full commit SHA for reproducible staging. Do not assume that the model endpoint name identifies this tokenizer revision. Files are saved to `./staging/tokenizer/`. In the pod this maps to `/test_data/tokenizer`.
+Set `revision` to the tokenizer repository revision paired with the served model; use its full commit SHA for reproducible staging. Do not assume that the model endpoint name identifies this tokenizer revision. This example saves files to `./staging/arc_easy/tokenizer/`. In the pod this maps to `/test_data/tokenizer`. Put the compatible tokenizer in each benchmark bundle that requires it; you can copy the same directory into multiple bundles when those benchmarks use the same tokenizer revision.
 
 > The list above is illustrative, not exhaustive. Stage every tokenizer, vocabulary, merge, and configuration file required by the exact tokenizer and revision you evaluate. Check the tokenizer repository and include files such as `tokenizer.model` (SentencePiece) or `vocab.json` and `merges.txt` (BPE) when applicable; the three common files above are not sufficient for every model.
 
-### Step 3: Upload to MinIO
+### Step 3: Upload a narrow bundle to MinIO
 
-Port-forward MinIO and upload the entire `./staging/` directory using the AWS CLI:
+For each benchmark, create a separate staging directory that contains only its dataset bundle and tokenizer. For example, arrange the ARC Easy files as:
+
+```text
+staging/arc_easy/
+  allenai--ai2_arc--ARC-Easy/
+    dataset_dict.json
+    ...
+  tokenizer/
+    tokenizer.json
+    tokenizer_config.json
+    ...
+```
+
+Use the AWS CLI to upload this one benchmark bundle under its own prefix:
 
 ```bash
-# Export MinIO credentials
+# Export MinIO credentials in the connected staging shell.
 export AWS_ACCESS_KEY_ID=<minio-access-key>
 export AWS_SECRET_ACCESS_KEY=<minio-secret-key>
 export AWS_DEFAULT_REGION=us-east-1
 
-# Port-forward MinIO (replace namespace and pod name as needed)
+# Port-forward MinIO (replace namespace and pod name as needed).
 kubectl port-forward -n minio pod/<minio-pod-name> 9000:9000 &
 
-# Upload staging/ to the offline prefix
-aws --endpoint-url http://127.0.0.1:9000 s3 cp ./staging/ s3://mlpipeline/offline/ --recursive
+aws --endpoint-url http://127.0.0.1:9000 s3 sync \
+  ./staging/arc_easy/ \
+  s3://mlpipeline/disconnected/lm-evaluation-harness/arc-easy/
 ```
 
-Each `staging/<slug>` maps to `s3://mlpipeline/offline/<slug>` — and ultimately to `/test_data/<slug>` in the evaluation pod.
-
-After uploading, the MinIO layout should look like:
-
-```
-s3://mlpipeline/offline/
-  allenai--ai2_arc--ARC-Easy/   ← dataset bundle
-  hellaswag/                    ← dataset bundle
-  blimp--adjunct_island/        ← one bundle per blimp subtask
-  tokenizer/                    ← tokenizer files
-```
+The contents of that prefix appear at the root of `/test_data`. Repeat with a different local bundle directory and S3 prefix for each benchmark. For a benchmark such as BLiMP that uses many subsets, put all required subset bundles for that benchmark beneath its one prefix; do not include unrelated benchmarks' data.
 
 ### Step 4: Create the MinIO Credentials Secret
 
@@ -160,7 +238,7 @@ The `secret_ref` value in `test_data_ref.s3` must match this Secret name (`minio
 
 ### Step 5: Submit an Evaluation Job
 
-Upload the tokenizer directory as `tokenizer/` beside the dataset bundle, then reference the MinIO prefix with `test_data_ref`. With this conventional layout, `parameters.tokenizer` may be omitted or left blank; the adapter uses `/test_data/tokenizer` when it detects the staged dataset. Set `parameters.tokenizer` explicitly to a local path under `/test_data` only when you need a different tokenizer location:
+Upload the tokenizer directory as `tokenizer/` beside this benchmark's dataset bundle, then reference that benchmark-specific MinIO prefix with `test_data_ref`. With this conventional layout, `parameters.tokenizer` may be omitted or left blank; the adapter uses `/test_data/tokenizer` when it detects the staged dataset. Set `parameters.tokenizer` explicitly to a local path under `/test_data` only when you need a different tokenizer location:
 
 ```bash
 curl -X POST https://<eval-hub-host>/api/v1/evaluations/jobs \
@@ -180,7 +258,7 @@ curl -X POST https://<eval-hub-host>/api/v1/evaluations/jobs \
         "test_data_ref": {
           "s3": {
             "bucket": "mlpipeline",
-            "key": "offline/",
+            "key": "disconnected/lm-evaluation-harness/arc-easy/",
             "secret_ref": "minio-credentials"
           }
         }
@@ -189,11 +267,11 @@ curl -X POST https://<eval-hub-host>/api/v1/evaluations/jobs \
   }'
 ```
 
-The init container syncs the entire `offline/` prefix to `/test_data/`, so all datasets and the tokenizer are available at their expected paths. Once the layout is detected, the adapter sets its Hugging Face cache paths and offline variables automatically, including `HF_HOME`, `HF_HUB_CACHE`, `HF_DATASETS_CACHE`, `HF_HUB_OFFLINE`, `HF_DATASETS_OFFLINE`, `HF_EVALUATE_OFFLINE`, and `TRANSFORMERS_OFFLINE`.
+The init container syncs only the referenced benchmark prefix to `/test_data/`; the dataset bundle and tokenizer are then available at their expected paths. Once the layout is detected, the adapter sets its Hugging Face cache paths and offline variables automatically, including `HF_HOME`, `HF_HUB_CACHE`, `HF_DATASETS_CACHE`, `HF_HUB_OFFLINE`, `HF_DATASETS_OFFLINE`, `HF_EVALUATE_OFFLINE`, and `TRANSFORMERS_OFFLINE`.
 
 ### Multiple benchmarks
 
-EvalHub runs one Kubernetes Job per benchmark. Each benchmark therefore needs its own `test_data_ref`, but they can all point to the same MinIO prefix — upload once to `offline/` and reuse the same ref on every entry. If all benchmarks use the conventional staged tokenizer, omit `parameters.tokenizer`; set an explicit local path only for a benchmark that uses a different tokenizer:
+EvalHub runs one Kubernetes Job per benchmark. Give each benchmark its own `test_data_ref` and narrow MinIO prefix containing only that benchmark's dataset/cache and tokenizer. If all benchmarks use the conventional staged tokenizer, omit `parameters.tokenizer`; set an explicit local path only for a benchmark that uses a different tokenizer:
 
 ```json
 {
@@ -206,12 +284,12 @@ EvalHub runs one Kubernetes Job per benchmark. Each benchmark therefore needs it
     {
       "id": "arc_easy",
       "provider_id": "lm_evaluation_harness",
-      "test_data_ref": { "s3": { "bucket": "mlpipeline", "key": "offline/", "secret_ref": "minio-credentials" } }
+      "test_data_ref": { "s3": { "bucket": "mlpipeline", "key": "disconnected/lm-evaluation-harness/arc-easy/", "secret_ref": "minio-credentials" } }
     },
     {
       "id": "hellaswag",
       "provider_id": "lm_evaluation_harness",
-      "test_data_ref": { "s3": { "bucket": "mlpipeline", "key": "offline/", "secret_ref": "minio-credentials" } }
+      "test_data_ref": { "s3": { "bucket": "mlpipeline", "key": "disconnected/lm-evaluation-harness/hellaswag/", "secret_ref": "minio-credentials" } }
     }
   ]
 }
@@ -244,6 +322,145 @@ Check that the init container populated `/test_data` with both the tokenizer fil
 
 For the default tokenizer, verify that the uploaded prefix contains the tokenizer files in `tokenizer/`; they should appear in the pod at `/test_data/tokenizer`. If you set `parameters.tokenizer`, verify that it names the corresponding local path under `/test_data`.
 
+## LightEval
+
+The disconnected LightEval adapter uses the Hugging Face cache and dataset cache staged by the selected benchmark's `test_data_ref`. It also imports `tinyBenchmarks.pkl` eagerly while loading LightEval task definitions, so this file must be present even when the selected task does not use TinyBenchmarks.
+
+For each LightEval benchmark in the matrix, prepare a separate bundle using the same LightEval adapter image and task configuration as the deployed job. Preserve the cache layout produced by Hugging Face:
+
+```text
+/test_data/
+  datasets/                    # selected task's prepared dataset cache
+  hub/                         # selected task's Hub snapshots and metadata
+  lighteval/
+    tinyBenchmarks.pkl         # pinned registry asset
+  tokenizer/                   # only when the selected model/task configuration uses a local tokenizer
+```
+
+The adapter sets its Hugging Face cache variables to the staged paths and disables Hub downloads. It mirrors the read-only datasets cache metadata into a writable job cache; keep the staged source intact. Do not include caches for unrelated tasks in the benchmark prefix. The LCB v6, GPQA Diamond, and MATH-500 endpoint jobs in this matrix use the task-specific datasets and `tinyBenchmarks.pkl`; they do not require a separate tokenizer bundle unless the selected model/task configuration uses a local tokenizer. GPQA Diamond may require accepted gated-repository terms and an authenticated token while staging. The token must not be placed in the bundle or the evaluation pod.
+
+To prepare one task cache, use a connected environment with the same LightEval adapter image and task registry as the deployed job. Put the pinned `tinyBenchmarks.pkl` file at the package's task-registry location before loading task definitions, then run the following from the adapter's application directory. Repeat with a fresh bundle directory and the exact task ID for each LightEval benchmark:
+
+```bash
+TASK_NAME=gpqa:diamond
+BUNDLE="$PWD/staging/gpqa-diamond"
+mkdir -p "$BUNDLE/lighteval"
+curl -fsSL \
+  https://raw.githubusercontent.com/felipemaiapolo/tinyBenchmarks/e9a8b1031b0340571beb6c9ca3a27891be09a8fd/tinyBenchmarks/tinyBenchmarks.pkl \
+  -o "$BUNDLE/lighteval/tinyBenchmarks.pkl"
+
+HF_HOME="$BUNDLE" \
+HF_HUB_CACHE="$BUNDLE/hub" \
+HF_DATASETS_CACHE="$BUNDLE/datasets" \
+TASK_NAME="$TASK_NAME" \
+python - <<'PY'
+import os
+
+from _hf_offline import ensure_lighteval_registry_assets
+
+root = os.environ["HF_HOME"]
+ensure_lighteval_registry_assets(root)
+
+from datasets import load_dataset
+from main import _task_configs
+
+task_name = os.environ["TASK_NAME"]
+task = _task_configs().get(task_name)
+if task is None or not task.hf_repo:
+    raise RuntimeError(f"No Hugging Face dataset is configured for {task_name}")
+kwargs = {"cache_dir": os.environ["HF_DATASETS_CACHE"]}
+if task.hf_subset:
+    kwargs["name"] = task.hf_subset
+if getattr(task, "hf_revision", None):
+    kwargs["revision"] = task.hf_revision
+if task_name == "gpqa:diamond":
+    kwargs["token"] = os.environ["HF_TOKEN"]
+loaded = load_dataset(task.hf_repo, **kwargs)
+if not len(loaded):
+    raise RuntimeError(f"The dataset for {task_name} has no splits")
+print(f"Staged {task_name}: {task.hf_repo}/{task.hf_subset or 'default'}")
+PY
+```
+
+Authenticate to gated Hugging Face repositories before this step. Do not print `HF_TOKEN`; keep it in the connected staging shell or a protected staging Secret, and never upload it with the bundle. Upload only the resulting `hub/`, `datasets/`, and `lighteval/tinyBenchmarks.pkl` paths under the benchmark's prefix.
+
+Use the `test_data_ref` prefix from the matrix on each LightEval benchmark entry. For example:
+
+```json
+{
+  "id": "gpqa:diamond",
+  "provider_id": "lighteval",
+  "test_data_ref": {
+    "s3": {
+      "bucket": "mlpipeline",
+      "key": "disconnected/knowledge-reasoning-v1/gpqa-diamond/",
+      "secret_ref": "minio-credentials"
+    }
+  }
+}
+```
+
+`tinyBenchmarks.pkl` is an auxiliary framework asset, not a dataset that can be omitted based on the selected benchmark. Include the exact file required by the LightEval version in the deployed adapter image. If it is missing, LightEval may try to fetch it during import despite Hugging Face offline flags.
+
+## RULER
+
+RULER's staged bundle is mounted at `/test_data`. Each benchmark needs its own prefix and its own `test_data_ref`; the adapter copies validated input files into a writable per-job cache. The curated Document Understanding v1 tasks use these inputs:
+
+| Benchmark | Required files at bundle root |
+|---|---|
+| `common-words-extraction` | `english_words.json` |
+| `frequency-words-extraction` | No task dataset file |
+| `qa-squad` | `squad.json` |
+| `qa-hotpotqa` | `hotpotqa.json` |
+| `niah-single-essay` | `PaulGrahamEssays.json` |
+| `variable-tracking` | No task dataset file for the curated defaults |
+
+Every RULER benchmark also needs a complete local Hugging Face tokenizer under `/test_data/tokenizer/`, including all files required by the tokenizer and its exact revision. If `parameters.tokenizer_path` is omitted or equals the evaluated model ID, the adapter uses that directory; otherwise set it to a local path and use `tokenizer_type: "hf"`. The OpenAI/tiktoken tokenizer mode is not supported for disconnected RULER jobs. The RULER image includes its NLTK sentence tokenizer data, so the pod does not need to download those resources.
+
+For example, a SQuAD benchmark entry can use:
+
+```json
+{
+  "id": "qa-squad",
+  "provider_id": "ruler",
+  "parameters": {
+    "tokenizer_type": "hf",
+    "tokenizer_path": "/test_data/tokenizer"
+  },
+  "test_data_ref": {
+    "s3": {
+      "bucket": "mlpipeline",
+      "key": "disconnected/document-understanding-v1/qa-squad/",
+      "secret_ref": "minio-credentials"
+    }
+  }
+}
+```
+
+The root of that S3 prefix must contain `squad.json` and `tokenizer/`. For a benchmark with no task dataset file, stage only its tokenizer. For essay-backed tasks, stage the non-empty `PaulGrahamEssays.json` file as well. The adapter validates required files and checksums and fails before inference if an asset is missing or invalid; it does not fall back to downloading data in disconnected mode.
+
+## Inspect AI: Hugging Face datasets and CyberSecEval 2
+
+Inspect HLE and DocVQA use Hugging Face-backed datasets; CyberSecEval 2 Prompt Injection uses a pinned JSON file fetched from GitHub in connected mode. For offline runs, the corresponding Inspect adapter image must include the staged-cache support and the benchmark's own `test_data_ref`.
+
+### HLE
+
+Stage the pinned `cais/hle` dataset revision using an authenticated Hugging Face account that has access to the gated repository. Keep the generated Hugging Face cache layout together (including `datasets/`, `hub/`, and any referenced Xet files) under the benchmark's S3 prefix. Access credentials are needed only during connected staging. The evaluation job still needs a reachable target and a reachable judge. Configure the judge model with the benchmark's `judge_model` parameter and put any judge endpoint/key settings in the Secret referenced by `model.auth.secret_ref`; see [Judge and scorer models](/guides/judge-and-scorer-models/).
+
+### DocVQA
+
+Stage the pinned `lmms-lab-encoder/DocVQA` `DocVQA` configuration and its validation split. Preserve the complete cache, including the image bytes/blobs referenced by the dataset records; a metadata-only dataset snapshot is insufficient. Keep the original Hugging Face cache layout under the benchmark prefix and include any Xet-backed objects created by the staging client. The target endpoint must be reachable inside the cluster and must accept image inputs.
+
+### CyberSecEval 2 Prompt Injection
+
+The adapter expects the pinned prompt-injection dataset at:
+
+```text
+/test_data/cyberseceval_2/prompt_injection_9b05e90e7a57333d006555420f7289cb.json
+```
+
+Place that file at the root-relative path shown above under the S3 prefix for `inspect/cyberseceval-2-pi`. The evaluation job also calls a judge model. Set `parameters.judge_model`; configure a separate judge endpoint or credential through the Secret referenced by `model.auth.secret_ref` when needed. The sidecar routes the model requests, so both target and judge services must be reachable from the job through their configured routes. See [Judge and scorer models](/guides/judge-and-scorer-models/).
+
 ## Inspect AI: BFCL
 
 BFCL (`inspect/bfcl`) downloads its dataset and, for some categories, function implementations and documentation from GitHub. The Hugging Face dataset and tokenizer layout in the previous section does not stage these files. For other Inspect benchmarks that use Hugging Face datasets, follow the Inspect adapter's [Hugging Face asset instructions](https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/inspect/README.md#huggingface-datasets).
@@ -275,7 +492,7 @@ The resulting cache must contain the complete `BFCL/` tree required by the selec
 For the MinIO workflow above, upload that directory under a prefix so the pod receives it at `/test_data/BFCL`:
 
 ```bash
-aws --endpoint-url http://127.0.0.1:9000 s3 sync "$INSPECT_EVALS_CACHE_DIR/BFCL" s3://mlpipeline/bfcl/BFCL
+aws --endpoint-url http://127.0.0.1:9000 s3 sync "$INSPECT_EVALS_CACHE_DIR/BFCL" s3://mlpipeline/disconnected/tool-use-v1/bfcl/BFCL
 ```
 
 Use that prefix in the BFCL benchmark's `test_data_ref`; create the MinIO Secret as described above. For example, when selecting categories explicitly:
@@ -291,7 +508,7 @@ Use that prefix in the BFCL benchmark's `test_data_ref`; create the MinIO Secret
   "test_data_ref": {
     "s3": {
       "bucket": "mlpipeline",
-      "key": "bfcl/",
+      "key": "disconnected/tool-use-v1/bfcl/",
       "secret_ref": "minio-credentials"
     }
   }
@@ -316,7 +533,7 @@ For a **curated Tool Use v1** job, attach `test_data_ref` to both repeated `insp
         "test_data_ref": {
           "s3": {
             "bucket": "mlpipeline",
-            "key": "bfcl/",
+            "key": "disconnected/tool-use-v1/bfcl/",
             "secret_ref": "minio-credentials"
           }
         }
@@ -327,7 +544,7 @@ For a **curated Tool Use v1** job, attach `test_data_ref` to both repeated `insp
         "test_data_ref": {
           "s3": {
             "bucket": "mlpipeline",
-            "key": "bfcl/",
+            "key": "disconnected/tool-use-v1/bfcl/",
             "secret_ref": "minio-credentials"
           }
         }
