@@ -42,7 +42,7 @@ Each S3 prefix below is an example of a **narrow bundle for one benchmark entry*
 | Tool Use v1 | First `inspect/bfcl` entry / Inspect | `disconnected/tool-use-v1/bfcl/` | Complete `BFCL/` cache for the selected categories, including the `simple_python` sentinel and category support files |
 | Tool Use v1 | Second `inspect/bfcl` entry / Inspect | `disconnected/tool-use-v1/bfcl/` | Same complete `BFCL/` cache; this repeated entry still needs its own `test_data_ref` |
 | Trustworthiness v1 | `inspect/cyberseceval-2-pi` / Inspect | `disconnected/trustworthiness-v1/cyberseceval-2-pi/` | Pinned dataset at `cyberseceval_2/prompt_injection_9b05e90e7a57333d006555420f7289cb.json` |
-| Trustworthiness v1 | `truthfulqa_mc1` / LM Evaluation Harness | `disconnected/trustworthiness-v1/truthfulqa-mc1/` | `truthfulqa--truthful_qa--multiple_choice/` Arrow bundle and `tokenizer/` |
+| Trustworthiness v1 | `truthfulqa_mc1` / LM Evaluation Harness | `disconnected/trustworthiness-v1/truthfulqa-mc1/` | `truthful_qa--multiple_choice/` Arrow bundle and `tokenizer/` |
 
 The matrix's collection membership and category lists can change. Confirm them against the collection configuration deployed in your cluster. For example, Tool Use v1 has two separate BFCL entries; both require their own `test_data_ref`, even when they point to the same S3 prefix.
 
