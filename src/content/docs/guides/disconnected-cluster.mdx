@@ -3,7 +3,7 @@ title: "Disconnected Cluster Evaluation"
 description: "Prepare benchmark assets and model dependencies for disconnected EvalHub evaluations."
 ---
 
-This guide explains how to stage benchmark data for disconnected evaluation. EvalHub's init container copies each benchmark's `test_data_ref` bundle to `/test_data`; the adapter then reads files from the paths its framework expects. The instructions cover the nine curated collections and 24 benchmark entries in the matrix below. They do not imply that every curated collection or every benchmark supported by an adapter works offline.
+This guide explains how to stage benchmark data for disconnected evaluation. EvalHub's init container copies each benchmark's `test_data_ref` bundle to `/test_data`; the adapter then reads files from the paths its framework expects. The instructions cover the nine curated collections and 24 benchmark entries in the matrix below.
 
 ## Prerequisites
 
@@ -86,18 +86,6 @@ Prepare the assets from a connected staging machine or an approved connected pre
 ### Target and judge connectivity
 
 Asset staging does not provide an inference endpoint. The target configured by `model.url` must resolve and accept requests from the job through the sidecar. For HLE, CyberSecEval 2 Prompt Injection, and FollowBench, configure the judge model name in the benchmark's `parameters.judge_model`. The target and judge can share the target connection; when a distinct judge connection is required, configure its credential and optional endpoint in the Secret referenced by `model.auth.secret_ref` (`judge_api-key` and, when needed, `judge_url`). Do not put credentials in `parameters` or the dataset bundle. See [Judge and scorer models](/guides/judge-and-scorer-models/) for the Secret format and routing behavior.
-
-### Adapter image versions
-
-Offline behavior is implemented in adapter images as well as in EvalHub's `test_data_ref` plumbing. These instructions assume the deployment uses adapter images built with the staged-asset changes for [Inspect/CyberSecEval 2](https://github.com/eval-hub/eval-hub-contrib/pull/289), [LightEval](https://github.com/eval-hub/eval-hub-contrib/pull/290), and [RULER](https://github.com/eval-hub/eval-hub-contrib/pull/291). The full 24-case Kind integration workflow is covered by [EvalHub PR #1239](https://github.com/eval-hub/eval-hub/pull/1239); that PR adds test coverage, not runtime behavior to the service image. These PRs do not define a single immutable adapter image tag: the release/deployment selects provider image references, which can differ between environments. Check the provider image reference in the installed operator configuration and verify the running pod's `imageID`. The EvalHub service image version alone does not establish adapter support.
-
-For a running evaluation pod, inspect the image reference and resolved digest with:
-
-```bash
-kubectl -n <job-namespace> get pods \
-  -l 'app=evalhub,component=evaluation-job' \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .status.containerStatuses[*]}{.name}{"="}{.image}{" ("}{.imageID}{") "}{end}{"\n"}{end}'
-```
 
 ## LM Evaluation Harness
 
