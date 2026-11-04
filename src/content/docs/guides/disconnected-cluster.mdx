@@ -314,6 +314,8 @@ For the default tokenizer, verify that the uploaded prefix contains the tokenize
 
 The disconnected LightEval adapter uses the Hugging Face cache and dataset cache staged by the selected benchmark's `test_data_ref`. It also imports `tinyBenchmarks.pkl` eagerly while loading LightEval task definitions, so this file must be present even when the selected task does not use TinyBenchmarks.
 
+Use a LightEval adapter image that provides `ensure_nltk_offline_resources`. The staging example below imports this function before loading task definitions. If the import fails, the image does not contain staged NLTK support; update the adapter image and repeat the staging step.
+
 For each LightEval benchmark in the matrix, prepare a separate bundle using the same LightEval adapter image and task configuration as the deployed job. The image does not download NLTK data during its build, and a disconnected job does not download it at runtime. Every LightEval bundle must therefore include NLTK `punkt` and `punkt_tab`, even when the benchmark itself does not tokenize sentences. The task registry imports IFEval, which uses those resources. Preserve the cache layout produced by Hugging Face:
 
 ```text
