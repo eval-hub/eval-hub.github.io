@@ -89,6 +89,8 @@ See the [Metrics reference](metrics/) for details on each metric.
 | `max_tokens` | integer | Maximum tokens for LLM completions | `null` (server default) |
 | `temperature` | number | Sampling temperature for LLM completions | `null` (adapter default) |
 | `judge_model` | string | Model used for LLM-based RAGAS metrics (`parameters.judge_model`) | Evaluated model (`model.name`) |
+| `judge_url` | string | Standalone local endpoint override; external URL overrides are rejected in Kubernetes | Auth-directory `judge_url`, otherwise `model.url` |
+| `judge_api_key` | string | Standalone local credential override; real API-key overrides are rejected in Kubernetes | Resolved judge connection credential; see below |
 
 ### Separate Judge Model
 
@@ -125,11 +127,18 @@ overrides are rejected; use the Secret-based configuration. Prefer the shared
 [local auth-directory setup](/guides/model-authentication/#local-auth-directories)
 for direct local execution as well.
 
+Local connections use the role's auth-directory key when present, otherwise
+the primary model credentials. When a local URL override selects an endpoint
+other than `model.url` or the configured role URL, supply `judge_api_key` for
+the judge or `OPENAI_API_KEY` for the standalone override connection. The adapter
+does not borrow a credential belonging to another endpoint.
+
 ### Embedding Configuration
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `embedding_model` | string | Model name for embeddings | Same as `model.name` |
+| `embedding_url` | string | Standalone local endpoint override; external URL overrides are rejected in Kubernetes | Auth-directory `embedding_url`, otherwise `model.url` |
 
 :::caution[Embedding Model Selection]
 Several RAGAS metrics (notably `answer_relevancy` and `answer_similarity`) require

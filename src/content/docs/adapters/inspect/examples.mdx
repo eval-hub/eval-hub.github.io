@@ -14,11 +14,13 @@ ignored; they cannot configure or override a Secret-backed connection.
 
 ## MaaS (OpenAI-compatible API key Secret)
 
-When every role shares one gateway and credential, only `api-key` is needed:
+When every role shares one gateway and credential, only `api-key` is needed.
+Replace the credential placeholder and create or update the Secret in `team-a`:
 
 ```bash
-kubectl create secret generic maas-creds --namespace "$TENANT_NAMESPACE" \
-  --from-literal=api-key="$MAAS_API_KEY"
+kubectl create secret generic maas-creds --namespace team-a \
+  --from-literal=api-key='<maas-credential>' \
+  --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 ```yaml
@@ -184,14 +186,13 @@ dictionaries can retain a `model` name; their connection fields are ignored.
 
 ## Bloom behavioural suites
 
-Add a scenario connection to the Petri Secret when generation needs a separate
-model endpoint:
+When generation needs a separate model endpoint, add these entries under the
+existing `stringData` key in the Petri example's `inspect-model-auth` Secret.
+Keep its target, auditor and judge entries when applying the updated Secret:
 
 ```yaml
-stringData:
-  # Add these entries alongside the target, auditor and judge entries.
-  scenarios_api-key: "<scenario-credential>"
-  scenarios_url: https://scenarios.example/v1
+scenarios_api-key: "<scenario-credential>"
+scenarios_url: https://scenarios.example/v1
 ```
 
 ```yaml

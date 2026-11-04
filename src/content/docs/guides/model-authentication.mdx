@@ -85,7 +85,8 @@ This means:
 - TLS to the model endpoint is handled by the sidecar using `ca_cert` from the secret
 - The adapter calls the rewritten sidecar URL, including its original API path, regardless of auth type
 
-This guide applies to evaluation jobs created by the Kubernetes runtime. Local runtime behavior may differ.
+The sidecar and projected-volume layout above apply to the Kubernetes runtime.
+For direct local adapter execution, see [Local auth directories](#local-auth-directories).
 
 For an end-to-end workflow covering judge, grader, and scorer model selection and credentials, see [Using Judge and Scorer Models](/guides/judge-and-scorer-models/).
 
@@ -242,13 +243,16 @@ connection URLs or API keys from `config.parameters` or auxiliary runtime env
 variables. If the framework uses environment variables, set them in a subprocess
 environment from the resolved Secret values, independently for each role.
 
-Framework passthrough settings can override a correctly configured client. Strip
-connection fields such as `api_key`, `apiKey`, `base_url`, and `apiBaseUrl` from
-model-option dictionaries, including nested dictionaries and lists, before
-forwarding them. Copy the settings, retain generation options such as temperature,
-and preserve unrelated test data. Ignore legacy connection fields rather than
-failing solely because they are present. Secret validation, including a role URL
-without its matching key, still applies.
+Framework passthrough settings can override a correctly configured client. Use
+the Inspect adapter's `without_connection_options` filtering rule: recursively
+copy dictionaries and lists, removing keys that are `api_key`, `api-key`,
+`api_base`, `base_url`, or `url`, or end in `_api_key`, `_api-key`, `_base_url`,
+or `_url`. Apply this rule before forwarding model-option dictionaries, and
+extend it for any additional connection fields accepted by your framework.
+Retain generation options such as temperature and preserve unrelated test data.
+Ignore legacy connection fields rather than failing solely because they are
+present. Secret validation, including a role URL without its matching key,
+still applies.
 
 ### Protocol support
 

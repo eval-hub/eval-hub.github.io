@@ -136,6 +136,12 @@ outside `parameters`. Do not add target URLs or API keys to this object.
 |---|---|---|---|
 | `judge_model` | string | Judge model name. Use the strongest available model — judge quality has the largest impact on audit reliability. | `"claude-opus-4-7"` |
 
+These Claude defaults require OpenAI-compatible endpoints serving those model
+IDs. Override `auditor_model` and `judge_model` when your MaaS endpoint or gateway
+serves different IDs. Native Anthropic authentication has the
+[limitations described above](#migration-for-existing-inspect-jobs); the model
+name does not configure a separate endpoint or authentication scheme.
+
 ### Scenarios model (Bloom only)
 
 | Parameter | Type | Description | Default |

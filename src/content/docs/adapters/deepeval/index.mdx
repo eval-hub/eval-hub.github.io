@@ -106,7 +106,10 @@ make image-deepeval
 make push-deepeval REGISTRY=quay.io/your-org VERSION=v1.0.0
 ```
 
-To run the adapter directly without a container:
+To run the adapter directly without a container, prepare the auth directory in
+[Local Testing](/adapters/deepeval/examples/#local-testing) and set
+`model.auth.secret_ref` in `meta/job.json` to its absolute `file:///` URL. The
+directory contains `api-key` and optional `judge_api-key` / `judge_url` files:
 
 ```bash
 cd adapters/deepeval
@@ -114,7 +117,6 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 export EVALHUB_MODE=local
 export EVALHUB_JOB_SPEC_PATH=meta/job.json
-export OPENAI_API_KEY=your-key-here
 
-python main.py
+.venv/bin/python main.py
 ```
