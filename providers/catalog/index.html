@@ -80,7 +80,7 @@ Search
 Showing 17 of 17 providers
 </p> <div class="catalog-layout"> <div class="catalog-cards" id="catalog-cards"> <button type="button" class="provider-card" data-provider-id="atif" aria-pressed="false"> <h3>ATIF Trajectory Adapter</h3> <div class="provider-id">atif</div> <p class="provider-desc">Evaluate pre-recorded ATIF trajectories using an OpenAI-compatible judge.</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">agentic</span> </div> </button><button type="button" class="provider-card" data-provider-id="databench" aria-pressed="false"> <h3>DataBench</h3> <div class="provider-id">databench</div> <p class="provider-desc">Direct-answer question answering over DataBench CSV tables, scored by the official DataBench evaluator.</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">table_qa</span> </div> </button><button type="button" class="provider-card" data-provider-id="deepeval" aria-pressed="false"> <h3>DeepEval</h3> <div class="provider-id">deepeval</div> <p class="provider-desc">LLM-as-judge evaluation framework with metrics for faithfulness, relevancy, hallucination, correctness, summarization, and multi-turn conversation evaluation</p> <div class="provider-meta"> <span class="chip">8 benchmarks</span> <span class="chip">accuracy</span><span class="chip">multi-turn</span><span class="chip">nlp</span> </div> </button><button type="button" class="provider-card" data-provider-id="evalhub-internal" aria-pressed="false"> <h3>EvalHub Post Processor</h3> <div class="provider-id">evalhub-internal</div> <p class="provider-desc">Ordered post-processing operations on completed evaluation results.</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">post_processing</span> </div> </button><button type="button" class="provider-card" data-provider-id="followbench" aria-pressed="false"> <h3>FollowBench</h3> <div class="provider-id">followbench</div> <p class="provider-desc">FollowBench evaluates multi-level, fine-grained constraint following across content, situation, style, format, mixed, and example constraints. It reports Hard Satisfaction Rate (HSR), Soft Satisfaction Rate (SSR), and Consistent Satisfaction Levels (CSL) using rule-based checks and a configurable external judge.
 </p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="ibm-clear" aria-pressed="false"> <h3>IBM CLEAR</h3> <div class="provider-id">ibm-clear</div> <p class="provider-desc">IBM CLEAR evaluation framework for error analysis and reporting on agent traces</p> <div class="provider-meta"> <span class="chip">3 benchmarks</span> <span class="chip">error-analysis</span> </div> </button><button type="button" class="provider-card" data-provider-id="ifbench" aria-pressed="false"> <h3>IFBench</h3> <div class="provider-id">ifbench</div> <p class="provider-desc">IFBench (AllenAI) evaluates precise instruction-following generalization using 58 out-of-domain verifiable constraints. The adapter loads the bundled IFBench test set, generates model completions via an OpenAI-compatible endpoint, and scores responses with programmatic constraint checkers. Primary metric is prompt-level loose accuracy, matching the IFBench paper reporting convention.
-</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="inspect" aria-pressed="false"> <h3>Inspect AI</h3> <div class="provider-id">inspect</div> <p class="provider-desc">UK AISI Inspect AI framework — Petri/Bloom alignment auditing and inspect-evals benchmarks</p> <div class="provider-meta"> <span class="chip">76 benchmarks</span> <span class="chip">agent</span><span class="chip">alignment</span><span class="chip">coding</span> </div> </button><button type="button" class="provider-card" data-provider-id="lighteval" aria-pressed="false"> <h3>LightEval</h3> <div class="provider-id">lighteval</div> <p class="provider-desc">HuggingFace LightEval — endpoint-only evaluation against any OpenAI-compatible server (vLLM, Ollama, OpenRouter). Supports loglikelihood (multiple-choice) and generative tasks across reasoning, math, knowledge, coding, and safety benchmarks. Loglikelihood scoring uses the /v1/completions echo+logprobs path; no local model weights required.
+</p> <div class="provider-meta"> <span class="chip">1 benchmarks</span> <span class="chip">instruction_following</span> </div> </button><button type="button" class="provider-card" data-provider-id="inspect" aria-pressed="false"> <h3>Inspect AI</h3> <div class="provider-id">inspect</div> <p class="provider-desc">UK AISI Inspect AI framework — Petri/Bloom alignment auditing and inspect-evals benchmarks</p> <div class="provider-meta"> <span class="chip">76 benchmarks</span> <span class="chip">agent</span><span class="chip">alignment</span><span class="chip">coding</span> </div> </button><button type="button" class="provider-card" data-provider-id="lighteval" aria-pressed="false"> <h3>LightEval</h3> <div class="provider-id">lighteval</div> <p class="provider-desc">HuggingFace LightEval evaluates models through local Transformers/vLLM backends or API providers. OpenAI-compatible APIs can run generation tasks and loglikelihood tasks when the server supports echo and logprobs.
 </p> <div class="provider-meta"> <span class="chip">28 benchmarks</span> <span class="chip">code</span><span class="chip">knowledge</span><span class="chip">language_understanding</span> </div> </button><button type="button" class="provider-card" data-provider-id="mteb" aria-pressed="false"> <h3>MTEB</h3> <div class="provider-id">mteb</div> <p class="provider-desc">Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">classification</span><span class="chip">clustering</span><span class="chip">reranking</span> </div> </button><button type="button" class="provider-card" data-provider-id="nemo-guardrails" aria-pressed="false"> <h3>NeMo Guardrails</h3> <div class="provider-id">nemo-guardrails</div> <p class="provider-desc">Evaluate NeMo Guardrails security configurations against classification datasets. Measures accuracy, precision, recall, F1, and latency of guardrail decisions.</p> <div class="provider-meta"> <span class="chip">5 benchmarks</span> <span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="promptfoo" aria-pressed="false"> <h3>promptfoo</h3> <div class="provider-id">promptfoo</div> <p class="provider-desc">promptfoo (MIT license) is an open-source LLM testing tool. This adapter wraps its assertion-based prompt/model regression testing (promptfoo-eval) and its OWASP LLM Top 10 red-team plugin catalog (promptfoo-redteam). Every job persists promptfoo&#39;s native eval.json as a retained artifact so results can be reopened in promptfoo&#39;s own viewer via `promptfoo import`. Reference: https://github.com/promptfoo/promptfoo
 </p> <div class="provider-meta"> <span class="chip">2 benchmarks</span> <span class="chip">capability</span><span class="chip">safety</span> </div> </button><button type="button" class="provider-card" data-provider-id="ragas" aria-pressed="false"> <h3>RAGAS</h3> <div class="provider-id">ragas</div> <p class="provider-desc">Retrieval Augmented Generation Assessment — evaluates RAG pipeline quality using metrics like faithfulness, answer relevancy, context precision/recall, and more. Models are accessed via OpenAI-compatible endpoints.
 </p> <div class="provider-meta"> <span class="chip">2 benchmarks</span> <span class="chip">rag_evaluation</span> </div> </button><button type="button" class="provider-card" data-provider-id="ruler" aria-pressed="false"> <h3>RULER</h3> <div class="provider-id">ruler</div> <p class="provider-desc">NVIDIA RULER long-context evaluation benchmark. Tests LLMs across 13 synthetic tasks spanning needle-in-a-haystack retrieval, variable tracking, aggregation, and question answering at multiple context lengths.
@@ -596,13 +596,6 @@ parameters:
       Judge model name used by DeepEval for LLM-as-judge evaluation.
       Defaults to the evaluated model's name if not set.
 
-  - name: eval_model_url
-    type: string
-    default: null
-    description: >
-      Base URL of the OpenAI-compatible judge endpoint (e.g. &quot;http://judge-svc:8000/v1&quot;).
-      Defaults to the evaluated model's URL if not set.
-
   - name: threshold
     type: float
     default: 0.5
@@ -823,13 +816,6 @@ data:
           Judge model name used by DeepEval for LLM-as-judge evaluation.
           Defaults to the evaluated model&#39;s name if not set.
 
-      - name: eval_model_url
-        type: string
-        default: null
-        description: &gt;
-          Base URL of the OpenAI-compatible judge endpoint (e.g. &quot;http://judge-svc:8000/v1&quot;).
-          Defaults to the evaluated model&#39;s URL if not set.
-
       - name: threshold
         type: float
         default: 0.5
@@ -1038,19 +1024,6 @@ parameters:
     type: string
     description: Judge model identifier. Required for the bundled collection.
 
-  - name: judge_url
-    type: string
-    description: >
-      Legacy endpoint override for standalone jobs that omit judge_model. When
-      judge_model is set, do not set this or judge_api_key as job parameters;
-      use judge_url and judge_api-key in model.auth.secret_ref instead.
-
-  - name: judge_api_key
-    type: string
-    description: >
-      Legacy standalone judge credential. When judge_model is set, use
-      judge_api-key in model.auth.secret_ref instead.
-
   - name: num_examples
     type: integer
     description: >
@@ -1148,19 +1121,6 @@ data:
       - name: judge_model
         type: string
         description: Judge model identifier. Required for the bundled collection.
-
-      - name: judge_url
-        type: string
-        description: &gt;
-          Legacy endpoint override for standalone jobs that omit judge_model. When
-          judge_model is set, do not set this or judge_api_key as job parameters;
-          use judge_url and judge_api-key in model.auth.secret_ref instead.
-
-      - name: judge_api_key
-        type: string
-        description: &gt;
-          Legacy standalone judge credential. When judge_model is set, use
-          judge_api-key in model.auth.secret_ref instead.
 
       - name: num_examples
         type: integer
@@ -1284,24 +1244,13 @@ parameters:
   - name: provider
     type: string
     description: >
-      Required. LiteLLM/OpenAI-style provider name for the judge (e.g. openai, azure).
+      Required. Use openai for Secret-based routing. Other native authentication protocols require additional sidecar support.
 
   - name: inference_backend
     type: string
     default: litellm
     description: >
-      CLEAR inference backend. Use &quot;endpoint&quot; with model.url or parameters.endpoint_url (or inference_url)
-      for a fixed HTTP endpoint; default litellm uses the usual CLEAR LiteLLM path.
-
-  - name: endpoint_url
-    type: string
-    description: >
-      When inference_backend is &quot;endpoint&quot;, HTTP base URL for the judge (inference_url is accepted as an alias).
-
-  - name: inference_url
-    type: string
-    description: >
-      Same role as endpoint_url when inference_backend is &quot;endpoint&quot;.
+      CLEAR inference backend: litellm (default) or legacy endpoint. Both use judge_api-key/judge_url in model.auth.secret_ref, falling back to the primary model Secret connection.
 
   - name: evaluation_criteria
     type: object
@@ -1444,24 +1393,13 @@ data:
       - name: provider
         type: string
         description: &gt;
-          Required. LiteLLM/OpenAI-style provider name for the judge (e.g. openai, azure).
+          Required. Use openai for Secret-based routing. Other native authentication protocols require additional sidecar support.
 
       - name: inference_backend
         type: string
         default: litellm
         description: &gt;
-          CLEAR inference backend. Use &quot;endpoint&quot; with model.url or parameters.endpoint_url (or inference_url)
-          for a fixed HTTP endpoint; default litellm uses the usual CLEAR LiteLLM path.
-
-      - name: endpoint_url
-        type: string
-        description: &gt;
-          When inference_backend is &quot;endpoint&quot;, HTTP base URL for the judge (inference_url is accepted as an alias).
-
-      - name: inference_url
-        type: string
-        description: &gt;
-          Same role as endpoint_url when inference_backend is &quot;endpoint&quot;.
+          CLEAR inference backend: litellm (default) or legacy endpoint. Both use judge_api-key/judge_url in model.auth.secret_ref, falling back to the primary model Secret connection.
 
       - name: evaluation_criteria
         type: object
@@ -2427,206 +2365,39 @@ benchmarks:
     tags: [custom, inspect-ai]
 
 parameters:
-  # ---------------------------------------------------------------------------
-  # Model configuration
-  #
-  # Every model role (target, auditor, judge, scenarios, realism) can point to
-  # any OpenAI-compatible endpoint including vLLM, Ollama, and OpenRouter.
-  #
-  # Per-role pattern:
-  #   {role}_model   — fully-qualified provider/model string
-  #   {role}_url     — base URL override (overrides global OPENAI_BASE_URL)
-  #   {role}_api_key — API key override (overrides global OPENAI_API_KEY)
-  #
-  # ---------------------------------------------------------------------------
-  # Model names — bare model names only, no provider prefixes required.
-  # The adapter detects the correct API from credentials:
-  #   OPENAI_BASE_URL / OPENAI_API_KEY  → OpenAI-compatible (vLLM, Ollama, OpenRouter)
-  #   ANTHROPIC_API_KEY                 → Anthropic Messages API
-  #
-  # vLLM model names: use the exact HuggingFace ID the server was loaded with.
-  #   Examples: ibm-granite/granite-3.3-8b-instruct, meta-llama/Llama-3.3-70B-Instruct
-  #
-  # Ollama model names: use the Ollama library name as shown by `ollama list`.
-  #   Examples: granite4.1:3b, llama3.3, qwen3:32b, granite3.3:8b, phi4
-  #
-  # OpenRouter model names: use the provider/model ID from openrouter.ai/models.
-  #   Examples: meta-llama/llama-3.3-70b-instruct, qwen/qwen3.5-27b-20260224
-  #
-  # Anthropic model names: use the Claude API model ID from platform.claude.com.
-  #   Examples: claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5-20251001
-  # ---------------------------------------------------------------------------
-
-  # ---------------------------------------------------------------------------
-  # Model names and per-role credentials
-  #
-  # Each role (target, auditor, judge, scenarios, realism) supports:
-  #   {role}_model      — model name (bare or org/model, no provider prefix)
-  #   {role}_base_url   — OpenAI-compatible endpoint URL for this role
-  #   {role}_api_key    — API key for this role's endpoint
-  #
-  # Global fallbacks (apply to all roles that don't have per-role overrides):
-  #   job.model.url / OPENAI_BASE_URL   — OpenAI-compatible endpoint
-  #   OPENAI_API_KEY / api_key          — API key for OpenAI-compatible endpoint
-  #   ANTHROPIC_API_KEY / anthropic_api_key — Anthropic API key
-  #
-  # When a role has its own base_url, that role uses an inline endpoint config
-  # and does not inherit OPENAI_BASE_URL from the target model's job.model.url.
-  # This allows each role to target a different provider or server instance.
-  # ---------------------------------------------------------------------------
-
-  # --- Target model (the model being evaluated) ---
-  # Primary endpoint: job.model.url (sets OPENAI_BASE_URL globally).
-  # Use target_base_url only to override with a different endpoint than the global one.
-
-  - name: api_key
-    type: string
-    default: null
-    description: >
-      Global API key for OpenAI-compatible endpoints. Sets OPENAI_API_KEY.
-      Not required for unauthenticated vLLM. Falls back to OPENAI_API_KEY env var.
-
+  # Model IDs are job parameters. Connections come only from model.auth.secret_ref:
+  # <role>_api-key and optional <role>_url. Missing roles reuse the primary connection.
+  # See ../../docs/model-role-auth.md. Legacy inline connection parameters are ignored.
   - name: grader_model
     type: string
     default: null
     description: >
-      StrongREJECT only. Optional independent grader model (for example
-      gpt-4o-mini). When set, the task uses Inspect's grader role instead of
-      its built-in judge_llm default. The credential must be injected into the
-      adapter as OPENAI_JUDGE_API_KEY; do not place the key in this parameter
-      or in task_args.
+      StrongREJECT grader model ID. Uses judge_api-key/judge_url from model.auth.secret_ref, or the primary Secret connection.
 
-  - name: grader_base_url
-    type: string
-    default: null
-    description: >
-      StrongREJECT only. Base URL for the independent grader's OpenAI-compatible
-      endpoint. Defaults to https://api.openai.com/v1 and can also be supplied
-      through OPENAI_JUDGE_BASE_URL.
-
-  - name: target_base_url
-    type: string
-    default: null
-    description: >
-      Override endpoint URL for the target model when it differs from job.model.url.
-      Implies OpenAI-compatible API.
-
-  - name: target_api_key
-    type: string
-    default: null
-    description: API key for the target model endpoint, when different from api_key.
-
-  # --- Auditor model (drives the adversarial conversation) ---
   - name: auditor_model
     type: string
     default: &quot;claude-sonnet-4-6&quot;
     description: >
-      Petri/Bloom auditor model name (bare or org/model — no provider prefix).
-      API is selected from credentials: ANTHROPIC_API_KEY → Anthropic API;
-      OPENAI_BASE_URL / OPENAI_API_KEY → OpenAI-compatible endpoint.
-      Per-role override: set auditor_base_url to use a dedicated endpoint.
+      Petri/Bloom auditor model ID. Uses auditor_api-key/auditor_url from model.auth.secret_ref, or the primary Secret connection.
 
-  - name: auditor_base_url
-    type: string
-    default: null
-    description: >
-      OpenAI-compatible endpoint URL for the auditor. Overrides global OPENAI_BASE_URL
-      for this role only. Set auditor_anthropic_base_url instead for Anthropic endpoints.
-
-  - name: auditor_api_key
-    type: string
-    default: null
-    description: OpenAI-compatible API key for the auditor endpoint.
-
-  - name: auditor_anthropic_base_url
-    type: string
-    default: null
-    description: >
-      Anthropic API base URL for the auditor (for proxies or on-prem deployments).
-      Overrides the global ANTHROPIC_BASE_URL for this role only.
-
-  - name: auditor_anthropic_api_key
-    type: string
-    default: null
-    description: Anthropic API key for the auditor, when different from anthropic_api_key.
-
-  # --- Judge model (scores transcripts on 38 alignment dimensions) ---
   - name: judge_model
     type: string
     default: &quot;claude-opus-4-7&quot;
     description: >
-      Petri/Bloom judge model name. For HLE and CyberSecEval 2 in the bundled
-      collections, provide a non-empty per-job judge_model. With no judge-specific
-      entries in model.auth.secret_ref, this reuses the target connection;
-      judge_api-key selects a separate credential and optional judge_url a
-      separate endpoint.
+      Judge model ID. Uses judge_api-key/judge_url from model.auth.secret_ref. HLE/CyberSecEval bind this model to the grader role.
 
-  - name: judge_base_url
-    type: string
-    default: null
-    description: OpenAI-compatible endpoint URL for the judge. Overrides global OPENAI_BASE_URL.
-
-  - name: judge_api_key
-    type: string
-    default: null
-    description: OpenAI-compatible API key for the judge endpoint.
-
-  - name: judge_anthropic_base_url
-    type: string
-    default: null
-    description: >
-      Anthropic API base URL for the judge (for proxies or on-prem deployments).
-      Overrides the global ANTHROPIC_BASE_URL for this role only.
-
-  - name: judge_anthropic_api_key
-    type: string
-    default: null
-    description: Anthropic API key for the judge, when different from anthropic_api_key.
-
-  # --- Anthropic API key (global fallback for Anthropic-hosted models) ---
-  - name: anthropic_api_key
-    type: string
-    default: null
-    description: >
-      API key for the Anthropic API. Falls back to ANTHROPIC_API_KEY env var.
-
-  # --- Scenarios model (Bloom only) ---
   - name: scenarios_model
     type: string
     default: null
     description: >
-      Bloom only. Model for the 'bloom scenarios' generation step.
-      Defaults to auditor_model when unset.
+      Bloom scenario-generation model ID; defaults to auditor_model. Uses scenarios_api-key/scenarios_url from model.auth.secret_ref.
 
-  - name: scenarios_base_url
-    type: string
-    default: null
-    description: OpenAI-compatible endpoint URL for the scenarios model.
-
-  - name: scenarios_api_key
-    type: string
-    default: null
-    description: API key for the scenarios endpoint.
-
-  # --- Realism model (Petri optional) ---
   - name: realism_model
     type: string
     default: null
     description: >
-      Petri only. Optional fourth model role for realism filtering.
-      Defaults to auditor when unset.
+      Optional Petri realism model ID. Uses realism_api-key/realism_url from model.auth.secret_ref.
 
-  - name: realism_base_url
-    type: string
-    default: null
-    description: OpenAI-compatible endpoint URL for the realism model.
-
-  - name: realism_api_key
-    type: string
-    default: null
-    description: API key for the realism endpoint.
-
-  # --- Bloom-specific ---
   - name: behavior_dir
     type: string
     default: null
@@ -3497,206 +3268,39 @@ data:
         tags: [custom, inspect-ai]
 
     parameters:
-      # ---------------------------------------------------------------------------
-      # Model configuration
-      #
-      # Every model role (target, auditor, judge, scenarios, realism) can point to
-      # any OpenAI-compatible endpoint including vLLM, Ollama, and OpenRouter.
-      #
-      # Per-role pattern:
-      #   {role}_model   — fully-qualified provider/model string
-      #   {role}_url     — base URL override (overrides global OPENAI_BASE_URL)
-      #   {role}_api_key — API key override (overrides global OPENAI_API_KEY)
-      #
-      # ---------------------------------------------------------------------------
-      # Model names — bare model names only, no provider prefixes required.
-      # The adapter detects the correct API from credentials:
-      #   OPENAI_BASE_URL / OPENAI_API_KEY  → OpenAI-compatible (vLLM, Ollama, OpenRouter)
-      #   ANTHROPIC_API_KEY                 → Anthropic Messages API
-      #
-      # vLLM model names: use the exact HuggingFace ID the server was loaded with.
-      #   Examples: ibm-granite/granite-3.3-8b-instruct, meta-llama/Llama-3.3-70B-Instruct
-      #
-      # Ollama model names: use the Ollama library name as shown by `ollama list`.
-      #   Examples: granite4.1:3b, llama3.3, qwen3:32b, granite3.3:8b, phi4
-      #
-      # OpenRouter model names: use the provider/model ID from openrouter.ai/models.
-      #   Examples: meta-llama/llama-3.3-70b-instruct, qwen/qwen3.5-27b-20260224
-      #
-      # Anthropic model names: use the Claude API model ID from platform.claude.com.
-      #   Examples: claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5-20251001
-      # ---------------------------------------------------------------------------
-
-      # ---------------------------------------------------------------------------
-      # Model names and per-role credentials
-      #
-      # Each role (target, auditor, judge, scenarios, realism) supports:
-      #   {role}_model      — model name (bare or org/model, no provider prefix)
-      #   {role}_base_url   — OpenAI-compatible endpoint URL for this role
-      #   {role}_api_key    — API key for this role&#39;s endpoint
-      #
-      # Global fallbacks (apply to all roles that don&#39;t have per-role overrides):
-      #   job.model.url / OPENAI_BASE_URL   — OpenAI-compatible endpoint
-      #   OPENAI_API_KEY / api_key          — API key for OpenAI-compatible endpoint
-      #   ANTHROPIC_API_KEY / anthropic_api_key — Anthropic API key
-      #
-      # When a role has its own base_url, that role uses an inline endpoint config
-      # and does not inherit OPENAI_BASE_URL from the target model&#39;s job.model.url.
-      # This allows each role to target a different provider or server instance.
-      # ---------------------------------------------------------------------------
-
-      # --- Target model (the model being evaluated) ---
-      # Primary endpoint: job.model.url (sets OPENAI_BASE_URL globally).
-      # Use target_base_url only to override with a different endpoint than the global one.
-
-      - name: api_key
-        type: string
-        default: null
-        description: &gt;
-          Global API key for OpenAI-compatible endpoints. Sets OPENAI_API_KEY.
-          Not required for unauthenticated vLLM. Falls back to OPENAI_API_KEY env var.
-
+      # Model IDs are job parameters. Connections come only from model.auth.secret_ref:
+      # &lt;role&gt;_api-key and optional &lt;role&gt;_url. Missing roles reuse the primary connection.
+      # See ../../docs/model-role-auth.md. Legacy inline connection parameters are ignored.
       - name: grader_model
         type: string
         default: null
         description: &gt;
-          StrongREJECT only. Optional independent grader model (for example
-          gpt-4o-mini). When set, the task uses Inspect&#39;s grader role instead of
-          its built-in judge_llm default. The credential must be injected into the
-          adapter as OPENAI_JUDGE_API_KEY; do not place the key in this parameter
-          or in task_args.
+          StrongREJECT grader model ID. Uses judge_api-key/judge_url from model.auth.secret_ref, or the primary Secret connection.
 
-      - name: grader_base_url
-        type: string
-        default: null
-        description: &gt;
-          StrongREJECT only. Base URL for the independent grader&#39;s OpenAI-compatible
-          endpoint. Defaults to https://api.openai.com/v1 and can also be supplied
-          through OPENAI_JUDGE_BASE_URL.
-
-      - name: target_base_url
-        type: string
-        default: null
-        description: &gt;
-          Override endpoint URL for the target model when it differs from job.model.url.
-          Implies OpenAI-compatible API.
-
-      - name: target_api_key
-        type: string
-        default: null
-        description: API key for the target model endpoint, when different from api_key.
-
-      # --- Auditor model (drives the adversarial conversation) ---
       - name: auditor_model
         type: string
         default: &quot;claude-sonnet-4-6&quot;
         description: &gt;
-          Petri/Bloom auditor model name (bare or org/model — no provider prefix).
-          API is selected from credentials: ANTHROPIC_API_KEY → Anthropic API;
-          OPENAI_BASE_URL / OPENAI_API_KEY → OpenAI-compatible endpoint.
-          Per-role override: set auditor_base_url to use a dedicated endpoint.
+          Petri/Bloom auditor model ID. Uses auditor_api-key/auditor_url from model.auth.secret_ref, or the primary Secret connection.
 
-      - name: auditor_base_url
-        type: string
-        default: null
-        description: &gt;
-          OpenAI-compatible endpoint URL for the auditor. Overrides global OPENAI_BASE_URL
-          for this role only. Set auditor_anthropic_base_url instead for Anthropic endpoints.
-
-      - name: auditor_api_key
-        type: string
-        default: null
-        description: OpenAI-compatible API key for the auditor endpoint.
-
-      - name: auditor_anthropic_base_url
-        type: string
-        default: null
-        description: &gt;
-          Anthropic API base URL for the auditor (for proxies or on-prem deployments).
-          Overrides the global ANTHROPIC_BASE_URL for this role only.
-
-      - name: auditor_anthropic_api_key
-        type: string
-        default: null
-        description: Anthropic API key for the auditor, when different from anthropic_api_key.
-
-      # --- Judge model (scores transcripts on 38 alignment dimensions) ---
       - name: judge_model
         type: string
         default: &quot;claude-opus-4-7&quot;
         description: &gt;
-          Petri/Bloom judge model name. For HLE and CyberSecEval 2 in the bundled
-          collections, provide a non-empty per-job judge_model. With no judge-specific
-          entries in model.auth.secret_ref, this reuses the target connection;
-          judge_api-key selects a separate credential and optional judge_url a
-          separate endpoint.
+          Judge model ID. Uses judge_api-key/judge_url from model.auth.secret_ref. HLE/CyberSecEval bind this model to the grader role.
 
-      - name: judge_base_url
-        type: string
-        default: null
-        description: OpenAI-compatible endpoint URL for the judge. Overrides global OPENAI_BASE_URL.
-
-      - name: judge_api_key
-        type: string
-        default: null
-        description: OpenAI-compatible API key for the judge endpoint.
-
-      - name: judge_anthropic_base_url
-        type: string
-        default: null
-        description: &gt;
-          Anthropic API base URL for the judge (for proxies or on-prem deployments).
-          Overrides the global ANTHROPIC_BASE_URL for this role only.
-
-      - name: judge_anthropic_api_key
-        type: string
-        default: null
-        description: Anthropic API key for the judge, when different from anthropic_api_key.
-
-      # --- Anthropic API key (global fallback for Anthropic-hosted models) ---
-      - name: anthropic_api_key
-        type: string
-        default: null
-        description: &gt;
-          API key for the Anthropic API. Falls back to ANTHROPIC_API_KEY env var.
-
-      # --- Scenarios model (Bloom only) ---
       - name: scenarios_model
         type: string
         default: null
         description: &gt;
-          Bloom only. Model for the &#39;bloom scenarios&#39; generation step.
-          Defaults to auditor_model when unset.
+          Bloom scenario-generation model ID; defaults to auditor_model. Uses scenarios_api-key/scenarios_url from model.auth.secret_ref.
 
-      - name: scenarios_base_url
-        type: string
-        default: null
-        description: OpenAI-compatible endpoint URL for the scenarios model.
-
-      - name: scenarios_api_key
-        type: string
-        default: null
-        description: API key for the scenarios endpoint.
-
-      # --- Realism model (Petri optional) ---
       - name: realism_model
         type: string
         default: null
         description: &gt;
-          Petri only. Optional fourth model role for realism filtering.
-          Defaults to auditor when unset.
+          Optional Petri realism model ID. Uses realism_api-key/realism_url from model.auth.secret_ref.
 
-      - name: realism_base_url
-        type: string
-        default: null
-        description: OpenAI-compatible endpoint URL for the realism model.
-
-      - name: realism_api_key
-        type: string
-        default: null
-        description: API key for the realism endpoint.
-
-      # --- Bloom-specific ---
       - name: behavior_dir
         type: string
         default: null
@@ -3809,17 +3413,15 @@ data:
 </pre> </details> </div> </div><div class="provider-detail" data-detail-id="lighteval" data-provider-yaml="# LightEval Adapter — Provider Configuration
 #
 # Wraps HuggingFace LightEval (https://github.com/huggingface/lighteval) as an
-# EvalHub community provider. Evaluates any OpenAI-compatible inference endpoint
-# against the benchmark suite without loading model weights locally.
+# EvalHub community provider. Supports local model backends and OpenAI-compatible
+# inference endpoints.
 
 id: lighteval
 name: LightEval
 description: >
-  HuggingFace LightEval — endpoint-only evaluation against any OpenAI-compatible
-  server (vLLM, Ollama, OpenRouter). Supports loglikelihood (multiple-choice) and
-  generative tasks across reasoning, math, knowledge, coding, and safety benchmarks.
-  Loglikelihood scoring uses the /v1/completions echo+logprobs path; no local
-  model weights required.
+  HuggingFace LightEval evaluates models through local Transformers/vLLM
+  backends or API providers. OpenAI-compatible APIs can run generation tasks
+  and loglikelihood tasks when the server supports echo and logprobs.
 type: community
 
 # ── Agent Discoverability ──────────────────────────────────────────────────────
@@ -3833,14 +3435,15 @@ agent:
     - safety
     - truthfulness
   recommended_when:
-    - &quot;User wants GSM8K, HellaSwag, ARC, WinoGrande, or TruthfulQA via endpoint&quot;
+    - &quot;User wants generation benchmarks through an API endpoint&quot;
     - &quot;Competition math benchmarks: AIME 2024/2025, MATH-500&quot;
-    - &quot;User wants GLUE language-understanding subtasks via a custom endpoint&quot;
-    - &quot;Lightweight truth-checking: TruthfulQA MC against an API model&quot;
+    - >-
+      User wants ARC, WinoGrande, GLUE, or TruthfulQA multiple choice through an
+      API that supports echo and logprobs.
   target_type: model
   summary: >-
     HuggingFace LightEval — 28 benchmarks across reasoning, math, knowledge, coding,
-    and safety. Evaluates any OpenAI-compatible endpoint; no local GPU needed.
+    and safety. Supports compatible API endpoints without local model weights.
   complements:
     - inspect
     - lm-eval
@@ -3850,23 +3453,17 @@ agent:
       {&quot;max_samples&quot;: 50}). Without it the full dataset runs, which can take
       hours for large benchmarks.
     - >-
-      Log-likelihood benchmarks (arc:easy, arc:challenge, winogrande, glue:cola,
-      glue:sst2, glue:mrpc, truthfulqa:mc and the suites that include them:
-      commonsense_reasoning, scientific_reasoning, language_understanding,
-      truthfulness) are scored through /v1/completions with echo=True and
-      logprobs=1. The endpoint must support these parameters (vLLM does by
-      default); a request that cannot be scored fails the job instead of
-      producing an accuracy. If your endpoint does not expose them, use
-      lm-evaluation-harness instead.
+      OpenAI-compatible API providers (endpoint, openai, and litellm) can run
+      log-likelihood benchmarks such as arc:easy, winogrande, glue:cola, and
+      truthfulqa:mc when the server supports /v1/completions with echo=true and
+      logprobs=1. A request that cannot be scored fails the job. Anthropic does
+      not support this scoring path and is rejected for these tasks. For an API
+      model whose server lacks these capabilities, use lm-evaluation-harness.
     - >-
-      The scored text is the one lighteval's own backends use: system prompt,
-      task instruction, few-shot examples (num_few_shot) and the question, then
-      each answer choice. Per-choice log-likelihoods match lighteval's
-      transformers backend for the same model and prompt settings.
-    - >-
-      Generation-only benchmarks (gsm8k, math*, aime*, gpqa:diamond, hellaswag,
-      piqa, openbookqa, mmlu, triviaqa, truthfulqa:gen, lcb:codegeneration_v6)
-      do not need /v1/completions logprobs.
+      Generation benchmarks (gsm8k, math*, aime*, gpqa:diamond, hellaswag,
+      mmlu, triviaqa, truthfulqa:gen, lcb:codegeneration_v6) do not need
+      logprobs. In LightEval 0.13.0, HellaSwag and MMLU use generation-based
+      task definitions with exact-match metrics.
 
 parameters:
   - name: provider
@@ -3875,10 +3472,10 @@ parameters:
     description: >
       Model provider backend. Use &quot;endpoint&quot; (default) for any OpenAI-compatible
       API server (vLLM, Ollama, OpenRouter, etc.). Other valid values are
-      &quot;transformers&quot;, &quot;vllm&quot;, &quot;openai&quot;, &quot;anthropic&quot;. &quot;anthropic&quot; runs the
-      generation-only benchmarks; log-likelihood benchmarks are rejected for it
-      because they need /v1/completions with echo+logprobs, which Anthropic's API
-      does not implement.
+      &quot;transformers&quot;, &quot;vllm&quot;, &quot;openai&quot;, &quot;anthropic&quot;, or &quot;litellm&quot;.
+      OpenAI-compatible API providers need a server with /v1/completions echo+logprobs
+      support for log-likelihood tasks. Anthropic is generation-only because its
+      API does not implement that scoring path.
 
   - name: max_samples
     type: integer
@@ -4044,7 +3641,7 @@ benchmarks:
 
   - id: hellaswag
     name: HellaSwag
-    description: Everyday activity completion — commonsense NLI via loglikelihood scoring.
+    description: Everyday activity completion — commonsense multiple choice scored by generated answers.
     category: reasoning
     metrics: [hellaswag.em]
     tags: [reasoning, commonsense, lighteval]
@@ -4268,8 +3865,7 @@ benchmarks:
     pass_criteria:
       # Placeholder: strict exact match on free-form text scores low by design.
       threshold: 0.1
-
-" hidden> <div class="detail-header"> <div class="detail-title-group"> <h3>LightEval</h3> <div class="detail-id">lighteval</div> </div> <a class="detail-github-link" href="https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/lighteval/provider.yaml" target="_blank" rel="noopener noreferrer" title="View provider.yaml on GitHub" aria-label="View provider.yaml on GitHub"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"> <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path> </svg> </a> </div> <p>HuggingFace LightEval — endpoint-only evaluation against any OpenAI-compatible server (vLLM, Ollama, OpenRouter). Supports loglikelihood (multiple-choice) and generative tasks across reasoning, math, knowledge, coding, and safety benchmarks. Loglikelihood scoring uses the /v1/completions echo+logprobs path; no local model weights required.
+" hidden> <div class="detail-header"> <div class="detail-title-group"> <h3>LightEval</h3> <div class="detail-id">lighteval</div> </div> <a class="detail-github-link" href="https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/lighteval/provider.yaml" target="_blank" rel="noopener noreferrer" title="View provider.yaml on GitHub" aria-label="View provider.yaml on GitHub"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"> <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path> </svg> </a> </div> <p>HuggingFace LightEval evaluates models through local Transformers/vLLM backends or API providers. OpenAI-compatible APIs can run generation tasks and loglikelihood tasks when the server supports echo and logprobs.
 </p> <div class="detail-section"> <h4>Runtime</h4> <div class="detail-runtime">quay.io/evalhub/community-lighteval:latest</div> </div> <div class="detail-section"> <h4>Benchmarks (28)</h4> <table class="benchmarks-table"> <thead> <tr><th>ID</th><th>Name</th><th>Category</th></tr> </thead> <tbody> <tr> <td><code>math</code></td> <td>Math problem-solving suite</td> <td>math</td> </tr><tr> <td><code>gsm8k</code></td> <td>GSM8K</td> <td>math</td> </tr><tr> <td><code>math:algebra</code></td> <td>Competition algebra</td> <td>math</td> </tr><tr> <td><code>math:counting_and_probability</code></td> <td>Counting &amp; probability problems</td> <td>math</td> </tr><tr> <td><code>math_500</code></td> <td>MATH-500</td> <td>math</td> </tr><tr> <td><code>aime24</code></td> <td>AIME 2024</td> <td>math</td> </tr><tr> <td><code>aime25</code></td> <td>AIME 2025</td> <td>math</td> </tr><tr> <td><code>commonsense_reasoning</code></td> <td>Commonsense reasoning suite</td> <td>reasoning</td> </tr><tr> <td><code>scientific_reasoning</code></td> <td>Science reasoning suite</td> <td>reasoning</td> </tr><tr> <td><code>physical_commonsense</code></td> <td>Physical world understanding suite</td> <td>reasoning</td> </tr><tr> <td><code>hellaswag</code></td> <td>HellaSwag</td> <td>reasoning</td> </tr><tr> <td><code>winogrande</code></td> <td>WinoGrande</td> <td>reasoning</td> </tr><tr> <td><code>arc:easy</code></td> <td>ARC Easy</td> <td>reasoning</td> </tr><tr> <td><code>arc:challenge</code></td> <td>ARC Challenge</td> <td>reasoning</td> </tr><tr> <td><code>piqa</code></td> <td>PIQA</td> <td>reasoning</td> </tr><tr> <td><code>gpqa:diamond</code></td> <td>GPQA Diamond</td> <td>reasoning</td> </tr><tr> <td><code>knowledge</code></td> <td>Factual knowledge suite</td> <td>knowledge</td> </tr><tr> <td><code>mmlu</code></td> <td>MMLU</td> <td>knowledge</td> </tr><tr> <td><code>triviaqa</code></td> <td>TriviaQA</td> <td>knowledge</td> </tr><tr> <td><code>openbookqa</code></td> <td>OpenBookQA</td> <td>knowledge</td> </tr><tr> <td><code>language_understanding</code></td> <td>Language understanding suite</td> <td>language_understanding</td> </tr><tr> <td><code>glue:cola</code></td> <td>CoLA — Grammatical acceptability</td> <td>language_understanding</td> </tr><tr> <td><code>glue:sst2</code></td> <td>SST-2 — Sentiment classification</td> <td>language_understanding</td> </tr><tr> <td><code>glue:mrpc</code></td> <td>MRPC — Paraphrase detection</td> <td>language_understanding</td> </tr><tr> <td><code>lcb:codegeneration_v6</code></td> <td>LiveCodeBench v6 — Code generation</td> <td>code</td> </tr><tr> <td><code>truthfulness</code></td> <td>Honesty &amp; hallucination suite</td> <td>safety</td> </tr><tr> <td><code>truthfulqa:mc</code></td> <td>TruthfulQA — Multiple choice</td> <td>safety</td> </tr><tr> <td><code>truthfulqa:gen</code></td> <td>TruthfulQA — Generation</td> <td>safety</td> </tr> </tbody> </table> </div> <div class="detail-section"> <h4>ConfigMap options</h4> <form class="configmap-form" data-configmap-form> <label>
 Namespace
 <input type="text" name="namespace" value="opendatahub"> </label> <label>
@@ -4285,21 +3881,19 @@ metadata:
     trustyai.opendatahub.io/evalhub-provider-type: system
     trustyai.opendatahub.io/evalhub-provider-name: lighteval
 data:
-  lighteval.yaml: |+
+  lighteval.yaml: |
     # LightEval Adapter — Provider Configuration
     #
     # Wraps HuggingFace LightEval (https://github.com/huggingface/lighteval) as an
-    # EvalHub community provider. Evaluates any OpenAI-compatible inference endpoint
-    # against the benchmark suite without loading model weights locally.
+    # EvalHub community provider. Supports local model backends and OpenAI-compatible
+    # inference endpoints.
 
     id: lighteval
     name: LightEval
     description: &gt;
-      HuggingFace LightEval — endpoint-only evaluation against any OpenAI-compatible
-      server (vLLM, Ollama, OpenRouter). Supports loglikelihood (multiple-choice) and
-      generative tasks across reasoning, math, knowledge, coding, and safety benchmarks.
-      Loglikelihood scoring uses the /v1/completions echo+logprobs path; no local
-      model weights required.
+      HuggingFace LightEval evaluates models through local Transformers/vLLM
+      backends or API providers. OpenAI-compatible APIs can run generation tasks
+      and loglikelihood tasks when the server supports echo and logprobs.
     type: community
 
     # ── Agent Discoverability ──────────────────────────────────────────────────────
@@ -4313,14 +3907,15 @@ data:
         - safety
         - truthfulness
       recommended_when:
-        - &quot;User wants GSM8K, HellaSwag, ARC, WinoGrande, or TruthfulQA via endpoint&quot;
+        - &quot;User wants generation benchmarks through an API endpoint&quot;
         - &quot;Competition math benchmarks: AIME 2024/2025, MATH-500&quot;
-        - &quot;User wants GLUE language-understanding subtasks via a custom endpoint&quot;
-        - &quot;Lightweight truth-checking: TruthfulQA MC against an API model&quot;
+        - &gt;-
+          User wants ARC, WinoGrande, GLUE, or TruthfulQA multiple choice through an
+          API that supports echo and logprobs.
       target_type: model
       summary: &gt;-
         HuggingFace LightEval — 28 benchmarks across reasoning, math, knowledge, coding,
-        and safety. Evaluates any OpenAI-compatible endpoint; no local GPU needed.
+        and safety. Supports compatible API endpoints without local model weights.
       complements:
         - inspect
         - lm-eval
@@ -4330,23 +3925,17 @@ data:
           {&quot;max_samples&quot;: 50}). Without it the full dataset runs, which can take
           hours for large benchmarks.
         - &gt;-
-          Log-likelihood benchmarks (arc:easy, arc:challenge, winogrande, glue:cola,
-          glue:sst2, glue:mrpc, truthfulqa:mc and the suites that include them:
-          commonsense_reasoning, scientific_reasoning, language_understanding,
-          truthfulness) are scored through /v1/completions with echo=True and
-          logprobs=1. The endpoint must support these parameters (vLLM does by
-          default); a request that cannot be scored fails the job instead of
-          producing an accuracy. If your endpoint does not expose them, use
-          lm-evaluation-harness instead.
+          OpenAI-compatible API providers (endpoint, openai, and litellm) can run
+          log-likelihood benchmarks such as arc:easy, winogrande, glue:cola, and
+          truthfulqa:mc when the server supports /v1/completions with echo=true and
+          logprobs=1. A request that cannot be scored fails the job. Anthropic does
+          not support this scoring path and is rejected for these tasks. For an API
+          model whose server lacks these capabilities, use lm-evaluation-harness.
         - &gt;-
-          The scored text is the one lighteval&#39;s own backends use: system prompt,
-          task instruction, few-shot examples (num_few_shot) and the question, then
-          each answer choice. Per-choice log-likelihoods match lighteval&#39;s
-          transformers backend for the same model and prompt settings.
-        - &gt;-
-          Generation-only benchmarks (gsm8k, math*, aime*, gpqa:diamond, hellaswag,
-          piqa, openbookqa, mmlu, triviaqa, truthfulqa:gen, lcb:codegeneration_v6)
-          do not need /v1/completions logprobs.
+          Generation benchmarks (gsm8k, math*, aime*, gpqa:diamond, hellaswag,
+          mmlu, triviaqa, truthfulqa:gen, lcb:codegeneration_v6) do not need
+          logprobs. In LightEval 0.13.0, HellaSwag and MMLU use generation-based
+          task definitions with exact-match metrics.
 
     parameters:
       - name: provider
@@ -4355,10 +3944,10 @@ data:
         description: &gt;
           Model provider backend. Use &quot;endpoint&quot; (default) for any OpenAI-compatible
           API server (vLLM, Ollama, OpenRouter, etc.). Other valid values are
-          &quot;transformers&quot;, &quot;vllm&quot;, &quot;openai&quot;, &quot;anthropic&quot;. &quot;anthropic&quot; runs the
-          generation-only benchmarks; log-likelihood benchmarks are rejected for it
-          because they need /v1/completions with echo+logprobs, which Anthropic&#39;s API
-          does not implement.
+          &quot;transformers&quot;, &quot;vllm&quot;, &quot;openai&quot;, &quot;anthropic&quot;, or &quot;litellm&quot;.
+          OpenAI-compatible API providers need a server with /v1/completions echo+logprobs
+          support for log-likelihood tasks. Anthropic is generation-only because its
+          API does not implement that scoring path.
 
       - name: max_samples
         type: integer
@@ -4524,7 +4113,7 @@ data:
 
       - id: hellaswag
         name: HellaSwag
-        description: Everyday activity completion — commonsense NLI via loglikelihood scoring.
+        description: Everyday activity completion — commonsense multiple choice scored by generated answers.
         category: reasoning
         metrics: [hellaswag.em]
         tags: [reasoning, commonsense, lighteval]
@@ -4748,7 +4337,6 @@ data:
         pass_criteria:
           # Placeholder: strict exact match on free-form text scores low by design.
           threshold: 0.1
-
 </pre> </details> </div> </div><div class="provider-detail" data-detail-id="mteb" data-provider-yaml="# MTEB Provider Configuration
 # Massive Text Embedding Benchmark - comprehensive evaluation for text embedding models
 
@@ -4846,12 +4434,21 @@ parameters:
   - name: batch_size
     type: integer
     default: 32
-    description: Batch size for encoding
+    description: Positive integer batch size for encoding
+
+  - name: num_examples
+    type: integer
+    default: null
+    description: >-
+      Maximum evaluation examples per task; null evaluates the full dataset.
+      Retrieval limits queries and qrels but still processes the full corpus.
 
   - name: device
     type: string
     default: null
-    description: Device override (cuda, cpu, mps, cuda:0)
+    description: >-
+      Optional device override: cpu, mps, cuda, or cuda:<index>. Omit to let
+      MTEB choose the device.
 
   - name: languages
     type: array
@@ -4991,12 +4588,21 @@ data:
       - name: batch_size
         type: integer
         default: 32
-        description: Batch size for encoding
+        description: Positive integer batch size for encoding
+
+      - name: num_examples
+        type: integer
+        default: null
+        description: &gt;-
+          Maximum evaluation examples per task; null evaluates the full dataset.
+          Retrieval limits queries and qrels but still processes the full corpus.
 
       - name: device
         type: string
         default: null
-        description: Device override (cuda, cpu, mps, cuda:0)
+        description: &gt;-
+          Optional device override: cpu, mps, cuda, or cuda:&lt;index&gt;. Omit to let
+          MTEB choose the device.
 
       - name: languages
         type: array
@@ -5832,7 +5438,7 @@ agent:
     - wildguard
   hints:
     - &quot;The model endpoint must support OpenAI-compatible chat completions (POST /v1/chat/completions)&quot;
-    - &quot;promptfoo-redteam requires a generation_provider capable of producing adversarial test content AND grading responses (two independent promptfoo defaults); if unset, both fall back to promptfoo's own default model and OPENAI_API_KEY must be available&quot;
+    - &quot;promptfoo-redteam requires a generation_provider capable of producing adversarial test content AND grading responses (two independent promptfoo defaults); if unset, the target model is used; credentials and endpoints come from model.auth.secret_ref&quot;
     - &quot;promptfoo-redteam never calls promptfoo's hosted cloud service — PROMPTFOO_DISABLE_REDTEAM_REMOTE_GENERATION=1 is always set by this adapter&quot;
     - &quot;Use promptfoo-eval's config_yaml parameter to pass through an existing promptfoo project's config verbatim instead of generating one from prompts/tests&quot;
   result_interpretation:
@@ -6005,41 +5611,12 @@ parameters:
     type: string
     default: null
     description: >
-      promptfoo provider ID used both to generate adversarial test content
-      (passed as `redteam generate --provider`) AND to grade the resulting
-      responses (passed as `eval --grader`). These are two independent
-      promptfoo concerns that default separately — verified against a live
-      cluster: grading silently defaults to a hardcoded hosted model name
-      unrelated to --provider, and every graded test reports as failed
-      (pass=false) if that model isn't reachable. Leaving this unset makes
-      BOTH generation and grading fall back to promptfoo's own default model,
-      which requires OPENAI_API_KEY. For regulated/air-gapped deployments,
-      set this to an internally-hosted model so no external call is made for
-      either step.
+      OpenAI-compatible promptfoo provider ID (e.g. openai:chat:generator-model)
+      for adversarial generation. Defaults to the target provider ID. Its URL
+      and credential come from generation_provider_url/generation_provider_api-key
+      in model.auth.secret_ref. Grading uses judge_model (or this model ID) with
+      the independent judge_url/judge_api-key Secret connection.
 
-  - name: generation_provider_url
-    type: string
-    default: null
-    description: >
-      Base URL of the OpenAI-compatible endpoint for the generation_provider
-      model (e.g. https://granite-2b-svc.models.svc:8000/v1). Injected as
-      OPENAI_BASE_URL so promptfoo can reach cluster-internal models that
-      are not the evaluation target. If unset, defaults to the target
-      model's URL — suitable when both models share the same endpoint.
-      Only used when generation_provider is set.
-
-  - name: generation_provider_api_key
-    type: string
-    default: null
-    description: >
-      API key for the generation_provider endpoint. Injected as
-      OPENAI_API_KEY so promptfoo can authenticate with external model
-      services (e.g. LiteLLM, OpenAI) used for red-team test generation
-      and grading. Resolution order: this parameter, then the
-      GENERATION_PROVIDER_API_KEY environment variable, then the target
-      model's own API key. Only used when generation_provider is set.
-
-  # --- common parameters ---
   - name: max_concurrency
     type: integer
     default: 4
@@ -6049,6 +5626,14 @@ parameters:
     type: integer
     default: 120
     description: Per-request timeout in seconds for calls to the model endpoint.
+
+  - name: judge_model
+    type: string
+    default: null
+    description: >
+      OpenAI-compatible promptfoo grader provider ID, e.g. openai:chat:judge-model.
+      Defaults to generation_provider, then the target model. The connection comes
+      from judge_api-key/judge_url in model.auth.secret_ref.
 " hidden> <div class="detail-header"> <div class="detail-title-group"> <h3>promptfoo</h3> <div class="detail-id">promptfoo</div> </div> <a class="detail-github-link" href="https://github.com/eval-hub/eval-hub-contrib/blob/main/adapters/promptfoo/provider.yaml" target="_blank" rel="noopener noreferrer" title="View provider.yaml on GitHub" aria-label="View provider.yaml on GitHub"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"> <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path> </svg> </a> </div> <p>promptfoo (MIT license) is an open-source LLM testing tool. This adapter wraps its assertion-based prompt/model regression testing (promptfoo-eval) and its OWASP LLM Top 10 red-team plugin catalog (promptfoo-redteam). Every job persists promptfoo&#39;s native eval.json as a retained artifact so results can be reopened in promptfoo&#39;s own viewer via `promptfoo import`. Reference: https://github.com/promptfoo/promptfoo
 </p> <div class="detail-section"> <h4>Runtime</h4> <div class="detail-runtime">quay.io/evalhub/community-promptfoo:latest</div> </div> <div class="detail-section"> <h4>Benchmarks (2)</h4> <table class="benchmarks-table"> <thead> <tr><th>ID</th><th>Name</th><th>Category</th></tr> </thead> <tbody> <tr> <td><code>promptfoo-eval</code></td> <td>promptfoo Assertion-Based Regression Testing</td> <td>capability</td> </tr><tr> <td><code>promptfoo-redteam</code></td> <td>promptfoo Red-Team Evaluation (OWASP LLM Top 10)</td> <td>safety</td> </tr> </tbody> </table> </div> <div class="detail-section"> <h4>ConfigMap options</h4> <form class="configmap-form" data-configmap-form> <label>
 Namespace
@@ -6133,7 +5718,7 @@ data:
         - wildguard
       hints:
         - &quot;The model endpoint must support OpenAI-compatible chat completions (POST /v1/chat/completions)&quot;
-        - &quot;promptfoo-redteam requires a generation_provider capable of producing adversarial test content AND grading responses (two independent promptfoo defaults); if unset, both fall back to promptfoo&#39;s own default model and OPENAI_API_KEY must be available&quot;
+        - &quot;promptfoo-redteam requires a generation_provider capable of producing adversarial test content AND grading responses (two independent promptfoo defaults); if unset, the target model is used; credentials and endpoints come from model.auth.secret_ref&quot;
         - &quot;promptfoo-redteam never calls promptfoo&#39;s hosted cloud service — PROMPTFOO_DISABLE_REDTEAM_REMOTE_GENERATION=1 is always set by this adapter&quot;
         - &quot;Use promptfoo-eval&#39;s config_yaml parameter to pass through an existing promptfoo project&#39;s config verbatim instead of generating one from prompts/tests&quot;
       result_interpretation:
@@ -6306,41 +5891,12 @@ data:
         type: string
         default: null
         description: &gt;
-          promptfoo provider ID used both to generate adversarial test content
-          (passed as `redteam generate --provider`) AND to grade the resulting
-          responses (passed as `eval --grader`). These are two independent
-          promptfoo concerns that default separately — verified against a live
-          cluster: grading silently defaults to a hardcoded hosted model name
-          unrelated to --provider, and every graded test reports as failed
-          (pass=false) if that model isn&#39;t reachable. Leaving this unset makes
-          BOTH generation and grading fall back to promptfoo&#39;s own default model,
-          which requires OPENAI_API_KEY. For regulated/air-gapped deployments,
-          set this to an internally-hosted model so no external call is made for
-          either step.
+          OpenAI-compatible promptfoo provider ID (e.g. openai:chat:generator-model)
+          for adversarial generation. Defaults to the target provider ID. Its URL
+          and credential come from generation_provider_url/generation_provider_api-key
+          in model.auth.secret_ref. Grading uses judge_model (or this model ID) with
+          the independent judge_url/judge_api-key Secret connection.
 
-      - name: generation_provider_url
-        type: string
-        default: null
-        description: &gt;
-          Base URL of the OpenAI-compatible endpoint for the generation_provider
-          model (e.g. https://granite-2b-svc.models.svc:8000/v1). Injected as
-          OPENAI_BASE_URL so promptfoo can reach cluster-internal models that
-          are not the evaluation target. If unset, defaults to the target
-          model&#39;s URL — suitable when both models share the same endpoint.
-          Only used when generation_provider is set.
-
-      - name: generation_provider_api_key
-        type: string
-        default: null
-        description: &gt;
-          API key for the generation_provider endpoint. Injected as
-          OPENAI_API_KEY so promptfoo can authenticate with external model
-          services (e.g. LiteLLM, OpenAI) used for red-team test generation
-          and grading. Resolution order: this parameter, then the
-          GENERATION_PROVIDER_API_KEY environment variable, then the target
-          model&#39;s own API key. Only used when generation_provider is set.
-
-      # --- common parameters ---
       - name: max_concurrency
         type: integer
         default: 4
@@ -6350,6 +5906,14 @@ data:
         type: integer
         default: 120
         description: Per-request timeout in seconds for calls to the model endpoint.
+
+      - name: judge_model
+        type: string
+        default: null
+        description: &gt;
+          OpenAI-compatible promptfoo grader provider ID, e.g. openai:chat:judge-model.
+          Defaults to generation_provider, then the target model. The connection comes
+          from judge_api-key/judge_url in model.auth.secret_ref.
 </pre> </details> </div> </div><div class="provider-detail" data-detail-id="ragas" data-provider-yaml="# RAGAS Provider Configuration
 # Retrieval Augmented Generation Assessment — evaluation for RAG pipelines
 
@@ -8126,7 +7690,7 @@ data:
           Increase for slow endpoints or long-context models.
 </pre> </details> </div> </div> </aside> </div> <footer class="catalog-footer">
 Catalog synced from  <a href="https://github.com/eval-hub/eval-hub-contrib/tree/main" target="_blank" rel="noopener noreferrer"> eval-hub/eval-hub-contrib@main </a> 
-at Nov 4, 2026, 9:33 PM.
+at Nov 11, 2026, 4:11 PM.
 </footer> </div> <script type="module" src="/_astro/ProviderCatalog.astro_astro_type_script_index_0_lang.-hqmyugb.js"></script>
 <div class="sl-heading-wrapper level-h2"><h2 id="applying-a-configmap">Applying a ConfigMap</h2><a class="sl-anchor-link" href="#applying-a-configmap"><span aria-hidden="true" class="sl-anchor-icon"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentcolor" d="m12.11 15.39-3.88 3.88a2.52 2.52 0 0 1-3.5 0 2.47 2.47 0 0 1 0-3.5l3.88-3.88a1 1 0 0 0-1.42-1.42l-3.88 3.89a4.48 4.48 0 0 0 6.33 6.33l3.89-3.88a1 1 0 1 0-1.42-1.42Zm8.58-12.08a4.49 4.49 0 0 0-6.33 0l-3.89 3.88a1 1 0 0 0 1.42 1.42l3.88-3.88a2.52 2.52 0 0 1 3.5 0 2.47 2.47 0 0 1 0 3.5l-3.88 3.88a1 1 0 1 0 1.42 1.42l3.88-3.89a4.49 4.49 0 0 0 0-6.33ZM8.83 15.17a1 1 0 0 0 1.1.22 1 1 0 0 0 .32-.22l4.92-4.92a1 1 0 0 0-1.42-1.42l-4.92 4.92a1 1 0 0 0 0 1.42Z"></path></svg></span><span class="sr-only" data-pagefind-ignore>Section titled “Applying a ConfigMap”</span></a></div>
 <p>After downloading a ConfigMap YAML, apply it to your cluster:</p>
