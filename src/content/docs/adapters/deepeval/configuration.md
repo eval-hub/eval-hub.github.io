@@ -83,11 +83,20 @@ All configuration is specified in the `parameters` object of the JobSpec.
 | Parameter | Type | Description | Default |
 |---|---|---|---|
 | `eval_model_name` | string | Name of the judge model | `model.name` |
-| `eval_model_url` | string | Base URL of the judge model endpoint | `model.url` |
 
-:::note[Separate Judge Endpoint]
-The judge model defaults to the same model being evaluated. To use a separate, more capable model as judge (a common pattern), set `eval_model_name` and `eval_model_url` to point to a different endpoint. Any OpenAI-compatible server is supported.
-:::
+### Model-auth Secret
+
+Use the shared [Secret setup](/guides/model-authentication/#scenario-4-multi-model-secrets),
+naming the Secret `deepeval-model-auth` for the examples on this site. Keep
+model connection URLs and API keys out of `parameters`.
+
+- Select the judge with `eval_model_name` (default `model.name`). Its connection
+  uses `judge_api-key` / `judge_url`.
+- Legacy `eval_model_url`, `judge_url`, `judge_base_url`, and `judge_api_key`
+  parameters are ignored. `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` runtime values
+  do not configure this judge connection.
+
+See the shared [migration and image requirements](/guides/model-authentication/#migration-from-inline-connection-parameters).
 
 ### Scoring
 
@@ -169,8 +178,6 @@ See the [MLflow guide](/guides/mlflow/) for setup and configuration details.
 |---|---|---|---|
 | `EVALHUB_MODE` | Execution mode: `k8s` or `local` | No | `k8s` |
 | `EVALHUB_JOB_SPEC_PATH` | Path to the job spec JSON file | Yes (local mode) | `/meta/job.json` |
-| `OPENAI_API_KEY` | API key for OpenAI-compatible judge endpoint | When using OpenAI | — |
-| `ANTHROPIC_API_KEY` | API key for Anthropic judge endpoint | When using Anthropic | — |
 | `DEEPEVAL_CACHE_DIR` | DeepEval cache directory | No | `/tmp` |
 | `MLFLOW_TRACKING_URI` | MLflow server URL | When using MLflow | — |
 | `MLFLOW_EXPERIMENT` | MLflow experiment name (fallback) | No | — |
@@ -188,12 +195,11 @@ See the [MLflow guide](/guides/mlflow/) for setup and configuration details.
     "url": "https://api.openai.com/v1",
     "name": "gpt-4o",
     "auth": {
-      "secret_ref": "openai-api-key-secret"
+      "secret_ref": "deepeval-model-auth"
     }
   },
   "parameters": {
     "eval_model_name": "gpt-4o",
-    "eval_model_url": "https://api.openai.com/v1",
     "threshold": 0.7,
     "dataset_format": "csv",
     "max_concurrent": 2,

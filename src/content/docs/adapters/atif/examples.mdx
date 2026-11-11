@@ -260,7 +260,12 @@ podman run --rm \
   quay.io/evalhub/community-atif:latest
 ```
 
-In local mode the adapter calls `model.url` directly using the mounted credentials. In Kubernetes, judge traffic goes through the runtime sidecar instead.
+In local mode the adapter uses the real values from that auth directory. Optional
+`judge_api-key` / `judge_url` files select an independent judge connection;
+otherwise it uses `model.url` and `api-key`. In Kubernetes these files contain
+credential references and sidecar URLs instead. Do not put URLs or API keys in
+`parameters`; legacy judge connection parameters are ignored. See
+[Model-auth Secret](/adapters/atif/configuration/#model-auth-secret).
 
 </TabItem>
 </Tabs>
