@@ -38,10 +38,3 @@ keep model URLs and API keys out of `parameters`. Follow the shared
 ```
 
 For complete documentation, see the [LightEval README](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/lighteval).
-
-## Kubernetes resource requirements
-
-The shared LightEval provider has a high-memory allocation for LiveCodeBench.
-Before submitting evaluations, review the
-[job pod resource requirements](/kubernetes/job-resources/) for the allocation,
-provider-wide scope, and scheduling and quota implications.
