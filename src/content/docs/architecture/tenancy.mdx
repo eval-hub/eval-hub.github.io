@@ -203,19 +203,6 @@ The operator installs these ClusterRoles cluster-wide. Mode-specific Role and Ro
 The SAR targets (`evaluations`, `collections`, `providers`, `status-events`) are virtual — they don't correspond to actual Kubernetes API resources. EvalHub uses them to enforce fine-grained access control via the Kubernetes authorisation API.
 :::
 
-## Mode switching
-
-You can change `spec.tenancy` on a running EvalHub instance. The operator reconciles the difference automatically:
-
-| Transition | Operator behaviour |
-|---|---|
-| `single` → `multi` | Removes convenience Roles; provisions cross-namespace RBAC in tenant-labelled namespaces |
-| `multi` → `single` | Cleans up cross-namespace resources; creates convenience Roles in the instance namespace |
-
-:::caution[InvalidPlacement]
-A **multi-tenant** instance placed in a namespace carrying the `evalhub.trustyai.opendatahub.io/tenant` label enters `Error` phase with reason `InvalidPlacement`. Fix by removing the tenant label from that namespace or switching to `spec.tenancy: single`.
-:::
-
 ## Troubleshooting
 
 ### 403 Forbidden on API calls
