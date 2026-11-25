@@ -270,10 +270,52 @@
 
 
 
-<table><thead><tr><th>Framework (provider ID)</th><th>Per-sample artifact</th><th>What to configure</th><th><code dir="auto">results_data_ref.data_config</code></th></tr></thead><tbody><tr><td><strong>IFBench</strong> (<code dir="auto">ifbench</code>)</td><td><code dir="auto">sample_results.jsonl</code> + <code dir="auto">manifest.json</code></td><td>On by default. Needs <code dir="auto">exports.oci</code> or an MLflow <code dir="auto">experiment</code>. Disable with <code dir="auto">parameters.save_sample_results: false</code>.</td><td>None</td></tr><tr><td><strong>FollowBench</strong> (<code dir="auto">followbench</code>)</td><td><code dir="auto">sample_results.jsonl</code> + <code dir="auto">manifest.json</code></td><td>Same as IFBench.</td><td>None</td></tr><tr><td><strong>GuideLLM</strong> (<code dir="auto">guidellm</code>)</td><td><code dir="auto">benchmarks.json</code> (native report)</td><td>Always saved. Needs an export.</td><td><code dir="auto">columns.sample_id: request_id</code>, <code dir="auto">columns.prediction: &#x3C;per-request field></code> such as <code dir="auto">time_to_first_token_ms</code></td></tr><tr><td><strong>RULER</strong> (<code dir="auto">ruler</code>)</td><td><code dir="auto">samples.jsonl</code></td><td>Always saved. Needs an export.</td><td><code dir="auto">columns.sample_id: index</code> (or <code dir="auto">input</code>), <code dir="auto">columns.prediction: score</code></td></tr><tr><td><strong>LightEval</strong> (<code dir="auto">lighteval</code>)</td><td><code dir="auto">sample_results.jsonl</code></td><td>Set <code dir="auto">parameters.save_sample_results: true</code>. Requires <code dir="auto">exports.oci</code>.</td><td><code dir="auto">columns.sample_id: sample_index</code>, <code dir="auto">columns.prediction: metric.&#x3C;metric key></code>, <code dir="auto">selection.metric: &#x3C;primary metric></code></td></tr><tr><td><strong>Inspect AI</strong> (<code dir="auto">inspect</code>)</td><td>Eval log JSON (<code dir="auto">samples[]</code>)</td><td>Always saved. Needs an export.</td><td><code dir="auto">columns.sample_id: id</code>, <code dir="auto">columns.prediction: scores.&#x3C;scorer>.value</code>, <code dir="auto">value_mappings.prediction: {"C": 1, "I": 0}</code></td></tr><tr><td><strong>LM Evaluation Harness, contrib adapter</strong> (<code dir="auto">lm-eval</code>)</td><td><code dir="auto">samples_&#x3C;task>_*.jsonl</code> (native <code dir="auto">--log_samples</code>)</td><td>Always saved. Needs an export.</td><td>None for per-sample metrics such as <code dir="auto">acc</code></td></tr><tr><td><strong>RAGAS</strong> (<code dir="auto">ragas</code>)</td><td><code dir="auto">results.jsonl</code></td><td>Always saved. Needs <code dir="auto">exports.oci</code> or an MLflow <code dir="auto">experiment</code>.</td><td><code dir="auto">columns.sample_id: user_input</code></td></tr></tbody></table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Framework (provider ID)</th><th>Per-sample artifact</th><th>What to configure</th><th><code dir="auto">results_data_ref.data_config</code></th></tr></thead><tbody><tr><td><strong>IFBench</strong> (<code dir="auto">ifbench</code>)</td><td><code dir="auto">sample_results.jsonl</code> + <code dir="auto">manifest.json</code></td><td>On by default. Needs <code dir="auto">exports.oci</code> or an MLflow <code dir="auto">experiment</code>. Disable with <code dir="auto">parameters.save_sample_results: false</code>.</td><td>None</td></tr><tr><td><strong>FollowBench</strong> (<code dir="auto">followbench</code>)</td><td><code dir="auto">sample_results.jsonl</code> + <code dir="auto">manifest.json</code></td><td>Same as IFBench.</td><td>None</td></tr><tr><td><strong>GuideLLM</strong> (<code dir="auto">guidellm</code>)</td><td><code dir="auto">benchmarks.json</code> (native report)</td><td>Always saved. Needs an export.</td><td><code dir="auto">columns.sample_id: request_id</code>, <code dir="auto">columns.prediction: &#x3C;per-request field></code> such as <code dir="auto">time_to_first_token_ms</code></td></tr><tr><td><strong>RULER</strong> (<code dir="auto">ruler</code>)</td><td><code dir="auto">samples.jsonl</code></td><td>Always saved. Needs an export.</td><td><code dir="auto">columns.sample_id: index</code> (or <code dir="auto">input</code>), <code dir="auto">columns.prediction: score</code></td></tr><tr><td><strong>LightEval</strong> (<code dir="auto">lighteval</code>)</td><td><code dir="auto">sample_results.jsonl</code></td><td>Set <code dir="auto">parameters.save_sample_results: true</code>. Requires <code dir="auto">exports.oci</code>.</td><td><code dir="auto">columns.sample_id: sample_index</code>, <code dir="auto">columns.prediction: metric.&#x3C;metric key></code>, <code dir="auto">selection.metric: &#x3C;primary metric></code></td></tr><tr><td><strong>Inspect AI</strong> (<code dir="auto">inspect</code>)</td><td>Eval log JSON (<code dir="auto">samples[]</code>)</td><td>Always saved. Needs an export.</td><td><code dir="auto">columns.sample_id: id</code>, <code dir="auto">columns.prediction: scores.&#x3C;scorer>.value</code>, <code dir="auto">value_mappings.prediction: {"C": 1, "I": 0}</code></td></tr><tr><td><strong>LM Evaluation Harness, contrib adapter</strong> (<code dir="auto">lm-eval</code>)</td><td><code dir="auto">samples_&#x3C;task>_*.jsonl</code> (native <code dir="auto">--log_samples</code>)</td><td>Always saved. Needs an export.</td><td>None for per-sample metrics such as <code dir="auto">acc</code></td></tr><tr><td><strong>RAGAS</strong> (<code dir="auto">ragas</code>)</td><td><code dir="auto">results.jsonl</code></td><td>Always saved. Needs <code dir="auto">exports.oci</code> or an MLflow <code dir="auto">experiment</code>.</td><td><code dir="auto">columns.sample_id: user_input</code></td></tr><tr><td><strong>Garak</strong> (<code dir="auto">garak</code>)</td><td><code dir="auto">sample_results.jsonl</code></td><td>On by default. Disable with <code dir="auto">parameters.save_sample_results: false</code>. Needs an export.</td><td>None</td></tr><tr><td><strong>DeepEval</strong> (<code dir="auto">deepeval</code>)</td><td><code dir="auto">sample_results.jsonl</code> + <code dir="auto">manifest.json</code></td><td>Opt-in: <code dir="auto">parameters.save_sample_results: true</code>. Needs an export.</td><td>None</td></tr><tr><td><strong>NeMo Guardrails</strong> (<code dir="auto">nemo-guardrails</code>)</td><td><code dir="auto">sample_results.jsonl</code> + <code dir="auto">manifest.json</code></td><td>Opt-in: <code dir="auto">parameters.save_sample_results: true</code>. Needs an export.</td><td>None</td></tr></tbody></table>
+<p>Opt-in and opt-out parameters are only honored by adapter images that include the persistence change. Older images ignore them and save nothing.</p>
 <p>Framework notes:</p>
 <ul>
 <li><strong>IFBench, FollowBench.</strong> Export failures fail the evaluation. With no export configured, the evaluation still completes but no samples are saved. FollowBench’s primary metric is <code dir="auto">hsr</code>; IFBench’s is <code dir="auto">accuracy</code>.</li>
+<li><strong>Garak.</strong>
+<ul>
+<li>Each record is one response (or one source stub for intent scans) with a 0/1 <code dir="auto">attack_success_rate</code>. Failed attacks are included.</li>
+<li><code dir="auto">sample_id</code> is local to one scan report. Calibrate with a labeled subset of the same report, not a re-run.</li>
+<li>The mean uses one detector per probe, so it can differ from the reported aggregate.</li>
+<li>Failures while writing samples only log a warning and the evaluation still completes. If <code dir="auto">sample_results.jsonl</code> is missing, check the adapter logs.</li>
+<li>For an external <code dir="auto">results_data_ref</code>, add the <code dir="auto">manifest.json</code> described below. Garak does not write one.</li>
+</ul>
+</li>
+<li><strong>DeepEval.</strong>
+<ul>
+<li>Each record has a run-local <code dir="auto">sample_id</code> (the test index) and the native score. Inputs and answers are not stored.</li>
+<li>The row’s <code dir="auto">metric</code> is <code dir="auto">&#x3C;benchmark>_score</code> (for example <code dir="auto">faithfulness_score</code>) and must equal the job’s primary metric. If you override <code dir="auto">primary_score.metric</code>, every row is filtered out.</li>
+<li>Each test case must have exactly one metric. Invalid or non-finite scores fail the export and the evaluation.</li>
+</ul>
+</li>
+<li><strong>NeMo Guardrails.</strong>
+<ul>
+<li>Only the classification benchmarks (primary metric <code dir="auto">accuracy</code>) are exported. Each record is 1 for a correct block or allow decision and 0 otherwise.</li>
+<li>The masking benchmark (<code dir="auto">masking_accuracy</code>) is rejected when <code dir="auto">save_sample_results</code> is true.</li>
+<li>With zero results the files are empty and unusable for CI.</li>
+</ul>
+</li>
 <li><strong>GuideLLM.</strong>
 <ul>
 <li>The report must contain the <strong>complete</strong> successful-request list. A report that persisted only a sample of requests is rejected.</li>
@@ -352,19 +394,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-<table><thead><tr><th>Framework</th><th>Why</th></tr></thead><tbody><tr><td><strong>LM Evaluation Harness, core</strong> (<code dir="auto">lm_evaluation_harness</code>)</td><td>Reports aggregate metrics only. Samples are used for counts and not saved. Use the contrib <code dir="auto">lm-eval</code> adapter if you need CI.</td></tr><tr><td><strong>DeepEval</strong> (<code dir="auto">deepeval</code>)</td><td>Aggregate summary only.</td></tr><tr><td><strong>MTEB</strong> (<code dir="auto">mteb</code>)</td><td>Aggregate scores only.</td></tr><tr><td><strong>WildGuard</strong> (<code dir="auto">wildguard</code>)</td><td>No result artifacts.</td></tr><tr><td><strong>NeMo Guardrails</strong> (<code dir="auto">nemo-guardrails</code>)</td><td>Aggregate metrics only.</td></tr><tr><td><strong>SWE-bench</strong> (<code dir="auto">swebench</code>)</td><td>Aggregate metrics and diagnostic dictionaries only.</td></tr><tr><td><strong>DataBench</strong> (<code dir="auto">databench</code>)</td><td><code dir="auto">samples.jsonl</code> is saved, but the per-sample <code dir="auto">correct</code> field is a boolean, which is rejected.</td></tr><tr><td><strong>IBM CLEAR</strong> (<code dir="auto">ibm-clear</code>), <strong>ATIF</strong> (<code dir="auto">atif</code>), <strong>Promptfoo</strong> (<code dir="auto">promptfoo</code>), <strong>ToolEval</strong> (<code dir="auto">tooleval</code>)</td><td>Results are nested reports or trajectories, not flat per-sample scores.</td></tr><tr><td><strong>Garak</strong> (<code dir="auto">garak</code>)</td><td>Not assessed; the adapter is maintained outside eval-hub-contrib.</td></tr></tbody></table>
+<table><thead><tr><th>Framework</th><th>Why</th></tr></thead><tbody><tr><td><strong>LM Evaluation Harness, core</strong> (<code dir="auto">lm_evaluation_harness</code>)</td><td>Reports aggregate metrics only. Samples are used for counts and not saved. Use the contrib <code dir="auto">lm-eval</code> adapter if you need CI.</td></tr><tr><td><strong>MTEB</strong> (<code dir="auto">mteb</code>)</td><td>Aggregate scores only.</td></tr><tr><td><strong>WildGuard</strong> (<code dir="auto">wildguard</code>)</td><td>No result artifacts.</td></tr><tr><td><strong>SWE-bench</strong> (<code dir="auto">swebench</code>)</td><td>Aggregate metrics and diagnostic dictionaries only.</td></tr><tr><td><strong>DataBench</strong> (<code dir="auto">databench</code>)</td><td><code dir="auto">samples.jsonl</code> is saved, but the per-sample <code dir="auto">correct</code> field is a boolean, which is rejected.</td></tr><tr><td><strong>IBM CLEAR</strong> (<code dir="auto">ibm-clear</code>), <strong>ATIF</strong> (<code dir="auto">atif</code>), <strong>Promptfoo</strong> (<code dir="auto">promptfoo</code>), <strong>ToolEval</strong> (<code dir="auto">tooleval</code>)</td><td>Results are nested reports or trajectories, not flat per-sample scores.</td></tr></tbody></table>
 <p><strong>Workaround for unsupported frameworks:</strong> export one numeric score per sample yourself as flat JSONL with unique <code dir="auto">sample_id</code>s, and add a <code dir="auto">manifest.json</code> next to it:</p>
 <div class="expressive-code"><figure class="frame not-content"><figcaption class="header"></figcaption><pre data-language="json"><code><div class="ec-line"><div class="code"><span style="--0:#D6DEEB;--1:#403F53">{ </span><span style="--0:#7FDBCA;--1:#096E72">"primary_score"</span><span style="--0:#D6DEEB;--1:#403F53">: { </span><span style="--0:#7FDBCA;--1:#096E72">"metric"</span><span style="--0:#D6DEEB;--1:#403F53">: </span><span style="--0:#D9F5DD;--1:#111111">"</span><span style="--0:#C789D6;--1:#7C5686">accuracy</span><span style="--0:#D9F5DD;--1:#111111">"</span><span style="--0:#D6DEEB;--1:#403F53"> }, </span><span style="--0:#7FDBCA;--1:#096E72">"estimand"</span><span style="--0:#D6DEEB;--1:#403F53">: </span><span style="--0:#D9F5DD;--1:#111111">"</span><span style="--0:#C789D6;--1:#7C5686">mean</span><span style="--0:#D9F5DD;--1:#111111">"</span><span style="--0:#D6DEEB;--1:#403F53"> }</span></div></div></code></pre><div class="copy"><div aria-live="polite"></div><button title="Copy to clipboard" data-copied="Copied!" data-code="{ &#x22;primary_score&#x22;: { &#x22;metric&#x22;: &#x22;accuracy&#x22; }, &#x22;estimand&#x22;: &#x22;mean&#x22; }"><div></div></button></div></figure></div>
 <p>Then submit it as an external <code dir="auto">results_data_ref</code> (<code dir="auto">s3</code>, <code dir="auto">pvc</code>, <code dir="auto">git</code>, <code dir="auto">hf</code>, <code dir="auto">mlflow</code>, or <code dir="auto">oci</code>). The response then contains a single <code dir="auto">results.confidence_interval</code> instead of <code dir="auto">results.benchmarks[]</code>.</p>
