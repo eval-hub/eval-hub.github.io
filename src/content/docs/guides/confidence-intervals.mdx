@@ -155,10 +155,29 @@ CI computation needs one numeric score per evaluated sample, with a sample ident
 | **Inspect AI** (`inspect`) | Eval log JSON (`samples[]`) | Always saved. Needs an export. | `columns.sample_id: id`, `columns.prediction: scores.<scorer>.value`, `value_mappings.prediction: {"C": 1, "I": 0}` |
 | **LM Evaluation Harness, contrib adapter** (`lm-eval`) | `samples_<task>_*.jsonl` (native `--log_samples`) | Always saved. Needs an export. | None for per-sample metrics such as `acc` |
 | **RAGAS** (`ragas`) | `results.jsonl` | Always saved. Needs `exports.oci` or an MLflow `experiment`. | `columns.sample_id: user_input` |
+| **Garak** (`garak`) | `sample_results.jsonl` | On by default. Disable with `parameters.save_sample_results: false`. Needs an export. | None |
+| **DeepEval** (`deepeval`) | `sample_results.jsonl` + `manifest.json` | Opt-in: `parameters.save_sample_results: true`. Needs an export. | None |
+| **NeMo Guardrails** (`nemo-guardrails`) | `sample_results.jsonl` + `manifest.json` | Opt-in: `parameters.save_sample_results: true`. Needs an export. | None |
+
+Opt-in and opt-out parameters are only honored by adapter images that include the persistence change. Older images ignore them and save nothing.
 
 Framework notes:
 
 - **IFBench, FollowBench.** Export failures fail the evaluation. With no export configured, the evaluation still completes but no samples are saved. FollowBench's primary metric is `hsr`; IFBench's is `accuracy`.
+- **Garak.**
+  - Each record is one response (or one source stub for intent scans) with a 0/1 `attack_success_rate`. Failed attacks are included.
+  - `sample_id` is local to one scan report. Calibrate with a labeled subset of the same report, not a re-run.
+  - The mean uses one detector per probe, so it can differ from the reported aggregate.
+  - Failures while writing samples only log a warning and the evaluation still completes. If `sample_results.jsonl` is missing, check the adapter logs.
+  - For an external `results_data_ref`, add the `manifest.json` described below. Garak does not write one.
+- **DeepEval.**
+  - Each record has a run-local `sample_id` (the test index) and the native score. Inputs and answers are not stored.
+  - The row's `metric` is `<benchmark>_score` (for example `faithfulness_score`) and must equal the job's primary metric. If you override `primary_score.metric`, every row is filtered out.
+  - Each test case must have exactly one metric. Invalid or non-finite scores fail the export and the evaluation.
+- **NeMo Guardrails.**
+  - Only the classification benchmarks (primary metric `accuracy`) are exported. Each record is 1 for a correct block or allow decision and 0 otherwise.
+  - The masking benchmark (`masking_accuracy`) is rejected when `save_sample_results` is true.
+  - With zero results the files are empty and unusable for CI.
 - **GuideLLM.**
   - The report must contain the **complete** successful-request list. A report that persisted only a sample of requests is rejected.
   - Only the first benchmark strategy (`benchmarks[0]`) is used. A sweep is not pooled.
@@ -191,14 +210,11 @@ These adapters do not persist usable per-sample results, so CI cannot be compute
 | Framework | Why |
 |---|---|
 | **LM Evaluation Harness, core** (`lm_evaluation_harness`) | Reports aggregate metrics only. Samples are used for counts and not saved. Use the contrib `lm-eval` adapter if you need CI. |
-| **DeepEval** (`deepeval`) | Aggregate summary only. |
 | **MTEB** (`mteb`) | Aggregate scores only. |
 | **WildGuard** (`wildguard`) | No result artifacts. |
-| **NeMo Guardrails** (`nemo-guardrails`) | Aggregate metrics only. |
 | **SWE-bench** (`swebench`) | Aggregate metrics and diagnostic dictionaries only. |
 | **DataBench** (`databench`) | `samples.jsonl` is saved, but the per-sample `correct` field is a boolean, which is rejected. |
 | **IBM CLEAR** (`ibm-clear`), **ATIF** (`atif`), **Promptfoo** (`promptfoo`), **ToolEval** (`tooleval`) | Results are nested reports or trajectories, not flat per-sample scores. |
-| **Garak** (`garak`) | Not assessed; the adapter is maintained outside eval-hub-contrib. |
 
 **Workaround for unsupported frameworks:** export one numeric score per sample yourself as flat JSONL with unique `sample_id`s, and add a `manifest.json` next to it:
 
