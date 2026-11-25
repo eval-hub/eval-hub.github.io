@@ -197,6 +197,7 @@ Framework notes:
   - Epochs greater than 1 repeat `id`.
   - Large logs are downloaded in full. Raise `hardware_config.memory` if the job is OOM-killed.
 - **LM Evaluation Harness (`lm-eval`).**
+  - Samples are written by lm-eval itself (`--log_samples`) next to the results file and uploaded with the whole output directory. MLflow upload is best-effort: if it fails the evaluation still completes without samples in MLflow, so prefer `exports.oci`.
   - Group benchmarks (for example `mmlu`) write one file per subtask with overlapping `doc_id`s. Select a single file with `data_config.path`, or run each subtask as its own benchmark.
   - Metrics that are not per-sample means (perplexity, F1, BLEU, ROUGE) cannot be used.
 - **RAGAS.**
