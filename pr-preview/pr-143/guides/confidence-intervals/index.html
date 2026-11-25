@@ -348,6 +348,7 @@
 </li>
 <li><strong>LM Evaluation Harness (<code dir="auto">lm-eval</code>).</strong>
 <ul>
+<li>Samples are written by lm-eval itself (<code dir="auto">--log_samples</code>) next to the results file and uploaded with the whole output directory. MLflow upload is best-effort: if it fails the evaluation still completes without samples in MLflow, so prefer <code dir="auto">exports.oci</code>.</li>
 <li>Group benchmarks (for example <code dir="auto">mmlu</code>) write one file per subtask with overlapping <code dir="auto">doc_id</code>s. Select a single file with <code dir="auto">data_config.path</code>, or run each subtask as its own benchmark.</li>
 <li>Metrics that are not per-sample means (perplexity, F1, BLEU, ROUGE) cannot be used.</li>
 </ul>
