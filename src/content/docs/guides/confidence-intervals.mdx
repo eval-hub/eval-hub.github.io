@@ -1,0 +1,294 @@
+---
+title: "Confidence Intervals"
+description: "Compute confidence intervals for completed evaluation jobs with the post-processing API: prerequisites, framework support, limitations, and troubleshooting."
+---
+
+The post-processing API computes a **confidence interval (CI) for the average score** of a completed evaluation job. It reads the job's **per-sample results**, combines them with a small set of trusted labels (**calibration data**), and applies prediction-powered inference (PPI, original method, `lambda = 1`) via [`ppi_py`](https://github.com/aangelopoulos/ppi_py).
+
+- Each request is an asynchronous job. The source evaluation is never modified.
+- Use the REST API, the Python SDK (`client.post_processing`), or the CLI (`evalhub post-processing`). The SDK and CLI need `eval-hub-sdk` 1.1.0 or later. The MCP server does not expose it.
+- The runtime is the `evalhub-post-processor` adapter from [eval-hub-contrib](https://github.com/eval-hub/eval-hub-contrib/tree/main/adapters/evalhub-post-processor).
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/v1/evaluations/post-processing` | Create a job (`202`) |
+| `GET` | `/api/v1/evaluations/post-processing/{post_processing_job_id}` | Get status and results |
+| `DELETE` | `/api/v1/evaluations/post-processing/{post_processing_job_id}` | Stop and permanently delete the job (`204`) |
+
+There is no list endpoint, and post-processing jobs do not appear in `GET /api/v1/evaluations/jobs`. Keep the `resource.id` from the `POST` response.
+
+## Prerequisites
+
+1. **A completed source job.** The job state must be `completed` and every benchmark must have stored results. `running`, `failed`, and `partially_failed` jobs are rejected with `409 post_processing_source_not_completed`. A completed job whose benchmark has no stored results is accepted, then fails asynchronously with an `error_message`.
+2. **Per-sample results persisted by the source job.** Submit the evaluation with `exports.oci` and/or an MLflow `experiment`, using a [framework that writes per-sample results](#framework-support). You cannot add this after the fact; re-run the evaluation.
+3. **Calibration data:** labeled examples in S3, PVC, Git, or Hugging Face. The PVC and S3 reference formats are the same as for [test data](/guides/custom-data/).
+4. **The same tenant and authentication as the source evaluation.** Behind the standard kube-rbac-proxy deployment, send a bearer token and `X-Tenant`; the proxy sets `X-User` from the authenticated caller. If you call the service directly (for example through a port-forward), also send `X-User`. In local mode, no identity headers are required.
+5. **Platform setup (administrators).**
+   - The server must be able to run the post-processor image (default `quay.io/evalhub/evalhub-post-processor:latest`, override with `EVALHUB_POST_PROCESSING_IMAGE`).
+   - S3, Git, and Hugging Face inputs also need `service.eval_init_image` set to an image that supports post-processing staging.
+   - MLflow-backed results require [MLflow](/guides/mlflow/) to be configured for EvalHub.
+   - In local mode, the runtime launches the adapter from a sibling `../eval-hub-contrib/adapters/evalhub-post-processor` checkout. Set `EVALHUB_POST_PROCESSING_LOCAL_COMMAND` to use another location.
+
+## How to compute a confidence interval
+
+### 1. Run the evaluation with per-sample persistence
+
+Use a supported framework and configure at least one export. Some frameworks need an extra parameter, see [Framework support](#framework-support).
+
+```bash
+curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $EVALHUB_TOKEN" -H "X-Tenant: $EVALHUB_TENANT" \
+  -d '{
+    "name": "ifbench-run",
+    "model": { "url": "http://my-model:8000/v1", "name": "my-model" },
+    "benchmarks": [{ "id": "ifbench", "provider_id": "ifbench" }],
+    "exports": {
+      "oci": {
+        "coordinates": { "oci_host": "quay.io", "oci_repository": "myorg/evalhub-results" },
+        "k8s": { "connection": "my-oci-credentials" }
+      }
+    }
+  }'
+```
+
+Wait for `status.state` to become `completed`, then note the job ID.
+
+### 2. Prepare calibration data
+
+Calibration data is a set of examples with a **trusted label** (for example a human score) on the same scale as the evaluation score. Each row needs a `sample_id` and a `label`. The request must always map `columns.prediction`, but each row can either:
+
+- carry its own value in that column (the automatic score for that example), or
+- leave it out, in which case the prediction is taken from the evaluation results by matching `sample_id`.
+
+```jsonl
+{"sample_id": "c1", "label": 1, "prediction": 0.8}
+{"sample_id": "c2", "label": 0, "prediction": 0.2}
+```
+
+Calibration examples that also appear in the evaluation results are removed from the unlabeled set, so a labeled subset of the evaluated samples is a valid calibration set. Upload the file to S3, a PVC, Git, or Hugging Face.
+
+### 3. Submit the post-processing job
+
+```bash
+curl -s -X POST $EVALHUB_URL/api/v1/evaluations/post-processing \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $EVALHUB_TOKEN" -H "X-Tenant: $EVALHUB_TENANT" \
+  -d '{
+    "name": "ifbench-ci",
+    "operations": {
+      "confidence_interval": {
+        "results_data_ref": { "eval_job": { "id": "<evaluation-job-id>" } },
+        "calibration_data_ref": [{
+          "s3": { "bucket": "evaluation-data", "key": "calibration/ifbench", "secret_ref": "s3-secret" },
+          "data_config": {
+            "format": "jsonl",
+            "columns": { "sample_id": "sample_id", "label": "label", "prediction": "prediction" }
+          }
+        }],
+        "significance_level": 0.05
+      }
+    }
+  }'
+```
+
+The response is `202` with `resource.id` and `status.state: pending`.
+
+### 4. Poll for the result
+
+```bash
+curl -s $EVALHUB_URL/api/v1/evaluations/post-processing/$POST_PROCESSING_JOB_ID \
+  -H "Authorization: Bearer $EVALHUB_TOKEN" -H "X-Tenant: $EVALHUB_TENANT"
+```
+
+`status.state` moves `pending` → `running` → `completed` or `failed`. On failure, read `status.error_message`, an object with `message`, `message_code`, and `message_origin`. On success, results are under `results.benchmarks[]`, one per source benchmark:
+
+```json
+{
+  "id": "ifbench",
+  "provider_id": "ifbench",
+  "benchmark_index": 0,
+  "confidence_interval": {
+    "lower": 0.18, "upper": 0.31, "point_estimate": 0.246,
+    "n_labeled": 25, "n_unlabeled": 175,
+    "alpha": 0.05, "method": "original_ppi", "lambda": 1
+  }
+}
+```
+
+### Python SDK and CLI
+
+Both take the same request body as the REST API. Save it as `ci.yaml` (YAML or JSON), then:
+
+```bash
+evalhub post-processing run --config ci.yaml --wait
+evalhub post-processing results <post-processing-job-id>
+```
+
+`evalhub post-processing status <id>` shows one snapshot and `delete <id>` removes the job. With the SDK:
+
+```python
+from evalhub.models import StandalonePostProcessingRequest
+
+job = client.post_processing.submit(StandalonePostProcessingRequest(**request_body))
+job = client.post_processing.get(job.resource.id)
+client.post_processing.delete(job.resource.id)
+```
+
+## Request reference
+
+| Field | Notes |
+|-------|-------|
+| `name` | Optional job name. |
+| `operations.confidence_interval` | Required. The only supported operation. |
+| `operation_order` | Optional. If present, it must be `["confidence_interval"]`. |
+| `results_data_ref` | Required. Exactly one source: `eval_job`, `s3`, `pvc`, `git`, `hf`, `mlflow`, or `oci`. Optional `data_config` maps the file format and columns. |
+| `calibration_data_ref[]` | Required, at least one. Sources: `s3`, `pvc`, `git`, or `hf`. Each needs a `data_config` with `format`, `columns.label`, and `columns.prediction`. |
+| `significance_level` | Required. **Alpha**, strictly between 0 and 1. `0.05` gives a 95% interval. `0.7` gives a 30% interval. |
+| `primary_score.metric` | Required for external results. Not allowed with `eval_job` (the request is rejected). Also declare the metric in the data, see [limitations](#limitations). |
+| `results_data_ref.eval_job.num_parallel_threads` | Optional. The server only requires 1 or more. The current adapter caps it at 64, and a larger value fails inside the job pod. |
+| `hardware_config` | Optional. The same object as benchmark `hardware_config`: `cpu`, `memory`, `gpu`, `queue`, or a `hardware_profile_name`. See [Hardware Profiles](/guides/hardware-profiles/). |
+
+### Mapping per-sample files (`data_config`)
+
+Records must have a `sample_id` (or `doc_id` as a fallback) and a numeric score. If your files use other names, map them. Results and calibration accept different options:
+
+| Field | Results (`results_data_ref.data_config`) | Calibration (`calibration_data_ref[].data_config`) |
+|-------|---------|---------|
+| `format` | Optional. Auto-detected (`json`, `jsonl`, `csv`, `parquet`) by default. | Required, for example `jsonl`. |
+| `columns` | `sample_id`, `prediction`, `label`, `metric`, `benchmark_id`, `provider_id`. Dotted paths reach nested JSON (`scores.choice.value`). | `sample_id`, `label` (required), `prediction` (required), `benchmark_id`, `provider_id`. |
+| `selection` | `benchmark_id`, `provider_id`, `metric`. External sources: filters rows using values stored in the file. `eval_job`: identifies the source benchmark, so values must match the job's `benchmark_id`, `provider_id`, and primary metric, and override identity fields the artifact lacks or names differently. | `metric` only. |
+| `path` | Read one file or directory inside the artifact. | Not available. |
+| `value_mappings` | Convert string categories to numbers, for example `{"prediction": {"C": 1, "I": 0}}`. Every category present must be declared. | Not available. Labels and predictions must already be numeric. |
+
+For a job with several benchmarks, `results_data_ref.data_config` can be an array whose entries each carry a `selection` (`benchmark_id` and `provider_id`). Exactly one entry must match each benchmark.
+
+## Framework support
+
+CI computation needs one numeric score per evaluated sample, with a sample identifier. Not every adapter persists that today.
+
+### Supported
+
+| Framework (provider ID) | Per-sample artifact | What to configure | `results_data_ref.data_config` | Validated |
+|---|---|---|---|---|
+| **IFBench** (`ifbench`) | `sample_results.jsonl` + `manifest.json` | On by default. Needs `exports.oci` or an MLflow `experiment`. Disable with `parameters.save_sample_results: false`. | None | Cluster |
+| **FollowBench** (`followbench`) | `sample_results.jsonl` + `manifest.json` | Same as IFBench. | None | Cluster |
+| **GuideLLM** (`guidellm`) | `benchmarks.json` (native report) | Always saved. Needs an export. | `columns.sample_id: request_id`, `columns.prediction: <per-request field>` such as `time_to_first_token_ms` | Cluster |
+| **RULER** (`ruler`) | `samples.jsonl` | Always saved. Needs an export. | `columns.sample_id: index` (or `input`), `columns.prediction: score` | Cluster |
+| **LightEval** (`lighteval`) | `sample_results.jsonl` | Set `parameters.save_sample_results: true`. Requires `exports.oci`. | `columns.sample_id: sample_index`, `columns.prediction: metric.<metric key>`, `selection.metric: <primary metric>` | Reader only |
+| **Inspect AI** (`inspect`) | Eval log JSON (`samples[]`) | Always saved. Needs an export. | `columns.sample_id: id`, `columns.prediction: scores.<scorer>.value`, `value_mappings.prediction: {"C": 1, "I": 0}` | Reader only |
+| **LM Evaluation Harness, contrib adapter** (`lm-eval`) | `samples_<task>_*.jsonl` (native `--log_samples`) | Always saved. Needs an export. | None for per-sample metrics such as `acc` | Reader only |
+| **RAGAS** (`ragas`) | `results.jsonl` | Always saved. Needs `exports.oci` or an MLflow `experiment`. | `columns.sample_id: user_input` | Reader only |
+| **Garak** (`garak`) | `sample_results.jsonl` | On by default. Disable with `parameters.save_sample_results: false`. Needs an export. | None | Cluster |
+| **DeepEval** (`deepeval`) | `sample_results.jsonl` + `manifest.json` | Opt-in: `parameters.save_sample_results: true`. Needs an export. | None | Cluster |
+| **NeMo Guardrails** (`nemo-guardrails`) | `sample_results.jsonl` + `manifest.json` | Opt-in: `parameters.save_sample_results: true`. Needs an export. | None | Cluster |
+
+**Validated:** `Cluster` means the adapter's PR ran the full results-source and calibration-source matrix on a cluster. `Reader only` means the mapping was checked against the post-processor on fixtures built from the adapter's output, not on a cluster, so treat it as less proven.
+
+Opt-in and opt-out parameters are only honored by adapter images that include the persistence change. Older images ignore them and save nothing.
+
+Framework notes:
+
+- **IFBench, FollowBench.** Export failures fail the evaluation. With no export configured, the evaluation still completes but no samples are saved. FollowBench's primary metric is `hsr`; IFBench's is `accuracy`.
+- **Garak.**
+  - Each record is one response (or one source stub for intent scans) with a 0/1 `attack_success_rate`. Failed attacks are included.
+  - `sample_id` is local to one scan report. Calibrate with a labeled subset of the same report, not a re-run.
+  - The mean uses one detector per probe, so it can differ from the reported aggregate.
+  - Failures while writing samples only log a warning and the evaluation still completes. If `sample_results.jsonl` is missing, check the adapter logs.
+  - For an external `results_data_ref`, add the `manifest.json` described below. Garak does not write one.
+- **DeepEval.**
+  - Each record has a run-local `sample_id` (the test index) and the native score. Inputs and answers are not stored.
+  - The row's `metric` is `<benchmark>_score` (for example `faithfulness_score`) and must equal the job's primary metric. If you override `primary_score.metric`, every row is filtered out.
+  - Each test case must have exactly one metric. Invalid or non-finite scores fail the export and the evaluation.
+- **NeMo Guardrails.**
+  - Only the classification benchmarks (primary metric `accuracy`) are exported. Each record is 1 for a correct block or allow decision and 0 otherwise.
+  - The masking benchmark (`masking_accuracy`) is rejected when `save_sample_results` is true.
+  - With zero results the files are empty and unusable for CI.
+- **GuideLLM.**
+  - The report must contain the **complete** successful-request list. A report that persisted only a sample of requests is rejected.
+  - Only the first benchmark strategy (`benchmarks[0]`) is used. A sweep is not pooled.
+  - The CI is for the mean of the selected per-request measurement, not for aggregate rates such as the default `output_tokens_per_second` primary metric.
+  - Null measurements fail the job; `time_to_first_token_ms` is null for non-streaming requests.
+  - Label-only calibration joins by `request_id`, which is local to one report. Use calibration rows with their own prediction for other runs.
+- **RULER.**
+  - Rows have no `sample_id`, so map one.
+  - `index` repeats across tasks and context lengths. Use `input` as the identifier, or run one task and context length per job.
+  - The score is a 0–1 per-sample value. Averaging it can differ slightly from the rounded aggregate.
+- **LightEval.**
+  - Each row has a `metric` object that collides with the post-processor's `metric` selector and silently drops every row. Setting `selection.metric` to the benchmark's primary metric name avoids this.
+  - The metric key under `metric.` is LightEval's native per-sample name (for example `acc`), which can differ from the primary metric name (for example `hellaswag.em`). Check `sample_results.jsonl`.
+- **Inspect AI.**
+  - The scorer name depends on the task. Check `samples[0].scores` in the log.
+  - Every score value present must appear in `value_mappings`. Add `P` if partial credit occurs.
+  - Epochs greater than 1 repeat `id`.
+  - Large logs are downloaded in full. Raise `hardware_config.memory` if the job is OOM-killed.
+- **LM Evaluation Harness (`lm-eval`).**
+  - Samples are written by lm-eval itself (`--log_samples`) next to the results file and uploaded with the whole output directory. MLflow upload is best-effort: if it fails the evaluation still completes without samples in MLflow, so prefer `exports.oci`.
+  - Group benchmarks (for example `mmlu`) write one file per subtask with overlapping `doc_id`s. Select a single file with `data_config.path`, or run each subtask as its own benchmark.
+  - Metrics that are not per-sample means (perplexity, F1, BLEU, ROUGE) cannot be used.
+- **RAGAS.**
+  - `user_input` must be unique across rows.
+  - Rows where the metric failed are stored as null and fail the job. Remove them and use an external results reference.
+
+### Not supported
+
+These adapters do not persist usable per-sample results, so CI cannot be computed for them. **They might be enhanced to support CI computation in the future.**
+
+| Framework | Why |
+|---|---|
+| **LM Evaluation Harness, core** (`lm_evaluation_harness`) | Reports aggregate metrics only. Samples are used for counts and not saved. Use the contrib `lm-eval` adapter if you need CI. |
+| **MTEB** (`mteb`) | Aggregate scores only. |
+| **WildGuard** (`wildguard`) | No result artifacts. |
+| **SWE-bench** (`swebench`) | Aggregate metrics and diagnostic dictionaries only. |
+| **DataBench** (`databench`) | `samples.jsonl` is saved, but the per-sample `correct` field is a boolean, which is rejected. |
+| **IBM CLEAR** (`ibm-clear`), **ATIF** (`atif`), **Promptfoo** (`promptfoo`), **ToolEval** (`tooleval`) | Results are nested reports or trajectories, not flat per-sample scores. |
+
+**Workaround for unsupported frameworks:** export one numeric score per sample yourself as flat JSONL with unique `sample_id`s, and add a `manifest.json` next to it:
+
+```json
+{ "primary_score": { "metric": "accuracy" }, "estimand": "mean" }
+```
+
+Then submit it as an external `results_data_ref` (`s3`, `pvc`, `git`, `hf`, `mlflow`, or `oci`). The response then contains a single `results.confidence_interval` instead of `results.benchmarks[]`.
+
+### Adding support to your own adapter
+
+Write `sample_results.jsonl` (unique `sample_id` and a numeric score for the primary metric) and the `manifest.json` above to the OCI artifact and/or MLflow run, and report a numeric `primary_score` metric. See [Bring Your Own Framework](/guides/bring-your-own-framework/).
+
+## Common pitfalls and workarounds
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `409 ... must be completed before post-processing` | The source job is not `completed`. | Wait, or re-run the evaluation. A `partially_failed` job cannot be used. |
+| `Source benchmark needs experiment + mlflow_run_id or exports.oci + artifact coordinates` | The source job had no OCI export or MLflow experiment. | Re-run it with `exports.oci` or `experiment`. |
+| `No per-example scores found; aggregate metrics cannot be used for PPI` | The artifact has only aggregates, or records lack `sample_id` or a mapped score. | Check [Framework support](#framework-support) and map `columns`. |
+| `Missing sample_id in a per-example data file` | Some records have no identifier. | Map `columns.sample_id` to a field that every record has. |
+| `Duplicate evaluation sample_id` | IDs repeat across tasks, subtasks, epochs, or files. | Map a unique identifier, or narrow the results with `path` (and `selection` for external sources). |
+| `... prediction must be a finite numeric score` | The score is null, NaN, boolean, or text. | Map text categories in results with `value_mappings`. Convert booleans to 0/1, make calibration values numeric, and drop failed rows upstream. |
+| `Unmapped prediction value` | A category in the data is missing from `value_mappings`. | Declare every category present. |
+| `Calibration needs a prediction column or a matching evaluation sample_id` | Calibration IDs do not match the results' IDs. | Use the same ID values and types as the results. Check the LightEval `metric` collision. |
+| `PPI needs at least two paired calibration examples and two remaining unlabeled examples` | Too few calibration rows matched, or they cover nearly every sample. | Add calibration rows. Keep at least two samples unlabeled. |
+| `Calibration and evaluation predictions disagree for the same sample_id` | The calibration `prediction` differs from the evaluation score for the same ID. | Use the evaluation's own scores, or omit `prediction` values to join them. |
+| `Calibration shared by multiple benchmarks needs both benchmark_id and provider_id` | The source job has more than one benchmark. | Add `benchmark_id` and `provider_id` fields to every calibration row and map them with `columns.benchmark_id` and `columns.provider_id`. Calibration `selection` only supports `metric`. |
+| `... contains multiple benchmark_id values`, `selection matched no rows`, or `selection ... conflicts with the evaluation-job target` | External results mix groups or the selector does not match the file. For `eval_job`, the selector differs from the job's identity. | For external results, narrow with `data_config.selection` or `path` using the file's own values. For `eval_job`, set `selection` to the job's own benchmark, provider, and primary metric. Calibration cannot be narrowed this way, so split or filter the calibration data first. |
+| Interval is very wide or extends past the score range | Few labeled examples. PPI bounds are not clipped. | Add more calibration examples. |
+| Interval is far narrower or wider than expected | `significance_level` is alpha, not confidence. | Use `0.05` for 95%, not `0.95`. |
+| Pod is OOM-killed or staging fails on size | Artifacts are downloaded in full, and the S3, Git, and Hugging Face staging volume is limited to 5 GiB. | Raise `hardware_config.memory`. Use a PVC for large calibration sets. |
+
+## Limitations
+
+- **One operation, one estimand.** Only `confidence_interval` for the **mean** of per-sample numeric scores. F1, correlation, and percentiles are not supported. An artifact that declares another `estimand` is rejected.
+- **Fixed method.** Original PPI (`lambda = 1`). Bounds are not clipped to the score range.
+- **Aggregate versus per-sample mean.** The interval is for the mean of the stored per-sample scores. It can differ from the reported aggregate, for example with macro-averaged groups or rounding.
+- **All or nothing.** All benchmarks in the source job are processed, and one failure fails the whole job. Evaluate benchmarks from unsupported frameworks in a separate job.
+- **Calibration options are limited.** Calibration `data_config` supports `format`, `columns`, and `selection.metric` only. It cannot select a path inside an artifact or map string categories, so labels and predictions must already be numeric.
+- **Representative calibration.** Calibration examples must come from the same population and the same scoring procedure as the evaluation. Otherwise the coverage guarantee does not hold. Two labeled and two unlabeled samples are validation minimums, not recommendations.
+- **Sources.** Calibration supports `s3`, `pvc`, `git`, and `hf` only. Results support those plus `eval_job`, `mlflow`, and `oci`. For `eval_job`, MLflow is used first and OCI only as a fallback when MLflow has no artifacts. Invalid sample data does not trigger the fallback.
+- **External results need the metric in the data.** The current adapter reads the primary metric name from `primary_score.metric` inside the result JSON or a `manifest.json` next to the samples. The request's `primary_score` is required by the API for external results but is not used by the adapter.
+- **OCI.** A post-processing pod can reach one registry and repository. For `eval_job` sources, EvalHub reuses the source job's `exports.oci` automatically.
+
+## Related
+
+- [Results & Scoring](/guides/results-and-scoring/): how aggregate scores and pass/fail are computed.
+- [MLflow](/guides/mlflow/): configure experiment tracking and artifact storage.
+- [Server API](/reference/server-api/): full request and response schemas.

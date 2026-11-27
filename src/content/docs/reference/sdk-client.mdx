@@ -247,6 +247,7 @@ except ClientError as e:
 | `client.benchmarks` | `list(provider_id?, category?, limit?)` |
 | `client.collections` | `list()`, `get(id)`, `create(request)`, `delete(id)` |
 | `client.jobs` | `submit(request)`, `get(id)`, `list(status?, limit?)`, `cancel(id, hard_delete?)`, `wait_for_completion(id, timeout?, poll_interval?)` |
+| `client.post_processing` | `submit(request)`, `get(id)`, `delete(id)` (see [Confidence Intervals](/guides/confidence-intervals/)) |
 | `client.health()` | Health check |
 
 ### Key Models (`evalhub.models.api`)

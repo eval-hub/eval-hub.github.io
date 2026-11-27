@@ -106,6 +106,7 @@ export default defineConfig({
             { label: 'Bring Your Own Framework', slug: 'guides/bring-your-own-framework' },
             { label: 'Job Lifecycle & States', slug: 'guides/job-lifecycle' },
             { label: 'Results & Scoring', slug: 'guides/results-and-scoring' },
+            { label: 'Confidence Intervals', slug: 'guides/confidence-intervals' },
             { label: 'Collections', slug: 'guides/collections' },
             { label: 'Administration', slug: 'guides/administration' },
             { label: 'Hardware Profiles', slug: 'guides/hardware-profiles' },
