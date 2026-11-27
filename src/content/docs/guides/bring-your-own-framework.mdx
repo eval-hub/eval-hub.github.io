@@ -4,6 +4,7 @@ description: "Integrate a custom evaluation framework with EvalHub by writing an
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Since from '../../../components/Since.astro';
 
 EvalHub follows a **Bring Your Own Framework (BYOF)** model. Any evaluation
 framework can be plugged in by writing a thin adapter and packaging it as a
@@ -256,6 +257,14 @@ if oci_exports is not None:
 
 results = JobResults(..., oci_artifact=oci_artifact)
 ```
+
+<Since version="1.1.0" />
+
+The server uses the digest reported in the benchmark result to include the
+adapter-published artifact in the evaluation bundle. Each completed benchmark
+result selected for the bundle needs a valid OCI digest and a resolvable
+manifest in the registry and repository configured in `exports.oci.coordinates`.
+See [OCI export results](/guides/results-and-scoring/#oci-export-results) for bundle membership and publication failures.
 
 ### Optional: EvalCard and Environment Card
 

@@ -1,13 +1,14 @@
 ---
 title: "Results & Scoring"
-description: "How EvalHub calculates the results.test and results.benchmarks[].test values, and the user overrides that affect them."
+description: "How EvalHub reports benchmark and job scores, applies scoring overrides, and publishes evaluation cards and bundles to OCI registries."
 ---
 
-When an evaluation job completes, EvalHub populates a `results` section on the job
-resource. This page explains **exactly how the `test` values are calculated** —
-both the per-benchmark pass/fail (`results.benchmarks[].test`) and the job-level
-aggregate (`results.test`) — and which configuration and request overrides change
-the outcome.
+import Since from '../../../components/Since.astro';
+
+The job resource reports per-benchmark and aggregate scores in `results`, including
+the pass/fail tests derived from their thresholds. Scoring configuration and
+request overrides determine those tests. For jobs configured with OCI export,
+`results.oci` also reports publication progress and artifact references.
 
 :::note[Where the raw numbers come from]
 EvalHub does **not** compute benchmark metrics itself. The metric values (for
@@ -29,9 +30,21 @@ The `results` section carries two distinct `test` concepts:
 
 ## Shape of the `results` section
 
+This job response excerpt shows scoring results while OCI publication is running.
+
 ```json
 {
   "results": {
+    "oci": {
+      "status": {
+        "state": "running",
+        "message": {
+          "message": "Evaluation-card OCI processing is running",
+          "message_code": "oci_processing_running",
+          "message_origin": "server"
+        }
+      }
+    },
     "test": {
       "score": 0.72,
       "threshold": 0.45,
@@ -70,6 +83,7 @@ The `results` section carries two distinct `test` concepts:
 - `metrics` — the full map of metric values the adapter reported for that benchmark (passthrough).
 - `benchmarks[].test` — the derived pass/fail for that benchmark (see below).
 - `test` — the derived job-level result (see below).
+- `oci` — optional job-level [OCI export results](#oci-export-results).
 
 ## How each benchmark's `test` is calculated
 
@@ -315,6 +329,101 @@ The `test` block is deliberately omitted (rather than showing a misleading `0`) 
 - **no threshold** can be resolved (neither the benchmark config nor the provider
   defines one), or
 - (job level) **no benchmarks contributed** a valid weight/score.
+
+## OCI export results
+
+<Since version="1.1.0" />
+
+When a job configured with `exports.oci` reaches `completed` or `partially_failed`,
+the server automatically starts publishing the evaluation card and bundle in
+the background. The evaluation outcome remains in `status.state`. OCI
+publication has its own `results.oci.status.state` and a diagnostic
+`results.oci.status.message` object.
+
+The CLI's `--wait` and `--watch` and the SDK's `wait_for_completion()` follow
+evaluation completion. Fetch the job again to see subsequent OCI updates.
+
+```bash
+curl -fsS "$EVALHUB_URL/api/v1/evaluations/jobs/$JOB_ID" | jq '.results.oci'
+```
+
+Check for `results.oci` and each nested object before accessing its fields.
+Older jobs can omit any of these objects.
+
+| OCI status | How to interpret it |
+| --- | --- |
+| Absent | OCI status may be unavailable on older jobs, on jobs without OCI export, or before the first status update. An interruption or storage failure can also leave status absent. |
+| `running` | The server recorded that publication started. Fetch the job again for an update. An interruption or storage failure can leave the last recorded state at `running`. |
+| `completed` | The server saved both artifact references together with OCI completion. |
+| `failed` | Read the diagnostic `message` and check which references are present. A bundle publication failure can retain the published card. If saving OCI completion failed, a fallback update can retain both published references with status `failed`. |
+
+The following job response excerpt shows successful OCI publication for a
+`partially_failed` evaluation.
+
+```json
+{
+  "status": {
+    "state": "partially_failed"
+  },
+  "results": {
+    "oci": {
+      "status": {
+        "state": "completed",
+        "message": {
+          "message": "OCI processing completed",
+          "message_code": "oci_processing_completed",
+          "message_origin": "server"
+        }
+      },
+      "evaluation_card": {
+        "oci_digest": "sha256:2d657cf34b3aa9185224dac1d0c6935a7fa4b95ebd3e36328ac626b0273af45a",
+        "oci_reference": "quay.io/myorg/eval-results:evaluation-card-68a8a955-b6ed-4a28-97dd-d9a5d3aa05a0@sha256:2d657cf34b3aa9185224dac1d0c6935a7fa4b95ebd3e36328ac626b0273af45a"
+      },
+      "evaluation_bundle": {
+        "oci_digest": "sha256:bc14c1399d8f98636fffa20739215b5dbd731d2563ff5179c17a1a5b06f56fde",
+        "oci_reference": "quay.io/myorg/eval-results:evaluation-bundle-68a8a955-b6ed-4a28-97dd-d9a5d3aa05a0@sha256:bc14c1399d8f98636fffa20739215b5dbd731d2563ff5179c17a1a5b06f56fde"
+      }
+    }
+  }
+}
+```
+
+### Evaluation card and bundle
+
+| Artifact | Contents |
+| --- | --- |
+| Evaluation card | A job summary stored as a JSON layer in an OCI image manifest. The card digest identifies the manifest. |
+| Evaluation bundle | An OCI image index. Its first entry references the card, followed by artifacts for completed benchmarks in the order recorded in `results.benchmarks`. Failed and cancelled benchmarks are excluded. The bundle can contain only the card when no benchmark results are selected. The bundle digest identifies the index. |
+
+Every selected benchmark artifact must have a valid digest and a manifest that
+the server can resolve in the configured registry and repository. A verification
+failure for any selected artifact causes bundle publication to fail.
+
+Both artifact references contain `oci_digest` and `oci_reference`. Use the
+returned digest-qualified `oci_reference` to retrieve the artifact. Any tag in
+the reference is informational and can move independently of the digest.
+
+The card is always tagged `evaluation-card-<job-id>`. The bundle is tagged
+`<prefix>-<job-id>`. Set `exports.oci.coordinates.oci_tag` to choose the prefix,
+or omit it to use `evaluation-bundle`. The server reserves `evaluation-card`
+for the card and truncates long bundle prefixes to keep the final tag within
+128 characters while preserving the job ID. Adapters choose their own benchmark
+artifact tags.
+
+### Benchmark output files
+
+Use `oras manifest fetch` with `<registry>/<repository>@<manifest-digest>` to find the layer whose
+`olot.layer.content.name` annotation matches the relative file path. Then use
+`oras blob fetch` with `<registry>/<repository>@<layer-digest>` and `--output`
+to save the layer, and extract it with `tar -xzf`.
+
+To save the full benchmark artifact, use `oras cp --to-oci-layout` with the
+same manifest reference and a local `directory:tag` as the destination.
+Plain `oras pull` skips the SDK's layers because they use the Olot file name
+annotation.
+
+In Local Mode, the SDK adapter's benchmark reference may include `http://`.
+See [Fetching benchmark artifacts from a local registry](/guides/local-mode/#fetching-benchmark-artifacts-from-a-local-registry).
 
 ## Related
 

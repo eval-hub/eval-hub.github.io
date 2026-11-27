@@ -3,6 +3,7 @@ title: "Quick Start"
 ---
 
 import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import Since from '../../../components/Since.astro';
 
 Run your first evaluation with EvalHub.
 
@@ -425,7 +426,15 @@ curl -s $EVALHUB_URL/api/v1/evaluations/jobs/eval-a1b2c3d4 \
 
 ### Export Results to OCI Registry
 
-EvalHub can persist evaluation result files as OCI Artifacts to an OCI Registry. Each result file is stored as a separate layer in the OCI Artifact, allowing consumers to selectively pull only the content they need (e.g. a summary JSON, individual adapter output files, or all files).
+<Since version="1.1.0" />
+
+Adapters that support OCI export upload benchmark result files to the configured
+registry and repository. The EvalHub SDK adapter packages each exported file as
+its own gzip-compressed tar layer. You can fetch and extract a single layer by
+digest or copy the complete benchmark artifact to a local OCI layout. After the
+evaluation reaches `completed` or `partially_failed`, the server publishes a
+job summary as an evaluation card and an evaluation bundle that references the
+card and the selected benchmark artifacts.
 
 First, create a Kubernetes Secret with your registry credentials (aka "OCI Connection"):
 
@@ -518,7 +527,10 @@ curl -s -X POST $EVALHUB_URL/api/v1/evaluations/jobs \
 </TabItem>
 </Tabs>
 
-When the evaluation completes, the adapter pushes an OCI Artifact to the specified repository (e.g. `quay.io/myorg/myartifact`). The `k8s.connection` field references the name of the Kubernetes Secret containing the registry credentials.
+The `k8s.connection` field names the Kubernetes Secret that supplies registry
+credentials for benchmark uploads and server publication. After the evaluation
+finishes, use your job ID to [check OCI publication with `eval status`](/guides/cli/#check-oci-publication-with-eval-status).
+See [OCI export results](/guides/results-and-scoring/#oci-export-results) for how to retrieve the artifacts.
 
 ## Troubleshooting
 

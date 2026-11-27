@@ -2,6 +2,8 @@
 title: "Server API"
 ---
 
+import Since from '../../../components/Since.astro';
+
 Go REST API service for managing LLM evaluation workflows.
 
 ## REST API
@@ -22,6 +24,55 @@ GET    /api/v1/evaluations/jobs/{id}        # Get job status and results
 DELETE /api/v1/evaluations/jobs/{id}        # Cancel job
 POST   /api/v1/evaluations/jobs/{id}/events # Status/result callback (adapter → server)
 ```
+
+#### OCI export results
+
+<Since version="1.1.0" />
+
+`GET /api/v1/evaluations/jobs/{id}` returns a job object. The list endpoint
+returns the same job shape under `items[]`. Within `results`, the `oci` object
+and each of the following fields are optional.
+
+| Field under `results.oci` | Contents |
+| --- | --- |
+| `status` | OCI publication `state` (`running`, `completed`, or `failed`) and a diagnostic `message` object containing `message`, `message_code`, and optional `message_origin`. |
+| `evaluation_card` | Card manifest `oci_digest` and digest-qualified `oci_reference`. |
+| `evaluation_bundle` | Bundle index `oci_digest` and digest-qualified `oci_reference`. |
+
+Response excerpt from `GET /api/v1/evaluations/jobs/{id}` after OCI publication
+completes.
+
+```json
+{
+  "status": {
+    "state": "completed"
+  },
+  "results": {
+    "oci": {
+      "status": {
+        "state": "completed",
+        "message": {
+          "message": "OCI processing completed",
+          "message_code": "oci_processing_completed",
+          "message_origin": "server"
+        }
+      },
+      "evaluation_card": {
+        "oci_digest": "sha256:71cf3427f1c7cbf3f101c950dd5f6efcdaf1b7135a925a3015ac164936044cc5",
+        "oci_reference": "quay.io/myorg/eval-results:evaluation-card-7032aeac-d164-497e-be9a-f5188bb9792b@sha256:71cf3427f1c7cbf3f101c950dd5f6efcdaf1b7135a925a3015ac164936044cc5"
+      },
+      "evaluation_bundle": {
+        "oci_digest": "sha256:81f8f865478d19b2fe14b17492395686f969703bc60aa0a3914c6744f3514084",
+        "oci_reference": "quay.io/myorg/eval-results:evaluation-bundle-7032aeac-d164-497e-be9a-f5188bb9792b@sha256:81f8f865478d19b2fe14b17492395686f969703bc60aa0a3914c6744f3514084"
+      }
+    }
+  }
+}
+```
+
+In a submission, `exports.oci.coordinates.oci_tag` sets the bundle tag prefix.
+The default prefix is `evaluation-bundle`, and the final tag appends the job ID.
+See [OCI export results](/guides/results-and-scoring/#oci-export-results) for tagging, artifact contents, and failure behavior.
 
 ### Providers
 
@@ -124,6 +175,9 @@ Configuration loads from `config/config.yaml`, with environment variable and fil
 | `mlflow.token` | - | - | Static MLflow bearer token |
 | `mlflow.token_path` | `MLFLOW_TOKEN_PATH` | - | Path to MLflow bearer token file |
 | `mlflow.workspace` | `MLFLOW_WORKSPACE` | - | Workspace name when the MLflow server supports workspaces |
+| `sidecar.oci.push_timeout` | `OCI_PUSH_TIMEOUT` | `5m` | OCI publication timeout |
+| `sidecar.oci.http_timeout` | - | `30s` | OCI registry HTTP client timeout |
+| `sidecar.oci.ca_cert_path` | - | `/etc/pki/ca-trust/source/anchors/service-ca.crt` | CA bundle for registry TLS. The server uses system roots alone if the bundle file is absent. |
 | `prometheus.enabled` | - | `true` | Enable `/metrics` |
 | `otel.enabled` | - | `false` | Enable OpenTelemetry (see [OpenTelemetry](/guides/opentelemetry/)) |
 

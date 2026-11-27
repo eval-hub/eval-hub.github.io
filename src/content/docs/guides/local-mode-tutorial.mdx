@@ -17,6 +17,7 @@ Install the following tools before starting:
 
 - [uv](https://docs.astral.sh/uv/) — Python package manager
 - [podman](https://podman.io/) (or Docker) — for running the OCI registry
+- [ORAS](https://oras.land/docs/installation) and `jq` — for inspecting OCI artifacts and job responses
 - [ollama](https://ollama.com/) (or any OpenAI-compatible LLM server) — for serving a local model
 
 ## Setup
@@ -36,20 +37,28 @@ Install the following tools before starting:
 
 2. **Download the LightEval adapter**
 
-   Download the adapter driver and its requirements from eval-hub-contrib:
+   Download the adapter, its helper modules, and its requirements from eval-hub-contrib.
 
    ```bash
-   curl -o main.py https://raw.githubusercontent.com/eval-hub/eval-hub-contrib/main/adapters/lighteval/main.py
-   curl -o requirements.txt https://raw.githubusercontent.com/eval-hub/eval-hub-contrib/main/adapters/lighteval/requirements.txt
+   adapter_url=https://raw.githubusercontent.com/eval-hub/eval-hub-contrib/main/adapters/lighteval
+   for file in main.py _hf_offline.py custom_tasks.py lighteval_logprob_patch.py \
+       lighteval_memory_cap.py requirements.txt requirements-overrides.txt; do
+     curl -fsSLO "$adapter_url/$file"
+   done
    ```
 
 3. **Install dependencies**
 
-   Install the EvalHub server, CLI, and adapter requirements:
+   Install the CLI and adapter requirements. The SDK's `server` extra installs
+   the `eval-hub-server` package. The install requires version 1.1.0 or later
+   of both packages for job-level OCI publication.
 
    ```bash
-   uv pip install -r requirements.txt
-   uv pip install "eval-hub-sdk[server,cli]>=1.0.3"
+   printf '%s\n' \
+     'eval-hub-sdk[adapter,core,server,cli]>=1.1.0' \
+     'eval-hub-server>=1.1.0' > sdk-version.txt
+   uv pip install -r requirements.txt \
+     --override requirements-overrides.txt --override sdk-version.txt
    ```
 
 4. **Start MLflow (optional)**
@@ -87,7 +96,7 @@ Install the following tools before starting:
 
    Only needed if you want to persist evaluation artifacts to an OCI registry. Skip this step if you just want to run evaluations.
 
-   In another terminal, pull the registry image and start it on `localhost:5001`:
+   In another terminal, pull the registry image and start it at `http://localhost:5001`:
 
    ```bash
    podman pull docker.io/library/registry:2
@@ -122,7 +131,7 @@ Install the following tools before starting:
 
    Starting with eval-hub-sdk 1.0.3, Local mode starts a sidecar automatically.
 
-   For a basic evaluation, start the server with its built-in local defaults (available since eval-hub-sdk 1.0.3):
+   Start the packaged server with its built-in local defaults:
 
    ```bash
    evalhub server start
@@ -215,13 +224,13 @@ Install the following tools before starting:
    ```
 
    ```text
-   Provider created: a578921e-053a-496a-889b-ecd97b8dbd1a
+   Provider created: 38f7bdba-3fe0-4a68-8ef9-4220faff771f
    ```
 
    Save the provider ID for subsequent commands (your ID will differ):
 
    ```bash
-   PROVIDER_ID="a578921e-053a-496a-889b-ecd97b8dbd1a"
+   PROVIDER_ID="38f7bdba-3fe0-4a68-8ef9-4220faff771f"
    ```
 
    See the [Local Mode guide — Provider Configuration](/guides/local-mode/#provider-configuration-for-local-mode) for details on the `runtime.local` section.
@@ -236,7 +245,7 @@ Install the following tools before starting:
    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
    ┃ ID                                   ┃ NAME      ┃ DESCRIPTION                                ┃ BENCHMARKS ┃
    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-   │ a578921e-053a-496a-889b-ecd97b8dbd1a │ lighteval │ LightEval adapter for evaluation framework │ 1          │
+   │ 38f7bdba-3fe0-4a68-8ef9-4220faff771f │ lighteval │ LightEval adapter for evaluation framework │ 1          │
    └──────────────────────────────────────┴───────────┴────────────────────────────────────────────┴────────────┘
    ```
 
@@ -248,7 +257,7 @@ Install the following tools before starting:
 
    ```text
    Provider: lighteval
-   ID:       a578921e-053a-496a-889b-ecd97b8dbd1a
+   ID:       38f7bdba-3fe0-4a68-8ef9-4220faff771f
    Description: LightEval adapter for evaluation framework
 
    Benchmarks (1):
@@ -298,14 +307,17 @@ evalhub eval results $JOB_ID
 ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ BENCHMARK ┃ PROVIDER                             ┃ METRIC                 ┃ VALUE ┃
 ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
-│ gsm8k     │ a578921e-053a-496a-889b-ecd97b8dbd1a │ all.extractive_match   │ 0.7   │
-│ gsm8k     │ a578921e-053a-496a-889b-ecd97b8dbd1a │ gsm8k.extractive_match │ 0.7   │
+│ gsm8k     │ 38f7bdba-3fe0-4a68-8ef9-4220faff771f │ all.extractive_match   │ 0.7   │
+│ gsm8k     │ 38f7bdba-3fe0-4a68-8ef9-4220faff771f │ gsm8k.extractive_match │ 0.7   │
 └───────────┴──────────────────────────────────────┴────────────────────────┴───────┘
 ```
 
 ### With MLflow experiments and OCI artifact storage
 
-MLflow experiment tracking and OCI artifact export are optional. If you started MLflow and the OCI registry in the setup steps, add the `--experiment` and `--oci-*` flags:
+The evaluation card and bundle steps require `eval-hub-server` 1.1.0 or later.
+If you started MLflow and the OCI registry in the setup steps, add both
+`--experiment` and the `--oci-*` flags. To run with only OCI export, omit
+`--experiment`.
 
 ```bash
 evalhub eval run \
@@ -317,35 +329,40 @@ evalhub eval run \
   --param num_examples=10 \
   --param num_few_shot=0 \
   --experiment my-local-experiment \
-  --oci-host localhost:5001 \
+  --oci-host http://localhost:5001 \
   --oci-repository local-eval-results \
   --wait
 ```
 
+Example output:
+
 ```text
-Job submitted: ef42ad16-57b6-4bf4-a7ff-eb907e848bb1
-Waiting for job ef42ad16-57b6-4bf4-a7ff-eb907e848bb1 to complete...
-Job ef42ad16-57b6-4bf4-a7ff-eb907e848bb1 finished with state: completed
+Job submitted: 0e6f0af2-d7af-4450-a56c-5036c71d028d
+Waiting for job 0e6f0af2-d7af-4450-a56c-5036c71d028d to complete...
+Job 0e6f0af2-d7af-4450-a56c-5036c71d028d finished with state: completed
+
+OCI:
+  State: completed
 ```
 
-Save the job ID and check results:
+Set `JOB_ID` to the ID printed by your run and check the per-benchmark results.
 
 ```bash
-JOB_ID="ef42ad16-57b6-4bf4-a7ff-eb907e848bb1"
-evalhub eval results $JOB_ID --format json
+JOB_ID="0e6f0af2-d7af-4450-a56c-5036c71d028d"
+evalhub eval results "$JOB_ID" --format json
 ```
 
-Example output:
+Example excerpt from the per-benchmark results:
 
 ```json
 [
   {
     "id": "gsm8k",
-    "provider_id": "a578921e-053a-496a-889b-ecd97b8dbd1a",
+    "provider_id": "38f7bdba-3fe0-4a68-8ef9-4220faff771f",
     "benchmark_index": 0,
     "metrics": {
-      "all.extractive_match": 0.7,
-      "gsm8k.extractive_match": 0.7
+      "all.extractive_match": 0.8,
+      "gsm8k.extractive_match": 0.8
     },
     "artifacts": {
       "evalhub.env_card": {
@@ -359,22 +376,45 @@ Example output:
         "k8s_resource_limits": {},
         "key_packages": {
           "mlflow": "3.14.0",
-          "torch": "2.13.0",
-          "transformers": "5.13.0"
+          "torch": "2.15.0",
+          "transformers": "5.24.1"
         },
-        "os_info": "macOS-26.5.2-arm64-arm-64bit",
+        "os_info": "macOS-27.2.1-arm64-arm-64bit",
         "per_task_results": {},
         "python_version": "3.12.12",
         "scorer_ids": []
       },
-      "oci_digest": "sha256:5f853d7fa2c67247ca35b511deaec78a56d64c98734974e274504c039bedc558",
-      "oci_reference": "localhost:5001/local-eval-results:evalhub-9129f2cac2db213158f8c106e1b658e0e05ecd9db54630dfe6bc2edf2cdb413b@sha256:5f853d7fa2c67247ca35b511deaec78a56d64c98734974e274504c039bedc558"
+      "oci_digest": "sha256:afd555e2d29db6fb9e678cab14f52ed4daf5ae090856b6ab3e30a496e533cd3e",
+      "oci_reference": "http://localhost:5001/local-eval-results:evalhub-764a48e0d49334f7aaa29197d5cef6ba6e16b3443de46dbe9499199878974bcc@sha256:afd555e2d29db6fb9e678cab14f52ed4daf5ae090856b6ab3e30a496e533cd3e"
     },
     "mlflow_run_id": "3c03bb8128a349fe822e793637b7ffe2",
     "logs_path": null
   }
 ]
 ```
+
+To retrieve the adapter's files with ORAS, see
+[Fetching benchmark artifacts from a local registry](/guides/local-mode/#fetching-benchmark-artifacts-from-a-local-registry).
+
+### Fetch the evaluation bundle from the local registry
+
+<Since version="1.1.0" />
+
+After the evaluation finishes, [check OCI publication with `eval status`](/guides/cli/#check-oci-publication-with-eval-status).
+Once OCI publication reaches `completed`, fetch the bundle index using the
+returned digest-qualified reference.
+
+```bash
+bundle_ref=$(evalhub eval status "$JOB_ID" --format json |
+  jq -er '.[0].results.oci.evaluation_bundle.oci_reference') &&
+  oras manifest fetch --plain-http --pretty "$bundle_ref"
+```
+
+The output is an OCI image index. The first `manifests` entry points to the
+evaluation card manifest, whose layer contains the job summary JSON. The
+following entries point to the completed benchmark artifacts in benchmark
+order. In this example the second entry's digest matches the `oci_digest`
+in the benchmark results above. See [OCI export results](/guides/results-and-scoring/#oci-export-results) for details.
 
 ### Using the Python SDK
 

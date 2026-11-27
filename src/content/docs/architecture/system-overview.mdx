@@ -2,6 +2,8 @@
 title: "System Overview"
 ---
 
+import Since from '../../../components/Since.astro';
+
 EvalHub consists of three components that work together to orchestrate LLM evaluations.
 
 | Component | Description | Technology |
@@ -21,8 +23,14 @@ EvalHub consists of three components that work together to orchestrate LLM evalu
 3. **ConfigMap mounted** with JobSpec at `/meta/job.json`
 4. **Adapter loads JobSpec**, runs evaluation, reports progress via callbacks
 5. **Sidecar forwards events** to the server via `POST /api/v1/evaluations/jobs/{id}/events`
-6. **Adapter persists artifacts** to OCI registry and logs metrics to MLflow
+6. **Adapter persists artifacts** to OCI registry and logs metrics to MLflow when configured
 7. **Server stores results** in PostgreSQL, returns status to client
+8. **Server publishes the evaluation card and bundle** in the background for
+   jobs with `exports.oci` that reach `completed` or `partially_failed`. The
+   bundle references the card and selected adapter artifacts. Clients read
+   publication status and references under `results.oci`. See [OCI export results](/guides/results-and-scoring/#oci-export-results).
+
+   <Since version="1.1.0" />
 
 ## Core Concepts
 
