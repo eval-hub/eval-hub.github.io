@@ -3,6 +3,7 @@ title: "Job Lifecycle & States"
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Since from '../../../components/Since.astro';
 
 Every [evaluation job](https://eval-hub.github.io/eval-hub/#tag/Evaluations/operation/post_evaluations_jobs) (`POST /api/v1/evaluations/jobs`) runs one or more benchmarks. EvalHub tracks state at two levels:
 
@@ -196,6 +197,17 @@ The `status` field in the job response contains the overall state and per-benchm
   }
 }
 ```
+
+### Checking OCI publication after completion
+
+<Since version="1.1.0" />
+
+For jobs configured with `exports.oci`, the server starts publishing the
+evaluation card and bundle in the background when the evaluation reaches
+`completed` or `partially_failed`. The evaluation can finish before publication.
+Fetch the job again and check `results.oci.status` for the current OCI state
+and diagnostic message. See [OCI export results](/guides/results-and-scoring/#oci-export-results)
+for the request example and status meanings.
 
 ## Kubernetes signals
 

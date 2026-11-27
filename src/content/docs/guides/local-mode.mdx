@@ -170,7 +170,10 @@ benchmarks:
       threshold: 0.25
 ```
 
-The `OCI_INSECURE` variable allows pushing artifacts to a local OCI registry running without TLS. For registries that require authentication, the OCI persister reads credentials from `~/.docker/config.json` — run `docker login` (or `podman login`) before starting an evaluation.
+`OCI_INSECURE=true` tells the adapter's OCI persister to use plain HTTP.
+For registries that require adapter authentication, provide a Docker-format
+credential file using `docker login` or set `OCI_AUTH_CONFIG_PATH` to a
+compatible file. The adapter needs permission to push the benchmark artifact.
 
 A provider configuration can include both `runtime.local` and `runtime.k8s` sections, allowing the same definition to work in both modes.
 
@@ -198,9 +201,16 @@ experiment:
 exports:
   oci:
     coordinates:
-      oci_host: localhost:5001
+      oci_host: http://localhost:5001
       oci_repository: myorg/eval-results
 ```
+
+:::note[Plain-HTTP registries]
+Use `oci_host: http://localhost:5001` for a plain-HTTP local registry. The
+server defaults to HTTPS for card and bundle publication when the scheme is
+omitted, even in local mode. The adapter separately needs `OCI_INSECURE=true`
+in the provider environment.
+:::
 
 Replace `<provider-id>` with the ID returned by `evalhub providers create`. The `experiment` and `exports` sections are optional — omit them if you are not using MLflow or an OCI registry.
 
@@ -209,6 +219,28 @@ evalhub eval run --config job.yaml --wait
 ```
 
 See the [CLI guide](/guides/cli/#i-want-to-run-an-evaluation) for the full set of `eval run` options, including inline flags and output formats.
+
+### Checking OCI results
+
+<Since version="1.1.0" />
+
+In local mode, the server uses anonymous registry access to publish the
+evaluation card and bundle. The destination must allow anonymous pushes and
+reads so the server can also resolve the benchmark manifests.
+
+See [OCI export results](/guides/results-and-scoring/#oci-export-results) for how to check job-level publication status after the evaluation
+finishes.
+
+### Fetching benchmark artifacts from a local registry
+
+Before using a benchmark's `oci_reference` with ORAS, remove the `http://`
+prefix if present and any tag before `@`. Keep the registry port and use
+`<registry>/<repository>@<manifest-digest>`.
+
+For a plain-HTTP registry, add `--plain-http` to `oras manifest fetch` and
+`oras blob fetch`. Add `--from-plain-http` to `oras cp --to-oci-layout`.
+See [Benchmark output files](/guides/results-and-scoring/#benchmark-output-files)
+for how to retrieve a single file or the full artifact.
 
 ### Using a remote model
 
@@ -281,4 +313,4 @@ Look for `local runtime` messages in the log:
 | Job stays in `running` state | Adapter is not reporting back | Check the adapter logs in `jobrun.log`; verify the callback URL is reachable |
 | `provider has no local runtime configured` | Missing `runtime.local` in provider YAML | Add a `runtime.local.command` to the provider configuration |
 | MLflow experiment not created | MLflow not configured | Set `mlflow.tracking_uri` in the server config YAML (`server_config_file`); see [MLflow](/guides/mlflow/) |
-| OCI push fails | Registry not reachable or requires auth | Verify the registry is running; run `docker login`/`podman login` for authenticated registries or set `OCI_INSECURE=true` for local ones |
+| OCI push fails | Registry connectivity or access | Verify the registry is reachable. Check adapter push access and anonymous server push and read access. For a plain-HTTP registry, set `OCI_INSECURE=true` for the adapter. |

@@ -193,7 +193,7 @@ evalhub eval run --config eval.yaml --wait
 
 The command exits with code `1` if the job fails, making it suitable for CI pipelines.
 
-If the model endpoint requires authentication, see [Model authentication](model-authentication/).
+If the model endpoint requires authentication, see [Model authentication](/guides/model-authentication/).
 
 ## I want to check what's running
 
@@ -204,12 +204,12 @@ evalhub eval status
 ```
 
 ```
-┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ ID                 ┃ NAME                    ┃ STATE       ┃ PROVIDER              ┃ BENCHMARKS ┃ CREATED                    ┃
-┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ eval-a1b2c3d4      │ llama3-reasoning-eval   │ running     │ lm_evaluation_harness │ 2          │ 2026-03-25 10:00:00+00:00  │
-│ eval-e5f6g7h8      │ llama3-mmlu             │ completed   │ lm_evaluation_harness │ 2          │ 2026-03-24 09:15:00+00:00  │
-└────────────────────┴─────────────────────────┴─────────────┴───────────────────────┴────────────┴────────────────────────────┘
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ID            ┃ NAME                  ┃ STATE     ┃ OCI_STATE ┃ PROVIDER              ┃ BENCHMARKS ┃ CREATED                   ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ eval-a1b2c3d4 │ llama3-reasoning-eval │ running   │           │ lm_evaluation_harness │ 2          │ 2026-03-25 10:00:00+00:00 │
+│ eval-e5f6g7h8 │ llama3-mmlu           │ completed │ running   │ lm_evaluation_harness │ 2          │ 2026-03-24 09:15:00+00:00 │
+└───────────────┴───────────────────────┴───────────┴───────────┴───────────────────────┴────────────┴───────────────────────────┘
 ```
 
 Filter by status:
@@ -236,7 +236,38 @@ Watch a job until it finishes:
 evalhub eval status eval-a1b2c3d4 --watch
 ```
 
+### Check OCI publication with `eval status`
+
+<Since version="1.1.0 eval-hub-sdk" />
+
+The job list shows publication state in the `OCI_STATE` column. For a single
+job, the default output shows OCI state in a separate block when OCI results
+are present. If the OCI object has no status, the block shows `unavailable`.
+This excerpt shows the evaluation and OCI state lines for one job.
+
+```text
+State:   completed
+
+OCI:
+  State: running
+```
+
+Both `eval run --wait` and `eval status --watch` follow evaluation completion.
+Rerun `eval status` to check later OCI updates. For the diagnostic message and
+available card and bundle references, use JSON or YAML. JSON output for a
+specific job is an array containing the job object.
+
+```bash
+evalhub eval status "$JOB_ID" --format json | jq '.[0].results.oci'
+evalhub eval status "$JOB_ID" --format yaml
+```
+
+See [OCI export results](/guides/results-and-scoring/#oci-export-results) for the OCI states and artifact details.
+
 ## I want to see the results
+
+`evalhub eval results` returns per-benchmark results. For job-level OCI status
+and artifact references, see [Check OCI publication with `eval status`](#check-oci-publication-with-eval-status).
 
 ```bash
 evalhub eval results eval-a1b2c3d4
@@ -549,7 +580,7 @@ ANSI colour codes are stripped automatically when stdout is not a TTY, so piped 
 | **eval** | |
 | `evalhub eval run` | Submit an evaluation job |
 | `evalhub eval status [job-id]` | List jobs or inspect one |
-| `evalhub eval results <job-id>` | Show evaluation results |
+| `evalhub eval results <job-id>` | Show per-benchmark results |
 | `evalhub eval cancel <job-id>` | Cancel a job |
 | **collections** | |
 | `evalhub collections list` | List all collections |

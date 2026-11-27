@@ -3,6 +3,7 @@ title: "Python SDK"
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
+import Since from '../../../components/Since.astro';
 
 The EvalHub Python SDK provides synchronous and asynchronous clients for the EvalHub REST API, plus an adapter framework for building evaluation integrations.
 
@@ -187,6 +188,37 @@ client.jobs.cancel(job.id)
 client.jobs.cancel(job.id, hard_delete=True)
 ```
 
+#### Read OCI results from `client.jobs.get()`
+
+<Since version="1.1.0 eval-hub-sdk" />
+
+`wait_for_completion()` returns once the evaluation reaches a terminal state,
+which can happen while OCI publication is still active. Retrieve the job again
+to see its latest OCI status and any available artifact references.
+
+```python
+job = client.jobs.get(job_id)
+oci = job.results.oci if job.results is not None else None
+
+if oci is None:
+    print("OCI results are unavailable")
+else:
+    if oci.status is not None:
+        print(f"OCI state: {oci.status.state}")
+        print(f"OCI message: {oci.status.message.message}")
+    else:
+        print("OCI status is unavailable")
+
+    for label, artifact in (
+        ("Evaluation card", oci.evaluation_card),
+        ("Evaluation bundle", oci.evaluation_bundle),
+    ):
+        if artifact is not None:
+            print(f"{label}: {artifact.oci_reference}")
+```
+
+See [OCI export results](/guides/results-and-scoring/#oci-export-results) for the OCI states and publication outcomes.
+
 ## Async Concurrency
 
 ```python
@@ -257,6 +289,10 @@ except ClientError as e:
 | `ModelConfig` | Model endpoint (url, name, auth) |
 | `BenchmarkConfig` | Benchmark reference (id, provider_id, parameters) |
 | `EvaluationJob` | Job status and results |
+| `EvaluationJobResults` | Job results, including benchmark results and optional OCI results |
+| `EvaluationOCIResults` | Optional OCI status, evaluation card reference, and evaluation bundle reference |
+| `OCIProcessingStatus` | OCI state and diagnostic message |
+| `OCIArtifactReference` | Digest and digest-qualified OCI reference for a published artifact |
 | `JobStatus` | Enum: PENDING, RUNNING, COMPLETED, FAILED, CANCELLED |
 | `Provider` | Provider metadata and benchmarks |
 | `AgentMetadata` | Provider-level agent discoverability metadata |
